@@ -1,0 +1,1 @@
+CEL: Integracje zewnętrzne i hosting AI. WYMÓG: Kod do obsługi mikrofonu (expo-av). Cała komunikacja AI musi być kierowana do naszego własnego endpointu w GCP. ZABRANIA SIĘ używania komercyjnych SDK (np. OpenAI). Do udostępniania na Instagramie użyj 'react-native-view-shot' i 'expo-sharing'.
