@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useSettingsStore } from './useSettingsStore';
+import { useGamificationStore } from './useGamificationStore';
 import { DiaryEntry } from '../../domain/models/DiaryEntry';
 import { ExpoAvAudioRecorder } from '../../infrastructure/audio/expoAudioRecorder';
 import { GroqAiService } from '../../infrastructure/ai/groqService';
@@ -54,6 +55,7 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
       const { lifeGoals } = useSettingsStore.getState();
       const newEntry = await recordUseCase.stopRecordingAndProcess(lifeGoals);
       if (newEntry) {
+        useGamificationStore.getState().processNewEntry(newEntry.createdAt.toISOString());
         await get().fetchEntries();
         set({ isProcessing: false });
       } else {

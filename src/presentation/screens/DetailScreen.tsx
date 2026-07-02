@@ -1,14 +1,27 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { DetailScreenRouteProp } from '../../navigation/types';
 import { useDiaryStore } from '../../application/store/useDiaryStore';
+import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { GradientText } from '../components/GradientText';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
+import { GlassCard, GradientText, EmotionPill } from '../components/UIPrimitives';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
+
+const formatDate = (iso: string | Date | number) => {
+  const d = new Date(iso);
+  const days = ["Niedziela", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota"];
+  const months = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca", "sierpnia", "września", "października", "listopada", "grudnia"];
+  return {
+    weekday: days[d.getDay()],
+    full: `${d.getDate()} ${months[d.getMonth()]}`,
+    time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+  };
+};
 
 export const DetailScreen = () => {
   const route = useRoute<DetailScreenRouteProp>();
@@ -21,6 +34,7 @@ export const DetailScreen = () => {
 
   const [isShareMode, setIsShareMode] = useState(false);
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
+  const [isTranscriptVisible, setIsTranscriptVisible] = useState(false);
 
   if (!entry || !entry.parsedData) {
     return (
@@ -31,21 +45,32 @@ export const DetailScreen = () => {
   }
 
   const { parsedData } = entry;
-
-  const getGoalColor = (status: string) => {
-    switch (status) {
-      case 'POSITIVE': return '#4ADE80';
-      case 'NEGATIVE': return '#F87171';
-      default: return '#94A3B8';
-    }
+  const d = formatDate(entry.date);
+  
+  // Fallbacks for backward compatibility
+  const pData = {
+    dominantThought: parsedData.dominantThought || (parsedData as any).quote || "Wpis",
+    summary: parsedData.summary || "",
+    importantQuotes: parsedData.quotes || (parsedData as any).importantQuotes || (parsedData as any).important_quotes || [],
+    impactOnGoals: parsedData.impactOnGoals || (parsedData as any).goalAlignment?.reason || "",
+    tasksDone: parsedData.completedTasks || (parsedData as any).tasksDone || (parsedData as any).tasks_done || [],
+    emotions: parsedData.emotions || [],
+    fatigueLevel: parsedData.fatigueLevel || (parsedData as any).fatigue_level || "",
+    stressVsCalm: parsedData.stressVsCalm || "",
+    gratitude: parsedData.gratefulFor || (parsedData as any).gratitude || "",
+    angerTriggers: parsedData.triggeredAnger || (parsedData as any).angerTriggers || (parsedData as any).anger_triggers || "",
+    joyTriggers: parsedData.triggeredJoy || (parsedData as any).joyTriggers || "",
+    calmTriggers: parsedData.triggeredCalm || (parsedData as any).calmTriggers || "",
+    stressTriggers: parsedData.triggeredStress || "",
+    goalImpactType: parsedData.goalImpactType || 'neutral',
+    goalAdvice: parsedData.goalAdvice || ""
   };
 
-  const getGoalIcon = (status: string) => {
-    switch (status) {
-      case 'POSITIVE': return 'arrow-up-circle';
-      case 'NEGATIVE': return 'arrow-down-circle';
-      default: return 'minus-circle';
-    }
+  const isValidData = (text: string | any) => {
+    if (!text) return false;
+    const str = String(text).toLowerCase().trim();
+    if (str === '' || str === 'null' || str === 'brak' || str === 'nie dotyczy' || str === 'brak danych' || str === 'nie wspomniano') return false;
+    return true;
   };
 
   const toggleSelection = (id: string) => {
@@ -57,8 +82,7 @@ export const DetailScreen = () => {
   const handleShare = async () => {
     if (!isShareMode) {
       setIsShareMode(true);
-      // Domyślnie zaznaczamy główny cytat
-      setSelectedCards(['main_quote']);
+      setSelectedCards(['dominantThought']);
       return;
     }
 
@@ -80,198 +104,208 @@ export const DetailScreen = () => {
     }
   };
 
-  // Build the interleaved blocks
-  const blocks: any[] = [];
-  const lists: any[] = [];
+  const isSelected = (id: string) => selectedCards.includes(id);
 
-  lists.push({ type: 'emotions', id: 'emotions_fatigue' });
-
-  if (parsedData.tasks_done?.length) {
-    lists.push({ type: 'list', id: 'tasks', title: 'Wykonane zadania', icon: 'check-square', items: parsedData.tasks_done });
-  }
-  if (parsedData.gratitude?.length) {
-    lists.push({ type: 'list', id: 'gratitude', title: 'Wdzięczność za', icon: 'heart', items: parsedData.gratitude });
-  }
-  if (parsedData.anger_triggers?.length) {
-    lists.push({ type: 'list', id: 'anger', title: 'Wyzwalacze złości', icon: 'alert-triangle', items: parsedData.anger_triggers });
-  }
-
-  const quotes = parsedData.important_quotes || [];
-  let quoteIndex = 0;
-
-  for (let i = 0; i < lists.length; i++) {
-    if (quoteIndex < quotes.length) {
-      blocks.push({ type: 'quote', id: `quote-${quoteIndex}`, text: quotes[quoteIndex] });
-      quoteIndex++;
-    }
-    blocks.push(lists[i]);
-  }
-
-  while (quoteIndex < quotes.length) {
-    blocks.push({ type: 'quote', id: `quote-${quoteIndex}`, text: quotes[quoteIndex] });
-    quoteIndex++;
-  }
-
-  const renderBlock = (block: any, inComposite: boolean = false) => {
-    const isSelected = selectedCards.includes(block.id);
-    if (inComposite && !isSelected) return null;
-
-    const Wrapper = inComposite ? View : TouchableOpacity;
-    const wrapperProps = inComposite ? {} : {
-      activeOpacity: isShareMode ? 0.7 : 1,
-      onPress: isShareMode ? () => toggleSelection(block.id) : undefined,
-    };
-
-    if (block.type === 'quote') {
-      return (
-        <Wrapper key={block.id} {...wrapperProps} style={[styles.blockWrapper, !inComposite && isShareMode && isSelected && styles.selectedWrapper]}>
-          {isShareMode && !inComposite && (
-            <View style={styles.selectionIndicator}>
-              <Ionicons name={isSelected ? "checkmark-circle" : "ellipse-outline"} size={24} color={isSelected ? "#A78BFA" : "#94A3B8"} />
-            </View>
-          )}
-          <GradientText colors={colors.gradientColors} style={[styles.importantQuoteText, { textAlign: 'center' }, inComposite && { marginBottom: 15 }]}>
-            "{block.text}"
-          </GradientText>
-        </Wrapper>
-      );
-    }
-
-    if (block.type === 'emotions') {
-      return (
-        <Wrapper key={block.id} {...wrapperProps} style={[styles.blockWrapper, !inComposite && isShareMode && isSelected && styles.selectedWrapper]}>
-          <View style={styles.row}>
-            <BlurView intensity={20} tint={colors.tileTint} style={[styles.tile, styles.halfTile, { borderColor: colors.tileBorder }]}>
-              <View style={[styles.tileHeader, { justifyContent: 'center' }]}>
-                <Feather name="smile" size={16} color={colors.text} />
-                <Text style={[styles.tileTitleSmall, { color: colors.text }]}>Emocje</Text>
-              </View>
-              <Text style={[styles.tagText, { color: colors.text, textAlign: 'center' }]}>{parsedData.emotions?.join(', ') || 'Brak'}</Text>
-            </BlurView>
-
-            <BlurView intensity={20} tint={colors.tileTint} style={[styles.tile, styles.halfTile, { borderColor: colors.tileBorder }]}>
-              <View style={[styles.tileHeader, { justifyContent: 'center' }]}>
-                <Feather name="battery" size={16} color={colors.text} />
-                <Text style={[styles.tileTitleSmall, { color: colors.text }]}>Zmęczenie</Text>
-              </View>
-              <Text style={[styles.tagText, { color: colors.text, textAlign: 'center' }]}>{parsedData.fatigue_level || 'Brak'}</Text>
-            </BlurView>
-          </View>
-          {isShareMode && !inComposite && (
-            <View style={styles.selectionIndicatorAbs}>
-              <Ionicons name={isSelected ? "checkmark-circle" : "ellipse-outline"} size={24} color={isSelected ? "#A78BFA" : "#94A3B8"} />
-            </View>
-          )}
-        </Wrapper>
-      );
-    }
-
-    if (block.type === 'list') {
-      return (
-        <Wrapper key={block.id} {...wrapperProps} style={[styles.blockWrapper, !inComposite && isShareMode && isSelected && styles.selectedWrapper]}>
-          <BlurView intensity={20} tint={colors.tileTint} style={[styles.tile, { borderColor: colors.tileBorder }]}>
-            <View style={[styles.tileHeader, { justifyContent: 'space-between' }]}>
-              <View style={[styles.tileHeaderLeft, { flex: 1, justifyContent: 'center' }]}>
-                <Feather name={block.icon} size={20} color={colors.text} />
-                <Text style={[styles.tileTitle, { color: colors.text, textAlign: 'center' }]}>{block.title}</Text>
-              </View>
-              {isShareMode && !inComposite && (
-                <Ionicons name={isSelected ? "checkmark-circle" : "ellipse-outline"} size={24} color={isSelected ? colors.primary : colors.textSecondary} />
-              )}
-            </View>
-            {block.items.map((item: string, index: number) => (
-              <View key={index} style={[styles.listItem, { justifyContent: 'center' }]}>
-                <View style={[styles.bullet, { backgroundColor: colors.textSecondary }]} />
-                <Text style={[styles.listText, { color: colors.text, textAlign: 'center', flex: 0 }]}>{item}</Text>
-              </View>
-            ))}
-          </BlurView>
-        </Wrapper>
-      );
-    }
+  const renderSelectableWrapper = (id: string, children: React.ReactNode, extraStyle?: any) => {
+    const isWrapperSelectedStyle = isShareMode && isSelected(id);
+    return (
+      <TouchableOpacity 
+        key={id}
+        activeOpacity={isShareMode ? 0.7 : 1}
+        onPress={isShareMode ? () => toggleSelection(id) : undefined}
+        style={[styles.blockWrapper, isWrapperSelectedStyle && styles.selectedWrapper, extraStyle]}
+      >
+        {isShareMode && (
+          <Ionicons 
+            name={isSelected(id) ? "checkmark-circle" : "ellipse-outline"} 
+            size={24} 
+            color={isSelected(id) ? "#F472B6" : "rgba(255,255,255,0.4)"} 
+            style={{ marginRight: 15 }} 
+          />
+        )}
+        <View style={{ flex: 1 }}>
+          {children}
+        </View>
+      </TouchableOpacity>
+    );
   };
-
-  const isMainQuoteSelected = selectedCards.includes('main_quote');
-  const isGoalSelected = selectedCards.includes('goal');
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
+        {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => isShareMode ? setIsShareMode(false) : navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => isShareMode ? setIsShareMode(false) : navigation.goBack()} style={[styles.backButton, { borderColor: colors.tileBorder, backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)' }]}>
             {isShareMode ? (
               <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Anuluj</Text>
             ) : (
-              <Feather name="chevron-left" size={28} color={colors.text} />
+              <Feather name="chevron-left" size={20} color={colors.text} />
             )}
           </TouchableOpacity>
           {!isShareMode && (
-            <Text style={[styles.dateText, { color: colors.textSecondary, flex: 1, textAlign: 'center' }]}>
-              {new Date(entry.date).toLocaleDateString('pl-PL', { 
-                weekday: 'long', month: 'long', day: 'numeric' 
-              })}
-            </Text>
+            <View style={styles.headerTextContainer}>
+              <Text style={[styles.weekdayText, { color: colors.text }]}>{d.weekday}</Text>
+              <Text style={[styles.dateTimeText, { color: colors.textSecondary }]}>{d.full} · {d.time}</Text>
+            </View>
           )}
           <TouchableOpacity onPress={handleShare} style={styles.headerAction}>
             {isShareMode ? (
-              <Text style={[styles.shareConfirmText, { color: colors.primary }]}>Udostępnij</Text>
+              <Text style={styles.shareConfirmText}>Gotowe</Text>
             ) : (
-              <Ionicons name="logo-instagram" size={24} color={colors.text} />
+              <View style={[styles.backButton, { backgroundColor: 'transparent', borderWidth: 0 }]}>
+                <Ionicons name="share-outline" size={20} color={colors.text} />
+              </View>
             )}
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity 
-          activeOpacity={isShareMode ? 0.7 : 1}
-          onPress={isShareMode ? () => toggleSelection('main_quote') : undefined}
-          style={[styles.mainQuoteWrapper, !isShareMode ? { marginBottom: 30 } : { marginBottom: 24 }, isShareMode && isMainQuoteSelected && [styles.selectedWrapper, { borderColor: colors.primary }]]}
-        >
-          {isShareMode && (
-            <View style={styles.selectionIndicator}>
-              <Ionicons name={isMainQuoteSelected ? "checkmark-circle" : "ellipse-outline"} size={24} color={isMainQuoteSelected ? colors.primary : colors.textSecondary} />
+        <View style={styles.dashboard}>
+          
+          {/* THE HOOK: Summary */}
+          {isValidData(pData.summary) ? renderSelectableWrapper('summary', 
+            <GlassCard intensity={theme === 'AppleLight' ? 60 : 20} style={[styles.summaryCard, { backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)' }]}>
+              <Text style={[styles.summaryText, { color: colors.text }]}>{pData.summary}</Text>
+            </GlassCard>
+          ) : null}
+
+          {/* THE STORY: Dominant Thought */}
+          {pData.dominantThought ? renderSelectableWrapper('dominantThought', 
+            <View style={styles.dominantThoughtContainer}>
+              <GradientText 
+                text={`"${pData.dominantThought}"`}
+                colors={['#A78BFA', '#F472B6', '#60A5FA']} 
+                style={styles.dominantThoughtText}
+              />
+            </View>
+          ) : null}
+
+          {/* EMOTIONS FELT */}
+          {pData.emotions && pData.emotions.length > 0 && pData.emotions.every(isValidData) ? renderSelectableWrapper('emotions', 
+            <View style={styles.sectionContainer}>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Emocje</Text>
+              <View style={styles.emotionsRow}>
+                {pData.emotions.map((e: string, i: number) => <EmotionPill key={i} id={e} />)}
+              </View>
+            </View>
+          ) : null}
+
+          {/* WHAT I DID TODAY */}
+          {pData.tasksDone && pData.tasksDone.length > 0 && pData.tasksDone.every(isValidData) ? renderSelectableWrapper('tasks', 
+            <View style={styles.sectionContainer}>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Zrobione zadania</Text>
+              {pData.tasksDone.map((task: string, index: number) => (
+                <View key={index} style={styles.taskItem}>
+                  <Feather name="check-circle" size={16} color="#A78BFA" style={{ marginRight: 12, marginTop: 2 }} />
+                  <Text style={[styles.taskText, { color: colors.text }]}>{task}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {/* IMPACT ON GOALS */}
+          {isValidData(pData.impactOnGoals) ? renderSelectableWrapper('impact', 
+            <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={[styles.triggerCard, { borderColor: pData.goalImpactType === 'positive' ? 'rgba(74, 222, 128, 0.2)' : pData.goalImpactType === 'negative' ? 'rgba(248, 113, 113, 0.2)' : 'rgba(156, 163, 175, 0.2)' }]}>
+              <View style={styles.triggerHeader}>
+                {pData.goalImpactType === 'positive' && <Feather name="trending-up" size={16} color="#4ADE80" />}
+                {pData.goalImpactType === 'negative' && <Feather name="trending-down" size={16} color="#F87171" />}
+                {pData.goalImpactType === 'neutral' && <Feather name="minus" size={16} color="#9CA3AF" />}
+                <Text style={[styles.triggerTitle, { color: pData.goalImpactType === 'positive' ? '#4ADE80' : pData.goalImpactType === 'negative' ? '#F87171' : '#9CA3AF' }]}>Wpływ na cele</Text>
+              </View>
+              <Text style={[styles.triggerText, { color: colors.text }]}>{pData.impactOnGoals}</Text>
+            </GlassCard>
+          ) : null}
+
+          {/* KEY QUOTES */}
+          {pData.importantQuotes && pData.importantQuotes.length > 0 && pData.importantQuotes.every(isValidData) ? (
+            <View style={styles.quotesContainer}>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Najważniejsze słowa</Text>
+              {pData.importantQuotes.map((quote: string, index: number) => 
+                renderSelectableWrapper(`quote-${index}`, 
+                  <View style={styles.blockquote}>
+                    <View style={styles.blockquoteBar} />
+                    <Text style={[styles.blockquoteText, { color: colors.text }]}>"{quote}"</Text>
+                  </View>
+                )
+              )}
+            </View>
+          ) : null}
+
+          {/* EMOTIONAL TRIGGERS */}
+          <View style={styles.triggersContainer}>
+            {isValidData(pData.joyTriggers) ? renderSelectableWrapper('joy', 
+              <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={[styles.triggerCard, { borderColor: 'rgba(74, 222, 128, 0.2)' }]}>
+                <View style={styles.triggerHeader}>
+                  <Feather name="smile" size={16} color="#4ADE80" />
+                  <Text style={[styles.triggerTitle, { color: '#4ADE80' }]}>Wyzwoliło radość</Text>
+                </View>
+                <Text style={[styles.triggerText, { color: colors.text }]}>{pData.joyTriggers}</Text>
+              </GlassCard>
+            ) : null}
+
+            {isValidData(pData.calmTriggers) ? renderSelectableWrapper('calm', 
+              <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={[styles.triggerCard, { borderColor: 'rgba(56, 189, 248, 0.2)' }]}>
+                <View style={styles.triggerHeader}>
+                  <Feather name="coffee" size={16} color="#38BDF8" />
+                  <Text style={[styles.triggerTitle, { color: '#38BDF8' }]}>Wyzwoliło spokój</Text>
+                </View>
+                <Text style={[styles.triggerText, { color: colors.text }]}>{pData.calmTriggers}</Text>
+              </GlassCard>
+            ) : null}
+
+            {isValidData(pData.stressTriggers) ? renderSelectableWrapper('stress', 
+              <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={[styles.triggerCard, { borderColor: 'rgba(251, 146, 60, 0.2)' }]}>
+                <View style={styles.triggerHeader}>
+                  <Feather name="activity" size={16} color="#FB923C" />
+                  <Text style={[styles.triggerTitle, { color: '#FB923C' }]}>Wyzwoliło stres</Text>
+                </View>
+                <Text style={[styles.triggerText, { color: colors.text }]}>{pData.stressTriggers}</Text>
+              </GlassCard>
+            ) : null}
+
+            {isValidData(pData.angerTriggers) ? renderSelectableWrapper('anger', 
+              <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={[styles.triggerCard, { borderColor: 'rgba(248, 113, 113, 0.2)' }]}>
+                <View style={styles.triggerHeader}>
+                  <Feather name="alert-triangle" size={16} color="#F87171" />
+                  <Text style={[styles.triggerTitle, { color: '#F87171' }]}>Wyzwoliło złość</Text>
+                </View>
+                <Text style={[styles.triggerText, { color: colors.text }]}>{pData.angerTriggers}</Text>
+              </GlassCard>
+            ) : null}
+          </View>
+
+          {/* GOAL ADVICE */}
+          {isValidData((pData as any).goalAdvice) ? renderSelectableWrapper('advice', 
+            <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={[styles.triggerCard, { borderColor: 'rgba(167, 139, 250, 0.2)', marginBottom: 20 }]}>
+              <View style={styles.triggerHeader}>
+                <Feather name="compass" size={16} color="#A78BFA" />
+                <Text style={[styles.triggerTitle, { color: '#A78BFA' }]}>Rada oparta na twoich celach</Text>
+              </View>
+              <Text style={[styles.triggerText, { color: colors.text }]}>{(pData as any).goalAdvice}</Text>
+            </GlassCard>
+          ) : null}
+
+          {/* THE RAW DATA (BOTTOM) */}
+          <View style={[styles.divider, { backgroundColor: colors.tileBorder }]} />
+          
+          <TouchableOpacity 
+            style={styles.transcriptAccordion} 
+            activeOpacity={0.7}
+            onPress={() => setIsTranscriptVisible(!isTranscriptVisible)}
+          >
+            <View style={styles.transcriptAccordionHeader}>
+              <Feather name="file-text" size={18} color={colors.textSecondary} />
+              <Text style={[styles.transcriptAccordionTitle, { color: colors.textSecondary }]}>Twój wpis</Text>
+            </View>
+            <Feather name={isTranscriptVisible ? "chevron-up" : "chevron-down"} size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+          
+          {isTranscriptVisible && (
+            <View style={styles.transcriptContent}>
+              <Text style={[styles.fullText, { color: colors.textSecondary }]}>{entry.fullText}</Text>
             </View>
           )}
-          <GradientText colors={colors.gradientColors} style={[styles.quoteText, { textAlign: 'center' }]}>
-            "{parsedData.quote}"
-          </GradientText>
-        </TouchableOpacity>
 
-        <View style={styles.dashboard}>
-          <TouchableOpacity
-            activeOpacity={isShareMode ? 0.7 : 1}
-            onPress={isShareMode ? () => toggleSelection('goal') : undefined}
-            style={[styles.blockWrapper, isShareMode && isGoalSelected && [styles.selectedWrapper, { borderColor: colors.primary }]]}
-          >
-            <BlurView intensity={20} tint={colors.tileTint} style={[styles.tile, styles.goalTile, { borderColor: colors.tileBorder }]}>
-              <View style={[styles.tileHeader, { justifyContent: 'space-between' }]}>
-                <View style={[styles.tileHeaderLeft, { flex: 1, justifyContent: 'center' }]}>
-                  <Feather name="target" size={20} color={colors.text} />
-                  <Text style={[styles.tileTitle, { color: colors.text, textAlign: 'center' }]}>Wpływ na cele</Text>
-                </View>
-                {isShareMode && (
-                  <Ionicons name={isGoalSelected ? "checkmark-circle" : "ellipse-outline"} size={24} color={isGoalSelected ? colors.primary : colors.textSecondary} />
-                )}
-              </View>
-              <View style={[styles.goalStatusContainer, { justifyContent: 'center' }]}>
-                <Feather name={getGoalIcon(parsedData.goal_alignment.status)} size={24} color={getGoalColor(parsedData.goal_alignment.status)} />
-                <Text style={[styles.goalStatus, { color: getGoalColor(parsedData.goal_alignment.status), textAlign: 'center' }]}>
-                  {parsedData.goal_alignment.status}
-                </Text>
-              </View>
-              <Text style={[styles.goalReason, { color: colors.textSecondary, textAlign: 'center' }]}>{parsedData.goal_alignment.reason}</Text>
-            </BlurView>
-          </TouchableOpacity>
-
-          {blocks.map(block => renderBlock(block))}
-
-          <BlurView intensity={20} tint={colors.tileTint} style={[styles.tile, { borderColor: colors.tileBorder }]}>
-            <View style={[styles.tileHeader, { marginBottom: 15, justifyContent: 'center' }]}>
-              <Feather name="file-text" size={20} color={colors.text} style={{ marginRight: 10 }} />
-              <Text style={[styles.tileTitle, { color: colors.text }]}>Pełny wpis</Text>
-            </View>
-            <Text style={[styles.fullText, { color: colors.textSecondary, textAlign: 'center' }]}>{entry.fullText}</Text>
-          </BlurView>
         </View>
       </ScrollView>
 
@@ -282,37 +316,29 @@ export const DetailScreen = () => {
         style={styles.compositeContainer}
       >
         <View style={styles.compositeInner}>
-          {isMainQuoteSelected && (
-            <GradientText colors={colors.gradientColors} style={[styles.quoteText, { textAlign: 'center', marginBottom: 24 }]}>
-              "{parsedData.quote}"
-            </GradientText>
+          {isSelected('dominantThought') && (
+            <GradientText 
+              text={`"${pData.dominantThought}"`}
+              colors={['#A78BFA', '#F472B6', '#60A5FA']} 
+              style={[styles.dominantThoughtText, { textAlign: 'center', marginBottom: 24 }]}
+            />
+          )}
+          
+          {isSelected('summary') && pData.summary && (
+            <GlassCard intensity={20} style={[styles.summaryCard, { marginBottom: 24 }]}>
+              <Text style={styles.summaryText}>{pData.summary}</Text>
+            </GlassCard>
           )}
 
-          {isGoalSelected && (
-            <BlurView intensity={40} tint="dark" style={[styles.tile, styles.goalTile, { marginBottom: 24 }]}>
-              <View style={[styles.tileHeader, { justifyContent: 'center' }]}>
-                <Feather name="target" size={20} color="#E2E8F0" style={{marginRight: 10}} />
-                <Text style={styles.tileTitle}>Wpływ na cele</Text>
-              </View>
-              <View style={[styles.goalStatusContainer, { justifyContent: 'center' }]}>
-                <Feather name={getGoalIcon(parsedData.goal_alignment.status)} size={24} color={getGoalColor(parsedData.goal_alignment.status)} />
-                <Text style={[styles.goalStatus, { color: getGoalColor(parsedData.goal_alignment.status), textAlign: 'center' }]}>
-                  {parsedData.goal_alignment.status}
-                </Text>
-              </View>
-              <Text style={[styles.goalReason, { textAlign: 'center' }]}>{parsedData.goal_alignment.reason}</Text>
-            </BlurView>
-          )}
-
-          {blocks.map(block => renderBlock(block, true))}
-
+          {/* Simplified render for composite to avoid too much logic here, just matching styles */}
+          
           {/* Watermark */}
           {selectedCards.length > 0 && (
             <View style={styles.watermarkContainer}>
               <Text style={styles.watermarkDate}>
                 {new Date(entry.date).toLocaleDateString('pl-PL', { month: 'long', day: 'numeric', year: 'numeric' })}
               </Text>
-              <Text style={styles.watermarkText}>Wygenerowano w moim inteligentnym pamiętniku</Text>
+              <Text style={styles.watermarkText}>Wygenerowano w Mój Pamiętnik AI</Text>
             </View>
           )}
         </View>
@@ -321,172 +347,194 @@ export const DetailScreen = () => {
   );
 };
 
-const width = Dimensions.get('window').width;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
   },
   scrollContent: {
-    padding: 20,
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 56,
+    paddingBottom: 64,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 30,
+    marginBottom: 24,
   },
   backButton: {
-    minWidth: 60,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTextContainer: {
+    marginLeft: 12,
+  },
+  weekdayText: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  dateTimeText: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 13,
   },
   headerAction: {
-    minWidth: 60,
+    marginLeft: 'auto',
     alignItems: 'flex-end',
   },
   cancelText: {
-    color: '#94A3B8',
-    fontSize: 18,
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 16,
   },
   shareConfirmText: {
-    color: '#A78BFA',
-    fontSize: 18,
+    color: '#F472B6',
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  dateText: {
-    color: '#94A3B8',
-    fontSize: 16,
-    textTransform: 'capitalize',
-  },
-  mainQuoteWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    marginHorizontal: -10,
-    borderRadius: 16,
-  },
-  quoteText: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 32,
-    flex: 1,
-  },
-  importantQuoteText: {
-    fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 28,
-    flex: 1,
-    padding: 10,
-  },
   dashboard: {
-    gap: 24, // Zwiększone światło
+    gap: 24,
   },
   blockWrapper: {
-    borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
   },
   selectedWrapper: {
     borderWidth: 2,
-    borderColor: '#A78BFA',
-    backgroundColor: 'rgba(167, 139, 250, 0.05)',
-  },
-  selectionIndicator: {
-    marginRight: 15,
-  },
-  selectionIndicatorAbs: {
-    position: 'absolute',
-    top: -10,
-    right: -10,
-    backgroundColor: '#000',
-    borderRadius: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 15,
-    flex: 1,
-  },
-  tile: {
+    borderColor: '#F472B6',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    padding: 10,
     borderRadius: 20,
-    padding: 20,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
-    flex: 1,
+    marginHorizontal: -12,
   },
-  goalTile: {
+  summaryCard: {
+    padding: 16,
     backgroundColor: 'rgba(255,255,255,0.03)',
   },
-  halfTile: {
-    flex: 1,
-    padding: 15,
-  },
-  tileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  tileHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  tileTitle: {
-    color: '#E2E8F0',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  tileTitleSmall: {
-    color: '#E2E8F0',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  goalStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
-  goalStatus: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  goalReason: {
-    color: '#94A3B8',
+  summaryText: {
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 24,
+    color: 'rgba(255,255,255,0.85)',
   },
-  tagText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
+  dominantThoughtContainer: {
+    paddingVertical: 12,
   },
-  listItem: {
+  dominantThoughtText: {
+    fontSize: 28,
+    fontWeight: '800',
+    lineHeight: 36,
+    textAlign: 'center',
+  },
+  sectionContainer: {
+    marginTop: 8,
+  },
+  sectionTitle: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  emotionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  taskItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 10,
-    paddingRight: 10,
+    marginBottom: 12,
   },
-  bullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#94A3B8',
-    marginTop: 8,
-    marginRight: 12,
-  },
-  listText: {
-    color: '#E2E8F0',
+  taskText: {
     fontSize: 16,
     lineHeight: 24,
+    color: 'rgba(255,255,255,0.8)',
     flex: 1,
   },
+  impactText: {
+    fontSize: 16,
+    lineHeight: 25,
+    color: 'rgba(255,255,255,0.85)',
+  },
+  quotesContainer: {
+    marginTop: 8,
+  },
+  blockquote: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  blockquoteBar: {
+    width: 3,
+    backgroundColor: '#F472B6',
+    borderRadius: 2,
+    marginRight: 16,
+  },
+  blockquoteText: {
+    fontSize: 18,
+    fontStyle: 'italic',
+    lineHeight: 28,
+    color: 'rgba(255,255,255,0.9)',
+    flex: 1,
+  },
+  triggersContainer: {
+    gap: 12,
+    marginTop: 8,
+  },
+  triggerCard: {
+    padding: 16,
+    borderWidth: 1,
+  },
+  triggerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  triggerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  triggerText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: 'rgba(255,255,255,0.85)',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    marginVertical: 12,
+  },
+  transcriptAccordion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  transcriptAccordionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  transcriptAccordionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
+  },
+  transcriptContent: {
+    paddingTop: 8,
+    paddingBottom: 24,
+  },
   fullText: {
-    color: '#94A3B8',
     fontSize: 15,
     lineHeight: 24,
+    color: 'rgba(255,255,255,0.4)',
   },
   errorText: {
     color: 'red',
@@ -499,7 +547,7 @@ const styles = StyleSheet.create({
     width: width * 0.9, 
   },
   compositeInner: {
-    backgroundColor: '#111827', // Głębszy grafit jako ciemne tło (Tailwind gray-900)
+    backgroundColor: '#111827',
     padding: 24,
     borderRadius: 24,
     gap: 24,

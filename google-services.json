@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "742826207719",
+    "project_id": "my-diary-face6",
+    "storage_bucket": "my-diary-face6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:742826207719:android:1533515fc0fc9766543542",
+        "android_client_info": {
+          "package_name": "com.michal.sznurowski.diaryapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "742826207719-9uqp7ddlt3q4m39g6vtmtcinf4ki62ue.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-9h9nMDS-PPHBS_9PW29yLhNFM2iYVH0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "742826207719-9uqp7ddlt3q4m39g6vtmtcinf4ki62ue.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "742826207719-3vgqhqmjgprtsr35hoov0gluoupoe2il.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.michal.sznurowski.diary-app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

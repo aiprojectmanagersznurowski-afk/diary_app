@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -9,7 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 // Ensure Google Sign-In is configured somewhere, optimally here or in App.tsx
 GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '742826207719-9uqp7ddlt3q4m39g6vtmtcinf4ki62ue.apps.googleusercontent.com',
+  iosClientId: '742826207719-3vgqhqmjgprtsr35hoov0gluoupoe2il.apps.googleusercontent.com',
 });
 
 export const LoginScreen = () => {
@@ -28,49 +29,42 @@ export const LoginScreen = () => {
       const { identityToken } = appleAuthRequestResponse;
 
       if (identityToken) {
-        // Create a Firebase credential from the response
         const appleCredential = authModule.AppleAuthProvider.credential(identityToken);
-
-        // Sign the user in with the credential
         await auth.signInWithCredential(appleCredential);
       }
     } catch (error: any) {
       if (error.code === 'ERR_REQUEST_CANCELED') {
         // handle that the user canceled the sign-in flow
       } else {
-        console.error(error);
+        console.error('Apple SignIn Error:', error);
       }
     }
   };
 
   const onGoogleButtonPress = async () => {
     try {
-      // Check if your device supports Google Play
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      // Get the users ID token
       const response = await GoogleSignin.signIn();
-      const idToken = response.data?.idToken;
-
-      if (!idToken) throw new Error('No ID token found');
-
-      // Create a Google credential with the token
-      const googleCredential = authModule.GoogleAuthProvider.credential(idToken);
-
-      // Sign-in the user with the credential
-      await auth.signInWithCredential(googleCredential);
+      
+      if (response.type === 'success') {
+        const idToken = response.data?.idToken;
+        if (!idToken) throw new Error('Brak tokenu ID. Upewnij się, że Web Client ID jest poprawne.');
+        const googleCredential = authModule.GoogleAuthProvider.credential(idToken);
+        await auth.signInWithCredential(googleCredential);
+      } else {
+        console.log('Google sign-in cancelled by user or other issue:', response);
+      }
     } catch (error) {
-      console.error(error);
+      console.log('Google SignIn Error:', error);
     }
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
-        <Ionicons name="book" size={80} color={colors.primary} style={styles.logo} />
-        <Text style={[styles.title, { color: colors.text }]}>Mój Inteligentny Pamiętnik</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Zaloguj się, aby synchronizować swoje wpisy i cele w chmurze.
-        </Text>
+        <Image source={require('../../../assets/icon.png')} style={styles.logo} />
+        <Text style={[styles.title, { color: colors.text }]}>Vocaly</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary, marginBottom: 50 }]}>Your Voice Diary</Text>
 
         <View style={styles.buttonContainer}>
           <AppleAuthentication.AppleAuthenticationButton
@@ -122,7 +116,10 @@ const styles = StyleSheet.create({
     padding: 30,
   },
   logo: {
+    width: 120,
+    height: 120,
     marginBottom: 20,
+    borderRadius: 24,
   },
   title: {
     fontSize: 28,

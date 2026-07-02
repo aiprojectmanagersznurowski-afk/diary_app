@@ -58,13 +58,13 @@ interface SettingsState {
   syncGoalsFromCloud: () => Promise<void>;
 }
 
-const syncToCloud = async (goals: string[]) => {
+const syncToCloud = async (dataToSync: Partial<SettingsState>) => {
   const user = auth.currentUser;
   if (!user) return;
   try {
-    await db.collection('users').doc(user.uid).set({ lifeGoals: goals }, { merge: true });
+    await db.collection('users').doc(user.uid).set(dataToSync, { merge: true });
   } catch (error) {
-    console.error('Failed to sync goals to cloud', error);
+    console.error('Failed to sync to cloud', error);
   }
 };
 
@@ -77,38 +77,46 @@ export const useSettingsStore = create<SettingsState>()(
       setHasHydrated: (state) => set({ hasHydrated: state }),
       setGoals: (goals) => {
         set({ lifeGoals: goals });
-        syncToCloud(goals);
+        syncToCloud({ lifeGoals: goals });
       },
       addGoal: (goal) => {
         set((state) => {
           const newGoals = [...state.lifeGoals, goal];
-          syncToCloud(newGoals);
+          syncToCloud({ lifeGoals: newGoals });
           return { lifeGoals: newGoals };
         });
       },
       removeGoal: (goal) => {
         set((state) => {
           const newGoals = state.lifeGoals.filter(g => g !== goal);
-          syncToCloud(newGoals);
+          syncToCloud({ lifeGoals: newGoals });
           return { lifeGoals: newGoals };
         });
       },
       clearGoals: () => {
         set({ lifeGoals: [] });
-        syncToCloud([]);
+        syncToCloud({ lifeGoals: [] });
       },
-      setTheme: (theme) => set({ theme }),
+      setTheme: (theme) => {
+        set({ theme });
+        syncToCloud({ theme });
+      },
       syncGoalsFromCloud: async () => {
         const user = auth.currentUser;
         if (!user) return;
         try {
           const doc = await db.collection('users').doc(user.uid).get();
           const data = doc.data();
-          if (data && data.lifeGoals) {
-            set({ lifeGoals: data.lifeGoals });
+          if (data) {
+            if (data.lifeGoals) {
+              set({ lifeGoals: data.lifeGoals });
+            }
+            if (data.theme) {
+              set({ theme: data.theme });
+            }
           }
         } catch (error) {
-          console.error('Failed to fetch goals from cloud', error);
+          console.error('Failed to fetch from cloud', error);
         }
       },
     }),

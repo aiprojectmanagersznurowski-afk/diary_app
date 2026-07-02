@@ -14,18 +14,23 @@ import { useSettingsStore, THEMES } from './src/application/store/useSettingsSto
 import { auth } from './src/infrastructure/firebase/firebaseConfig';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
+import { InsightsScreen } from './src/presentation/screens/InsightsScreen';
+import { BadgesScreen } from './src/presentation/screens/BadgesScreen';
+import { useGamificationStore } from './src/application/store/useGamificationStore';
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const { hasHydrated, lifeGoals, theme, syncGoalsFromCloud } = useSettingsStore();
+  const { syncFromCloud: syncGamificationFromCloud } = useGamificationStore();
 
   useEffect(() => {
     const subscriber = auth.onAuthStateChanged((currentUser: FirebaseAuthTypes.User | null) => {
       setUser(currentUser);
       if (currentUser) {
-        syncGoalsFromCloud().finally(() => {
+        Promise.all([syncGoalsFromCloud(), syncGamificationFromCloud()]).finally(() => {
           if (initializing) setInitializing(false);
         });
       } else {
@@ -71,6 +76,8 @@ export default function App() {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Detail" component={DetailScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Insights" component={InsightsScreen} />
+            <Stack.Screen name="Badges" component={BadgesScreen} />
           </>
         )}
       </Stack.Navigator>

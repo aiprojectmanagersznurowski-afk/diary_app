@@ -1,16 +1,19 @@
 export interface ParsedDiaryData {
-  quote: string;
+  dominantThought: string;
+  summary: string;
+  quotes: string[];
+  impactOnGoals: string;
+  goalImpactType: 'positive' | 'negative' | 'neutral';
+  completedTasks: string[];
   emotions: string[];
-  tone: string;
-  fatigue_level: "Świeży umysł" | "Energiczny" | "Zmęczony" | "Bardzo zmęczony";
-  tasks_done: string[];
-  gratitude: string[];
-  anger_triggers: string[];
-  important_quotes?: string[];
-  goal_alignment: {
-    status: "POSITIVE" | "NEUTRAL" | "NEGATIVE";
-    reason: string;
-  };
+  fatigueLevel: number; // 1-10
+  stressVsCalm: 'stress' | 'calm' | 'neutral';
+  gratefulFor: string;
+  triggeredStress: string | null;
+  triggeredAnger: string | null;
+  triggeredJoy: string | null;
+  triggeredCalm: string | null;
+  goalAdvice: string | null;
 }
 
 export interface DiaryEntry {

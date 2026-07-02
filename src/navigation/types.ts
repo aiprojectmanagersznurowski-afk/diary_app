@@ -7,6 +7,8 @@ export type RootStackParamList = {
   Detail: { entryId: string };
   Onboarding: undefined;
   Settings: undefined;
+  Insights: undefined;
+  Badges: undefined;
 };
 
 export type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
@@ -14,5 +16,6 @@ export type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamL
 export type DetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Detail'>;
 export type OnboardingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
 export type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
+export type InsightsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Insights'>;
 
 export type DetailScreenRouteProp = RouteProp<RootStackParamList, 'Detail'>;
