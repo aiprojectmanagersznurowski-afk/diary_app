@@ -17,7 +17,7 @@ export const DiaryEntryCard: React.FC<DiaryEntryCardProps> = ({ entry, onPress }
   const { parsedData } = entry;
   if (!parsedData) return null;
 
-  const dateStr = new Date(entry.date).toLocaleDateString('pl-PL', { 
+  const dateStr = new Date(entry.createdAt || entry.date).toLocaleDateString('pl-PL', { 
     weekday: 'short', month: 'long', day: 'numeric' 
   });
 

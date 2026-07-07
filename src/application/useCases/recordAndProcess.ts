@@ -14,7 +14,15 @@ export class RecordAndProcessEntryUseCase {
     await this.audioRecorder.startRecording();
   }
 
-  async stopRecordingAndProcess(lifeGoals: string[] = []): Promise<DiaryEntry | null> {
+  getCurrentMetering(): number {
+    return this.audioRecorder.getCurrentMetering();
+  }
+
+  getRecordingDuration(): number {
+    return this.audioRecorder.getRecordingDuration();
+  }
+
+  async stopRecordingAndProcess(lifeGoals: string[] = [], aiPersonality: string = 'Po prostu przyjaciel'): Promise<DiaryEntry | null> {
     const audioUri = await this.audioRecorder.stopRecording();
     if (!audioUri) {
       throw new Error("No audio recorded");
@@ -40,7 +48,7 @@ export class RecordAndProcessEntryUseCase {
     }
 
     // 3. Extract structured data via LLM
-    const analysis = await this.aiService.extractData(finalTranscript, lifeGoals);
+    const analysis = await this.aiService.extractData(finalTranscript, lifeGoals, aiPersonality);
 
     // 4. Save or Update to database
     if (existingEntry) {

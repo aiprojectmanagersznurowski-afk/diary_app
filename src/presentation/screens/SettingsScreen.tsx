@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSettingsStore, THEMES, ThemeName } from '../../application/store/useSettingsStore';
+import { useSettingsStore, THEMES, ThemeName, AIPersonality } from '../../application/store/useSettingsStore';
 import { useGamificationStore } from '../../application/store/useGamificationStore';
 import { auth } from '../../infrastructure/firebase/firebaseConfig';
 import { GlassCard, GradientText } from '../components/UIPrimitives';
@@ -11,7 +11,7 @@ import { GlassCard, GradientText } from '../components/UIPrimitives';
 export const SettingsScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { theme, setTheme, clearGoals, lifeGoals } = useSettingsStore();
+  const { theme, setTheme, clearGoals, lifeGoals, aiPersonality, setAIPersonality } = useSettingsStore();
   const { clearGamification } = useGamificationStore();
   
   const colors = THEMES[theme];
@@ -66,6 +66,35 @@ export const SettingsScreen = () => {
                     {isSelected && (
                       <Ionicons name="checkmark-circle" size={20} color={themeColors.primary} style={styles.checkIcon} />
                     )}
+                  </GlassCard>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Osobowość AI</Text>
+          <View style={styles.personalityContainer}>
+            {(['Po prostu przyjaciel', 'Buddha', 'Józef Piłsudski', 'Stefan Banach'] as AIPersonality[]).map((persona) => {
+              const isSelected = persona === aiPersonality;
+              return (
+                <TouchableOpacity 
+                  key={persona}
+                  activeOpacity={0.7}
+                  onPress={() => setAIPersonality(persona)}
+                  style={{ marginBottom: 12 }}
+                >
+                  <GlassCard intensity={isSelected ? 20 : 10} style={[
+                    styles.personalityButton,
+                    isSelected && { borderColor: colors.primary, borderWidth: 1 }
+                  ]}>
+                    <View style={styles.personalityButtonInner}>
+                      <Text style={[styles.personalityText, { color: isSelected ? colors.text : colors.textSecondary }]}>{persona}</Text>
+                      {isSelected && (
+                        <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                      )}
+                    </View>
                   </GlassCard>
                 </TouchableOpacity>
               );
@@ -221,6 +250,23 @@ const styles = StyleSheet.create({
     color: '#F87171',
     fontSize: 16,
     fontWeight: '600',
+  },
+  personalityContainer: {
+    flexDirection: 'column',
+  },
+  personalityButton: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  personalityButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  personalityText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
   helperText: {
     fontSize: 13,

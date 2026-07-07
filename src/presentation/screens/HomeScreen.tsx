@@ -3,9 +3,11 @@ import { View, StyleSheet, FlatList, ActivityIndicator, Text, TouchableOpacity, 
 import { useNavigation } from '@react-navigation/native';
 import { useDiaryStore } from '../../application/store/useDiaryStore';
 import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
+import { getAnalyticsData, getWeeklyCalmPercentage } from '../../application/useCases/statsUseCase';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { GlassCard, GradientText, EmotionPill } from '../components/UIPrimitives';
 import { BadgeAlertModal } from '../components/BadgeAlertModal';
+import { RecordingOverlay } from '../components/RecordingOverlay';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
@@ -26,6 +28,9 @@ export const HomeScreen = () => {
   const { theme } = useSettingsStore();
   const colors = THEMES[theme];
   const navigation = useNavigation<any>();
+
+  const calmPercentage = getWeeklyCalmPercentage(entries);
+  const { calm: calmData } = getAnalyticsData(entries, 7);
 
   useEffect(() => {
     fetchEntries();
@@ -66,21 +71,20 @@ export const HomeScreen = () => {
             </View>
             <View style={styles.analyticsRow}>
               <Text style={[styles.analyticsMainText, { color: colors.text }]}>
-                Twój spokój wzrósł o{' '}
+                Twój spokój to{' '}
               </Text>
-              <GradientText text="42%" colors={['#38BDF8', '#818CF8', '#F472B6']} style={styles.analyticsMainText} />
+              <GradientText text={`${calmPercentage}%`} colors={['#38BDF8', '#818CF8', '#F472B6']} style={styles.analyticsMainText} />
             </View>
             <Text style={[styles.analyticsSubText, { color: colors.textSecondary }]}>Zobacz Weekly Insights →</Text>
           </View>
           <View style={styles.chartPlaceholder}>
-            {/* Simple sparkline approximation */}
-            <LinearGradient colors={['#60A5FA', '#F472B6']} style={[styles.chartLine, { height: 10, left: 0 }]} />
-            <LinearGradient colors={['#60A5FA', '#F472B6']} style={[styles.chartLine, { height: 20, left: 15 }]} />
-            <LinearGradient colors={['#60A5FA', '#F472B6']} style={[styles.chartLine, { height: 15, left: 30 }]} />
-            <LinearGradient colors={['#60A5FA', '#F472B6']} style={[styles.chartLine, { height: 30, left: 45 }]} />
-            <LinearGradient colors={['#60A5FA', '#F472B6']} style={[styles.chartLine, { height: 25, left: 60 }]} />
-            <LinearGradient colors={['#60A5FA', '#F472B6']} style={[styles.chartLine, { height: 40, left: 75 }]} />
-            <LinearGradient colors={['#60A5FA', '#F472B6']} style={[styles.chartLine, { height: 35, left: 90 }]} />
+            {calmData.map((point, index) => (
+              <LinearGradient 
+                key={index}
+                colors={['#60A5FA', '#F472B6']} 
+                style={[styles.chartLine, { height: point.value > 0 ? point.value * 0.4 : 10, left: index * 15 }]} 
+              />
+            ))}
           </View>
         </GlassCard>
       </TouchableOpacity>
@@ -109,7 +113,7 @@ export const HomeScreen = () => {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
-            const d = formatDate(item.date);
+            const d = formatDate(item.createdAt || item.date);
             const parsed = item.parsedData as any || {};
             const emotions = parsed.emotions || [];
             const summary = parsed.summary || item.fullText.slice(0, 100) + '...';
@@ -137,6 +141,9 @@ export const HomeScreen = () => {
           }}
         />
       )}
+
+      {/* Rygorystycznie optymalizowany komponent BlurView */}
+      <RecordingOverlay isRecording={isRecording} />
 
       {/* FAB - Figma Exact Match */}
       <View style={styles.fabContainer}>

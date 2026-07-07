@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db, auth } from '../../infrastructure/firebase/firebaseConfig';
 
 export type ThemeName = 'AppleDark' | 'Sepia' | 'AppleLight';
+export type AIPersonality = 'Po prostu przyjaciel' | 'Buddha' | 'Józef Piłsudski' | 'Stefan Banach';
 
 export interface ThemeColors {
   background: string;
@@ -48,6 +49,7 @@ export const THEMES: Record<ThemeName, ThemeColors> = {
 interface SettingsState {
   lifeGoals: string[];
   theme: ThemeName;
+  aiPersonality: AIPersonality;
   hasHydrated: boolean;
   setHasHydrated: (state: boolean) => void;
   setGoals: (goals: string[]) => void;
@@ -55,6 +57,7 @@ interface SettingsState {
   removeGoal: (goal: string) => void;
   clearGoals: () => void;
   setTheme: (theme: ThemeName) => void;
+  setAIPersonality: (personality: AIPersonality) => void;
   syncGoalsFromCloud: () => Promise<void>;
 }
 
@@ -73,6 +76,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       lifeGoals: [],
       theme: 'AppleDark',
+      aiPersonality: 'Po prostu przyjaciel',
       hasHydrated: false,
       setHasHydrated: (state) => set({ hasHydrated: state }),
       setGoals: (goals) => {
@@ -101,6 +105,10 @@ export const useSettingsStore = create<SettingsState>()(
         set({ theme });
         syncToCloud({ theme });
       },
+      setAIPersonality: (aiPersonality) => {
+        set({ aiPersonality });
+        syncToCloud({ aiPersonality });
+      },
       syncGoalsFromCloud: async () => {
         const user = auth.currentUser;
         if (!user) return;
@@ -113,6 +121,9 @@ export const useSettingsStore = create<SettingsState>()(
             }
             if (data.theme) {
               set({ theme: data.theme });
+            }
+            if (data.aiPersonality) {
+              set({ aiPersonality: data.aiPersonality });
             }
           }
         } catch (error) {

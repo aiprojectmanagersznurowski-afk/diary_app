@@ -148,3 +148,17 @@ export function getWeeklyEmotions(entries: DiaryEntry[]): ChartDataPoint[] {
   chartData.sort((a, b) => b.value - a.value);
   return chartData;
 }
+
+export function getWeeklyCalmPercentage(entries: DiaryEntry[]): number {
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const recentEntries = entries.filter((entry) => {
+    const entryDate = entry.date instanceof Date ? entry.date : new Date(entry.date);
+    return entryDate >= sevenDaysAgo && entryDate <= now;
+  });
+
+  if (recentEntries.length === 0) return 0;
+  
+  const calmCount = recentEntries.filter(e => e.parsedData?.stressVsCalm === 'calm').length;
+  return Math.round((calmCount / recentEntries.length) * 100);
+}

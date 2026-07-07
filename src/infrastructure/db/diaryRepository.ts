@@ -93,7 +93,7 @@ export class FirestoreDiaryRepository implements IDiaryRepository {
   }
 
   async getAll(): Promise<DiaryEntry[]> {
-    const snapshot = await this.getCollection().orderBy('createdAt', 'asc').get();
+    const snapshot = await this.getCollection().orderBy('createdAt', 'desc').get();
     
     return snapshot.docs.map((doc: any) => {
       const data = doc.data();

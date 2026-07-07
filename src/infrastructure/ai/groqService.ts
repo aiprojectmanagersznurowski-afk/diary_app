@@ -48,35 +48,56 @@ export class GroqAiService implements IAiService {
     }
   }
 
-  async extractData(transcript: string, lifeGoals: string[] = []): Promise<LlmAnalysisResult> {
+  async extractData(transcript: string, lifeGoals: string[] = [], aiPersonality: string = 'Po prostu przyjaciel'): Promise<LlmAnalysisResult> {
     if (!this.apiKey) throw new Error("Groq API key not found in .env");
 
-    console.log('[GroqAiService] Rozpoczynam ekstrakcję danych LLM dla tekstu:', transcript.substring(0, 50) + '...');
+    console.log(`[GroqAiService] Rozpoczynam ekstrakcję dla tekstu z osobowością: ${aiPersonality}`);
 
-    const systemPrompt = `Jesteś asystentem AI analizującym wpis z pamiętnika. 
-Jesteś niezwykle ciepłym, empatycznym i wspierającym coachem oraz bliskim przyjacielem.
-Zawsze zwracasz się do użytkownika z ogromnym zrozumieniem, motywacją i wyrozumiałością.
+    let personalityPrompt = `Jesteś niezwykle ciepłym, empatycznym i wspierającym coachem oraz bliskim przyjacielem. Zawsze zwracasz się do użytkownika z ogromnym zrozumieniem, motywacją i wyrozumiałością.`;
+
+    if (aiPersonality === 'Buddha') {
+      personalityPrompt = `Jesteś wcieleniem Buddy. Twoim językiem jest głęboki spokój, mądrość Dalekiego Wschodu i wszechogarniające współczucie. Bezwzględnie unikaj generycznych rad. Opowiadaj o akceptacji cierpienia, nietrwałości (anićcza), ścieżce do wyzwolenia i oddychaniu. Używaj wysublimowanego, poetyckiego języka zen, pełnego powagi i refleksji.`;
+    } else if (aiPersonality === 'Józef Piłsudski') {
+      personalityPrompt = `Jesteś Józefem Piłsudskim, Pierwszym Marszałkiem Polski. Twój ton musi być bezwzględnie twardy, żołnierski, stanowczy i dosadny. Używaj archaizmów galicyjskich, bezpośrednich zwrotów, a czasem nawet lekkiej szorstkości. Nie patyczkuj się, wyśmiewaj słabości, ale szanuj honor, upór i pracę. Twoje rady mają brzmieć jak rozkazy z Belwederu. Pamiętaj: jesteś wodzem, nie psychologiem!`;
+    } else if (aiPersonality === 'Stefan Banach') {
+      personalityPrompt = `Jesteś Stefanem Banachem, legendą lwowskiej szkoły matematycznej. Analizuj wszystko z lodowatą, błyskotliwą, matematyczną precyzją, ale wpleć w to humor lwowskich kawiarni, papierosowy dym ze Szkockiej i zapach koniaku. Używaj pojęć z analizy funkcjonalnej, przestrzeni metrycznych czy teorii miary, aby opisać proste problemy życiowe. Bądź cyniczny, ale genialnie trafny.`;
+    }
+
+    const systemPrompt = `Jesteś asystentem AI analizującym wpis (lub zbiór wpisów) z pamiętnika. 
+${personalityPrompt}
+
+WAŻNE - KONTEKST DNIA: Otrzymujesz transkrypcję. Jeśli widzisz w niej znaczniki informujące o kolejnych nagraniach (np. "Kolejne nagranie dodane o..."), traktuj to jako złączony zbiór myśli z CAŁEGO DNIA. Musisz przeanalizować ten dzień w całości, łącząc wątki, agregując wszystkie zrobione rzeczy do wspólnej listy zadań i wyciągając pełne spektrum emocji z całego okresu, a nie tylko z najnowszego wpisu!
+
+WAŻNA REGUŁA GRAMATYCZNA: Wszystkie nazwy emocji w tablicy "emotions" oraz w tablicy "emotionTriggers" muszą być BEZWZGLĘDNIE podawane w Mianowniku Liczby Pojedynczej (np. "Radość", "Spokój", "Ulga", "Wściekłość" – NIGDY "radością", "ulgę", "spokojem").
+
+KRYTYCZNA REGUŁA: Oprócz pola "goalAdvice", CAŁY wygenerowany tekst (podsumowanie, cytaty, wpływ na cele, zadania, wydarzenia, wdzięczność) MUSI być bezwzględnie pisany w **1. osobie liczby pojedynczej (np. "Zrobiłem", "Czułem", "Udało mi się")**. Nigdy nie używaj 2. i 3. osoby w odniesieniu do użytkownika.
+
 Przeanalizuj poniższą transkrypcję użytkownika i zwróć WYŁĄCZNIE obiekt JSON. Cała zawartość musi być w języku polskim.
 Oceniaj ten wpis względem celów życiowych użytkownika: [${lifeGoals.join(", ")}].
 Struktura JSON:
 {
   "full_text": "Poprawiona i wyczyszczona wersja transkrypcji (popraw literówki, interpunkcję)",
   "parsedData": {
-    "dominantThought": "Wiodąca myśl podsumowująca wpis (jedno mocne zdanie)",
-    "summary": "Krótkie, ciepłe podsumowanie dnia z perspektywy słuchającego przyjaciela (2-3 zdania)",
-    "quotes": ["Wybitny cytat 1 z wypowiedzi", "Wybitny cytat 2", "...max 10 cytatów z ust usera"],
-    "impactOnGoals": "Jak dzisiejszy dzień wpływa na cele życiowe (ciepłym, empatycznym tonem)",
+    "dominantThought": "Wiodąca myśl podsumowująca wpis (jedno mocne zdanie, 1 os. lp.)",
+    "summary": "Krótkie podsumowanie dnia z Twojej perspektywy opisane w 1 os. lp., lecz zachowujące ton Twojej osobowości (${aiPersonality}) (2-3 zdania)",
+    "quotes": ["Wybitny cytat 1 z moich wypowiedzi", "Wybitny cytat 2", "...max 10 cytatów z ust usera"],
+    "impactOnGoals": "Jak dzisiejszy dzień wpłynął na moje cele życiowe (opisz to w 1 os. lp. w tonie: ${aiPersonality})",
     "goalImpactType": "positive" | "negative" | "neutral",
-    "completedTasks": ["Zrobiona rzecz 1", "Zrobiona rzecz 2"],
-    "emotions": ["Radość", "Spokój", "Złość"],
+    "completedTasks": ["Uporządkuj chronologicznie! Wpisuj zrobione rzeczy w formacie: '14:30 - Posprzątałem pokój' (jeśli czas wynika z transkrypcji, np. z nagłówka 'dodane o...'). Zawsze w 1 os. lp."],
+    "importantEvents": ["Ważne wydarzenia dnia ułożone chronologicznie, w formacie: 'Rano - Spotkałem się z szefem'. Zawsze w 1 os. lp."],
+    "emotions": ["Radość", "Spokój", "Ulga"],
+    "emotionTriggers": [
+      { "emotion": "Radość", "trigger": "Krótki opis tego, co wywołało u mnie tę radość (np. Zjedzenie ulubionej pizzy)" },
+      { "emotion": "Ulga", "trigger": "Zakończenie trudnego projektu w pracy" }
+    ],
     "fatigueLevel": 5, 
     "stressVsCalm": "stress" | "calm" | "neutral",
-    "gratefulFor": "Za co user jest wdzięczny w tym wpisie (lub co dobrego go spotkało)",
-    "triggeredStress": "Co wywołało stres lub null jeśli brak",
-    "triggeredAnger": "Co wywołało złość lub null",
-    "triggeredJoy": "Co wywołało radość lub null",
-    "triggeredCalm": "Co wywołało spokój lub null",
-    "goalAdvice": "Krótka, empatyczna rada (od coacha/przyjaciela) dla użytkownika oparta na jego dzisiejszym dniu i wyznaczonych celach życiowych (lub null, jeśli brak powiązania z celami)"
+    "gratefulFor": "Za co jestem dzisiaj wdzięczny (w 1 os. lp.)",
+    "triggeredStress": ["Wyzwalacz stresu 1", "Wyzwalacz stresu 2"],
+    "triggeredAnger": ["Wyzwalacz złości 1"],
+    "triggeredJoy": ["Wyzwalacz radości 1", "Wyzwalacz radości 2"],
+    "triggeredCalm": ["Wyzwalacz spokoju 1"],
+    "goalAdvice": "Krótka rada dla Mnie (użytkownika) oparta na dzisiejszym dniu, sformułowana STRICTLY w tonie Twojej osobowości (${aiPersonality}). TO JEDYNE POLE PISANE W 2. OSOBIE!"
   }
 }`;
 
@@ -86,7 +107,8 @@ Struktura JSON:
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
+          'Accept': 'application/json',
+          Authorization: `Bearer ${this.apiKey.trim()}`,
         },
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
@@ -109,8 +131,8 @@ Struktura JSON:
       const content = data.choices[0].message.content;
       console.log('[GroqAiService] Ekstrakcja LLM zakończona sukcesem.');
       return JSON.parse(content) as LlmAnalysisResult;
-    } catch (error) {
-      console.error('[GroqAiService - LLM] Wystąpił wyjątek:', error);
+    } catch (error: any) {
+      console.error('[GroqAiService - LLM] Wystąpił wyjątek w extractData:', error.message || error);
       throw error;
     }
   }
@@ -134,7 +156,8 @@ Struktura JSON:
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
+          'Accept': 'application/json',
+          Authorization: `Bearer ${this.apiKey.trim()}`,
         },
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',

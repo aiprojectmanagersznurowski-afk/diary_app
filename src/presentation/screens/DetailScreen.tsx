@@ -45,7 +45,7 @@ export const DetailScreen = () => {
   }
 
   const { parsedData } = entry;
-  const d = formatDate(entry.date);
+  const d = formatDate(entry.createdAt || entry.date);
   
   // Fallbacks for backward compatibility
   const pData = {
@@ -58,6 +58,7 @@ export const DetailScreen = () => {
     fatigueLevel: parsedData.fatigueLevel || (parsedData as any).fatigue_level || "",
     stressVsCalm: parsedData.stressVsCalm || "",
     gratitude: parsedData.gratefulFor || (parsedData as any).gratitude || "",
+    importantEvents: parsedData.importantEvents || [],
     angerTriggers: parsedData.triggeredAnger || (parsedData as any).angerTriggers || (parsedData as any).anger_triggers || "",
     joyTriggers: parsedData.triggeredJoy || (parsedData as any).joyTriggers || "",
     calmTriggers: parsedData.triggeredCalm || (parsedData as any).calmTriggers || "",
@@ -181,11 +182,14 @@ export const DetailScreen = () => {
           ) : null}
 
           {/* EMOTIONS FELT */}
-          {pData.emotions && pData.emotions.length > 0 && pData.emotions.every(isValidData) ? renderSelectableWrapper('emotions', 
+          {((pData.emotionTriggers && pData.emotionTriggers.length > 0) || (pData.emotions && pData.emotions.length > 0 && pData.emotions.every(isValidData))) ? renderSelectableWrapper('emotions', 
             <View style={styles.sectionContainer}>
               <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Emocje</Text>
               <View style={styles.emotionsRow}>
-                {pData.emotions.map((e: string, i: number) => <EmotionPill key={i} id={e} />)}
+                {pData.emotionTriggers && pData.emotionTriggers.length > 0 
+                  ? pData.emotionTriggers.map((et, i) => <EmotionPill key={i} id={et.emotion} trigger={et.trigger} />)
+                  : pData.emotions.map((e: string, i: number) => <EmotionPill key={i} id={e} />)
+                }
               </View>
             </View>
           ) : null}
@@ -195,7 +199,7 @@ export const DetailScreen = () => {
             <View style={styles.sectionContainer}>
               <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Zrobione zadania</Text>
               {pData.tasksDone.map((task: string, index: number) => (
-                <View key={index} style={styles.taskItem}>
+                <View key={`task-${index}`} style={styles.taskItem}>
                   <Feather name="check-circle" size={16} color="#A78BFA" style={{ marginRight: 12, marginTop: 2 }} />
                   <Text style={[styles.taskText, { color: colors.text }]}>{task}</Text>
                 </View>
@@ -203,13 +207,41 @@ export const DetailScreen = () => {
             </View>
           ) : null}
 
+          {/* IMPORTANT EVENTS */}
+          {pData.importantEvents && pData.importantEvents.length > 0 && pData.importantEvents.every(isValidData) ? renderSelectableWrapper('events', 
+            <View style={styles.sectionContainer}>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Ważne wydarzenia</Text>
+              {pData.importantEvents.map((event: string, index: number) => (
+                <View key={`event-${index}`} style={styles.taskItem}>
+                  <Feather name="star" size={16} color="#FBBF24" style={{ marginRight: 12, marginTop: 2 }} />
+                  <Text style={[styles.taskText, { color: colors.text }]}>{event}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {/* GRATEFUL FOR */}
+          {isValidData(pData.gratitude) ? renderSelectableWrapper('gratitude', 
+            <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={[styles.triggerCard, { borderColor: 'rgba(251, 191, 36, 0.2)', backgroundColor: 'rgba(251, 191, 36, 0.05)' }]}>
+              <View style={styles.triggerHeader}>
+                <Feather name="heart" size={16} color="#FBBF24" />
+                <Text style={[styles.triggerTitle, { color: '#FBBF24' }]}>Za to jestem wdzięczny</Text>
+              </View>
+              <Text style={[styles.triggerText, { color: colors.text }]}>{pData.gratitude}</Text>
+            </GlassCard>
+          ) : null}
+
           {/* IMPACT ON GOALS */}
           {isValidData(pData.impactOnGoals) ? renderSelectableWrapper('impact', 
-            <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={[styles.triggerCard, { borderColor: pData.goalImpactType === 'positive' ? 'rgba(74, 222, 128, 0.2)' : pData.goalImpactType === 'negative' ? 'rgba(248, 113, 113, 0.2)' : 'rgba(156, 163, 175, 0.2)' }]}>
+            <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={[styles.triggerCard, { 
+              borderColor: pData.goalImpactType === 'positive' ? 'rgba(74, 222, 128, 0.2)' : pData.goalImpactType === 'negative' ? 'rgba(248, 113, 113, 0.2)' : 'rgba(156, 163, 175, 0.2)',
+              backgroundColor: pData.goalImpactType === 'positive' ? 'rgba(74, 222, 128, 0.05)' : pData.goalImpactType === 'negative' ? 'rgba(248, 113, 113, 0.05)' : 'rgba(156, 163, 175, 0.05)' 
+            }]}>
               <View style={styles.triggerHeader}>
-                {pData.goalImpactType === 'positive' && <Feather name="trending-up" size={16} color="#4ADE80" />}
-                {pData.goalImpactType === 'negative' && <Feather name="trending-down" size={16} color="#F87171" />}
-                {pData.goalImpactType === 'neutral' && <Feather name="minus" size={16} color="#9CA3AF" />}
+                <View style={{
+                  width: 8, height: 8, borderRadius: 4, marginRight: 8,
+                  backgroundColor: pData.goalImpactType === 'positive' ? '#4ADE80' : pData.goalImpactType === 'negative' ? '#F87171' : '#9CA3AF'
+                }} />
                 <Text style={[styles.triggerTitle, { color: pData.goalImpactType === 'positive' ? '#4ADE80' : pData.goalImpactType === 'negative' ? '#F87171' : '#9CA3AF' }]}>Wpływ na cele</Text>
               </View>
               <Text style={[styles.triggerText, { color: colors.text }]}>{pData.impactOnGoals}</Text>
@@ -239,7 +271,12 @@ export const DetailScreen = () => {
                   <Feather name="smile" size={16} color="#4ADE80" />
                   <Text style={[styles.triggerTitle, { color: '#4ADE80' }]}>Wyzwoliło radość</Text>
                 </View>
-                <Text style={[styles.triggerText, { color: colors.text }]}>{pData.joyTriggers}</Text>
+                <View style={styles.emotionsRow}>
+                  {Array.isArray(pData.joyTriggers) 
+                    ? pData.joyTriggers.map((t: string, i: number) => <EmotionPill key={`joy-${i}`} id={t} />)
+                    : <EmotionPill id={pData.joyTriggers} />
+                  }
+                </View>
               </GlassCard>
             ) : null}
 
@@ -249,7 +286,12 @@ export const DetailScreen = () => {
                   <Feather name="coffee" size={16} color="#38BDF8" />
                   <Text style={[styles.triggerTitle, { color: '#38BDF8' }]}>Wyzwoliło spokój</Text>
                 </View>
-                <Text style={[styles.triggerText, { color: colors.text }]}>{pData.calmTriggers}</Text>
+                <View style={styles.emotionsRow}>
+                  {Array.isArray(pData.calmTriggers) 
+                    ? pData.calmTriggers.map((t: string, i: number) => <EmotionPill key={`calm-${i}`} id={t} />)
+                    : <EmotionPill id={pData.calmTriggers} />
+                  }
+                </View>
               </GlassCard>
             ) : null}
 
@@ -259,7 +301,12 @@ export const DetailScreen = () => {
                   <Feather name="activity" size={16} color="#FB923C" />
                   <Text style={[styles.triggerTitle, { color: '#FB923C' }]}>Wyzwoliło stres</Text>
                 </View>
-                <Text style={[styles.triggerText, { color: colors.text }]}>{pData.stressTriggers}</Text>
+                <View style={styles.emotionsRow}>
+                  {Array.isArray(pData.stressTriggers) 
+                    ? pData.stressTriggers.map((t: string, i: number) => <EmotionPill key={`stress-${i}`} id={t} />)
+                    : <EmotionPill id={pData.stressTriggers} />
+                  }
+                </View>
               </GlassCard>
             ) : null}
 
@@ -269,7 +316,12 @@ export const DetailScreen = () => {
                   <Feather name="alert-triangle" size={16} color="#F87171" />
                   <Text style={[styles.triggerTitle, { color: '#F87171' }]}>Wyzwoliło złość</Text>
                 </View>
-                <Text style={[styles.triggerText, { color: colors.text }]}>{pData.angerTriggers}</Text>
+                <View style={styles.emotionsRow}>
+                  {Array.isArray(pData.angerTriggers) 
+                    ? pData.angerTriggers.map((t: string, i: number) => <EmotionPill key={`anger-${i}`} id={t} />)
+                    : <EmotionPill id={pData.angerTriggers} />
+                  }
+                </View>
               </GlassCard>
             ) : null}
           </View>

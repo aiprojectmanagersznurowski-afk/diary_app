@@ -79,7 +79,7 @@ export const EMOTIONS: Record<string, Emotion> = {
   hope: { label: "Nadzieja", color: "#F0ABFC", from: "#E879F9", to: "#818CF8" },
 };
 
-export const EmotionPill: React.FC<{ id: string }> = ({ id }) => {
+export const EmotionPill: React.FC<{ id: string, trigger?: string }> = ({ id, trigger }) => {
   const { theme } = useSettingsStore();
   const colors = THEMES[theme];
   // Normalize id, removing emoji if present and standardizing
@@ -92,7 +92,9 @@ export const EmotionPill: React.FC<{ id: string }> = ({ id }) => {
   return (
     <View style={[styles.pillContainer, { backgroundColor: `${e.from}22`, borderColor: colors.tileBorder }]}>
       <LinearGradient colors={[e.from, e.to]} style={styles.pillDot} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
-      <Text style={[styles.pillText, { color: colors.textSecondary }]}>{id}</Text> 
+      <Text style={[styles.pillText, { color: colors.textSecondary }]}>
+        {id}{trigger ? `: ${trigger}` : ''}
+      </Text> 
     </View>
   );
 };

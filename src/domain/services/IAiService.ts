@@ -7,6 +7,6 @@ export interface LlmAnalysisResult {
 
 export interface IAiService {
   transcribe(audioUri: string): Promise<string>;
-  extractData(transcript: string, lifeGoals: string[]): Promise<LlmAnalysisResult>;
+  extractData(transcript: string, lifeGoals: string[], aiPersonality?: string): Promise<LlmAnalysisResult>;
   extractLifeGoalsFromTranscript(transcript: string): Promise<string[]>;
 }

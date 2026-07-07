@@ -21,6 +21,8 @@ interface DiaryState {
   fetchEntries: () => Promise<void>;
   startRecording: () => Promise<void>;
   stopRecordingAndProcess: () => Promise<void>;
+  getCurrentMetering: () => number;
+  getRecordingDuration: () => number;
 }
 
 export const useDiaryStore = create<DiaryState>((set, get) => ({
@@ -52,8 +54,8 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   stopRecordingAndProcess: async () => {
     set({ isRecording: false, isProcessing: true });
     try {
-      const { lifeGoals } = useSettingsStore.getState();
-      const newEntry = await recordUseCase.stopRecordingAndProcess(lifeGoals);
+      const { lifeGoals, aiPersonality } = useSettingsStore.getState();
+      const newEntry = await recordUseCase.stopRecordingAndProcess(lifeGoals, aiPersonality);
       if (newEntry) {
         useGamificationStore.getState().processNewEntry(newEntry.createdAt.toISOString());
         await get().fetchEntries();
@@ -64,5 +66,13 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     } catch (error) {
       set({ error: String(error), isProcessing: false });
     }
+  },
+
+  getCurrentMetering: () => {
+    return recordUseCase.getCurrentMetering();
+  },
+
+  getRecordingDuration: () => {
+    return recordUseCase.getRecordingDuration();
   },
 }));
