@@ -23,22 +23,25 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function App() {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
-  const { hasHydrated, lifeGoals, theme, syncGoalsFromCloud } = useSettingsStore();
-  const { syncFromCloud: syncGamificationFromCloud } = useGamificationStore();
+  const { hasHydrated, lifeGoals, theme } = useSettingsStore();
 
   useEffect(() => {
+    // Listener rejestrowany raz na całe życie komponentu: syncGoalsFromCloud/syncFromCloud
+    // pobierane przez getState(), żeby nie wymuszać ponownej subskrypcji (i podwójnej
+    // synchronizacji) przy każdej zmianie referencji akcji ze store'ów.
     const subscriber = auth.onAuthStateChanged((currentUser: FirebaseAuthTypes.User | null) => {
       setUser(currentUser);
       if (currentUser) {
-        Promise.all([syncGoalsFromCloud(), syncGamificationFromCloud()]).finally(() => {
-          if (initializing) setInitializing(false);
-        });
+        Promise.all([
+          useSettingsStore.getState().syncGoalsFromCloud(),
+          useGamificationStore.getState().syncFromCloud(),
+        ]).finally(() => setInitializing(false));
       } else {
-        if (initializing) setInitializing(false);
+        setInitializing(false);
       }
     });
     return subscriber; // unsubscribe on unmount
-  }, [initializing]);
+  }, []);
 
   if (initializing || !hasHydrated) {
     return (
@@ -61,7 +64,7 @@ export default function App() {
   return (
     <NavigationContainer theme={appTheme}>
       <StatusBar style="light" />
-      <Stack.Navigator 
+      <Stack.Navigator
         screenOptions={{
           headerShown: false,
           animation: 'fade_from_bottom',

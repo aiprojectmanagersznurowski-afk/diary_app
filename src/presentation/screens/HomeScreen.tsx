@@ -1,30 +1,50 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, FlatList, ActivityIndicator, Text, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, FlatList, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useDiaryStore } from '../../application/store/useDiaryStore';
 import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
 import { getAnalyticsData, getWeeklyCalmPercentage } from '../../application/useCases/statsUseCase';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { GlassCard, GradientText, EmotionPill } from '../components/UIPrimitives';
 import { BadgeAlertModal } from '../components/BadgeAlertModal';
 import { RecordingOverlay } from '../components/RecordingOverlay';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const { width } = Dimensions.get('window');
-
 const formatDate = (iso: string | Date | number) => {
   const d = new Date(iso);
-  const days = ["Niedziela", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota"];
-  const months = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca", "sierpnia", "września", "października", "listopada", "grudnia"];
+  const days = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+  const months = [
+    'stycznia',
+    'lutego',
+    'marca',
+    'kwietnia',
+    'maja',
+    'czerwca',
+    'lipca',
+    'sierpnia',
+    'września',
+    'października',
+    'listopada',
+    'grudnia',
+  ];
   return {
     weekday: days[d.getDay()],
     full: `${d.getDate()} ${months[d.getMonth()]}`,
-    time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+    time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
   };
 };
 
 export const HomeScreen = () => {
-  const { entries, isLoading, isRecording, isProcessing, error, fetchEntries, startRecording, stopRecordingAndProcess } = useDiaryStore();
+  const {
+    entries,
+    isLoading,
+    isRecording,
+    isProcessing,
+    error,
+    fetchEntries,
+    startRecording,
+    stopRecordingAndProcess,
+  } = useDiaryStore();
   const { theme } = useSettingsStore();
   const colors = THEMES[theme];
   const navigation = useNavigation<any>();
@@ -52,10 +72,28 @@ export const HomeScreen = () => {
           <GradientText text="Mój Pamiętnik" style={styles.titleText} />
         </View>
         <View style={styles.headerIcons}>
-          <TouchableOpacity onPress={() => navigation.navigate('Badges')} style={[styles.iconButton, { borderColor: colors.tileBorder, backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)' }]}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Badges')}
+            style={[
+              styles.iconButton,
+              {
+                borderColor: colors.tileBorder,
+                backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
+              },
+            ]}
+          >
             <Feather name="award" size={18} color="#FBBF24" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={[styles.iconButton, { borderColor: colors.tileBorder, backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)' }]}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Settings')}
+            style={[
+              styles.iconButton,
+              {
+                borderColor: colors.tileBorder,
+                backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
+              },
+            ]}
+          >
             <Feather name="settings" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
@@ -70,19 +108,27 @@ export const HomeScreen = () => {
               <Text style={[styles.analyticsHeaderText, { color: colors.textSecondary }]}>Podsumowanie Tygodnia</Text>
             </View>
             <View style={styles.analyticsRow}>
-              <Text style={[styles.analyticsMainText, { color: colors.text }]}>
-                Twój spokój to{' '}
-              </Text>
-              <GradientText text={`${calmPercentage}%`} colors={['#38BDF8', '#818CF8', '#F472B6']} style={styles.analyticsMainText} />
+              <Text style={[styles.analyticsMainText, { color: colors.text }]}>Twój spokój to </Text>
+              <GradientText
+                text={`${calmPercentage}%`}
+                colors={['#38BDF8', '#818CF8', '#F472B6']}
+                style={styles.analyticsMainText}
+              />
             </View>
             <Text style={[styles.analyticsSubText, { color: colors.textSecondary }]}>Zobacz Weekly Insights →</Text>
           </View>
           <View style={styles.chartPlaceholder}>
             {calmData.map((point, index) => (
-              <LinearGradient 
+              <LinearGradient
                 key={index}
-                colors={['#60A5FA', '#F472B6']} 
-                style={[styles.chartLine, { height: point.value > 0 ? point.value * 0.4 : 10, left: index * 15 }]} 
+                colors={['#60A5FA', '#F472B6']}
+                style={[
+                  styles.chartLine,
+                  {
+                    height: point.value > 0 ? point.value * 0.4 : 10,
+                    left: index * 15,
+                  },
+                ]}
               />
             ))}
           </View>
@@ -114,7 +160,7 @@ export const HomeScreen = () => {
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
             const d = formatDate(item.createdAt || item.date);
-            const parsed = item.parsedData as any || {};
+            const parsed = (item.parsedData as any) || {};
             const emotions = parsed.emotions || [];
             const summary = parsed.summary || item.fullText.slice(0, 100) + '...';
 
@@ -148,16 +194,19 @@ export const HomeScreen = () => {
       {/* FAB - Figma Exact Match */}
       <View style={styles.fabContainer}>
         {isProcessing && (
-          <View style={[styles.processingPill, { backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)' }]}>
+          <View
+            style={[
+              styles.processingPill,
+              {
+                backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)',
+              },
+            ]}
+          >
             <ActivityIndicator size="small" color={colors.text} style={{ marginRight: 8 }} />
             <Text style={[styles.processingText, { color: colors.text }]}>Sztuczna Inteligencja analizuje...</Text>
           </View>
         )}
-        <TouchableOpacity 
-          activeOpacity={0.9}
-          onPress={handleRecordPress}
-          style={styles.fabWrapper}
-        >
+        <TouchableOpacity activeOpacity={0.9} onPress={handleRecordPress} style={styles.fabWrapper}>
           <LinearGradient
             colors={isRecording ? ['#EF4444', '#B91C1C'] : ['#A78BFA', '#F472B6', '#60A5FA']}
             start={{ x: 0, y: 0 }}
@@ -180,7 +229,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
     paddingTop: 64,
-    paddingBottom: 160, 
+    paddingBottom: 160,
   },
   headerContainer: {
     marginBottom: 12,
@@ -353,5 +402,5 @@ const styles = StyleSheet.create({
     borderRadius: 34,
     alignItems: 'center',
     justifyContent: 'center',
-  }
+  },
 });
