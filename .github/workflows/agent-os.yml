@@ -1,0 +1,53 @@
+# Agent OS: ostatnia linia obrony. Te same bramki co lokalnie, bez możliwości ominięcia.
+# Ustaw w GitHub: ochrona gałęzi main (wymagany status "agent-os / gates", wymagany review człowieka),
+# CODEOWNERS dla ścieżek chronionych. Zmiana ścieżek chronionych w PR wymaga etykiety
+# "agent-os:human-approved" (nadaje ją człowiek).
+name: agent-os
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: agent-os-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Adaptery agentów aktualne
+        run: node .agent-os/scripts/sync-adapters.mjs --check
+      - name: Testy mutacyjne bramek
+        run: node .agent-os/selftest/run.mjs --mutate
+
+  gates:
+    runs-on: ubuntu-latest
+    needs: selftest
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - uses: denoland/setup-deno@v2
+        if: hashFiles('supabase/functions/**') != ''
+        with: { deno-version: v2.x }
+      - uses: supabase/setup-cli@v1
+        if: hashFiles('supabase/config.toml') != ''
+        with: { version: latest }
+      - name: Lokalny stos Supabase
+        if: hashFiles('supabase/config.toml') != ''
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+      - name: Bramki + definicja ukończenia + recenzja krzyżowa
+        run: node .agent-os/scripts/gate.mjs --base origin/${{ github.base_ref }} --pr

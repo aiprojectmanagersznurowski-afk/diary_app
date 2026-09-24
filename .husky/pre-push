@@ -1,5 +1,3 @@
 # >>> agent-os (nie edytuj: node .agent-os/scripts/install-hooks.mjs)
-node .agent-os/scripts/gate.mjs --staged || exit 1
+node .agent-os/scripts/gate.mjs --base || exit 1
 # <<< agent-os
-
-npx lint-staged

@@ -1,0 +1,18 @@
+# Ścieżki chronione Agent OS wymagają akceptacji człowieka.
+/.agent-os/contracts/   @aiprojectmanagersznurowski-afk
+/.agent-os/scripts/     @aiprojectmanagersznurowski-afk
+/.agent-os/selftest/    @aiprojectmanagersznurowski-afk
+/.agent-os/roles/       @aiprojectmanagersznurowski-afk
+/.agent-os/workflows/   @aiprojectmanagersznurowski-afk
+/.agent-os/templates/   @aiprojectmanagersznurowski-afk
+/.agent-os/tasks/       @aiprojectmanagersznurowski-afk
+/.claude/               @aiprojectmanagersznurowski-afk
+/.gemini/               @aiprojectmanagersznurowski-afk
+/.agents/               @aiprojectmanagersznurowski-afk
+/.husky/                @aiprojectmanagersznurowski-afk
+/.github/               @aiprojectmanagersznurowski-afk
+/AGENTS.md              @aiprojectmanagersznurowski-afk
+/CLAUDE.md              @aiprojectmanagersznurowski-afk
+/GEMINI.md              @aiprojectmanagersznurowski-afk
+/supabase/migrations/   @aiprojectmanagersznurowski-afk
+/docs/05-decyzje.md     @aiprojectmanagersznurowski-afk

@@ -1,0 +1,35 @@
+id: F1-04
+title: Profil użytkownika w tabeli profiles
+phase: 1
+role: mobile
+branch: feat/F1-04-profiles
+depends_on: [F1-03]
+roadmap: "Tabela `profiles` zamiast synchronizacji ustawień przez Firestore/AsyncStorage (cele, osobowość, motyw, strefa czasowa, grywalizacja)"
+read_first:
+  - docs/02-architektura.md#4-model-danych
+  - docs/01-zakres.md  # M7, M8
+scope:
+  write:
+    - src/domain/**
+    - src/application/**
+    - src/infrastructure/supabase/**
+    - src/infrastructure/profile/**
+    - src/presentation/screens/OnboardingScreen.tsx
+    - src/presentation/screens/SettingsScreen.tsx
+    - src/app/**
+    - src/composition/**
+    - App.tsx
+context: |
+  Repozytorium ProfileRepository w domain, implementacja Supabase w infrastructure.
+  Strefa czasowa z urządzenia przy pierwszym zapisie (Intl), bo "dzień" liczymy w strefie użytkownika.
+  Onboarding głosowy zostaje; wyciąganie celów przez AI na razie działa jak dziś
+  (przeniesienie AI na serwer to F2) — nie dodawaj nowych wywołań AI z klienta.
+acceptance:
+  - "onboarding zapisuje cele, osobowość, motyw i strefę czasową w profiles"
+  - "po zalogowaniu na innym urządzeniu ustawienia wczytują się z profiles"
+  - "odpowiedzi onboardingu łączone prawdziwym znakiem nowej linii"
+  - "testy jest przypadków użycia profilu z atrapą repozytorium"
+fixes_known_bugs:
+  - "OnboardingScreen.tsx: join('\\n\\n') łączy odpowiedzi dosłownym tekstem \\n\\n"
+human_steps:
+  - "CP-DEVICE: onboarding na urządzeniu, ponowne logowanie"

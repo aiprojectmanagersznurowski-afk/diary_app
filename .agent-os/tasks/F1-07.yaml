@@ -1,0 +1,29 @@
+id: F1-07
+title: Unieważnienie klucza Groq i przeniesienie kluczy do sekretów Supabase
+phase: 1
+role: edge
+branch: chore/F1-07-rotate-ai-keys
+depends_on: [F1-01]
+roadmap: "Unieważnienie obecnego klucza Groq; klucze przeniesione do sekretów Supabase"
+read_first:
+  - docs/03-stos-technologiczny.md#sekrety-i-konfiguracja
+  - docs/05-decyzje.md  # ADR-003
+scope:
+  write:
+    - .env.example
+    - supabase/config.toml
+context: |
+  Zadanie w większości ludzkie. Agent: przygotowuje .env.example (bez wartości) z nazwami
+  GROQ_API_KEY i GEMINI_API_KEY dla sekretów Supabase oraz listę kroków dla człowieka w handoff.
+  Agent nigdy nie czyta .env ani nie zna wartości kluczy.
+  Aplikacja wciąż woła Groq z klienta do czasu F2; po unieważnieniu klucza przetwarzanie
+  w obecnej aplikacji przestanie działać — to świadomy koszt (brak użytkowników produkcyjnych).
+acceptance:
+  - ".env.example opisuje GROQ_API_KEY i GEMINI_API_KEY jako sekrety Supabase (bez EXPO_PUBLIC_)"
+  - "handoff zawiera listę kroków człowieka z CP-SECRETS"
+fixes_known_bugs:
+  - "groqService.ts: klucz Groq w pakiecie aplikacji (EXPO_PUBLIC_) — unieważnienie klucza; usunięcie kodu w F2"
+human_steps:
+  - "CP-SECRETS: unieważnić klucz Groq w konsoli Groq, wygenerować nowy"
+  - "CP-SECRETS: supabase secrets set GROQ_API_KEY=... GEMINI_API_KEY=..."
+  - "CP-SECRETS: usunąć EXPO_PUBLIC_GROQ_API_KEY i GOGLE_API z lokalnego .env"

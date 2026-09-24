@@ -1,0 +1,41 @@
+id: F1-03
+title: Logowanie Google i Apple przez Supabase Auth
+phase: 1
+role: mobile
+branch: feat/F1-03-supabase-auth
+depends_on: [F1-02, F1-08]
+roadmap: "Logowanie Google przez `signInWithIdToken`; Sign in with Apple na iOS"
+read_first:
+  - docs/02-architektura.md#8-bezpieczeństwo-i-prywatność
+  - docs/03-stos-technologiczny.md#sekrety-i-konfiguracja
+scope:
+  write:
+    - src/infrastructure/supabase/**
+    - src/infrastructure/auth/**
+    - src/domain/**
+    - src/application/**
+    - src/presentation/screens/LoginScreen.tsx
+    - src/app/**
+    - src/composition/**
+    - App.tsx
+    - app.json
+    - package.json
+    - package-lock.json
+    - .env.example
+context: |
+  Klient: @supabase/supabase-js z sesją w AsyncStorage (przewodnik Supabase dla Expo).
+  Google: @react-native-google-signin/google-signin → idToken → supabase.auth.signInWithIdToken({provider:'google'}).
+  Apple: expo-apple-authentication (tylko iOS) → signInWithIdToken({provider:'apple', nonce}).
+  iOS client ID jest dziś wpisany w LoginScreen.tsx: przenieś do .env (EXPO_PUBLIC_...).
+  Firebase Auth zostaje do czasu F1-06, ale nowy przepływ go nie używa.
+acceptance:
+  - "logowanie Google działa na iOS i Androidzie; sesja przetrwa restart aplikacji"
+  - "Sign in with Apple działa na iOS (przycisk tylko na iOS)"
+  - "nasłuch zmian sesji rejestrowany raz (brak podwójnej rejestracji)"
+  - "brak client ID na stałe w kodzie; zmienne opisane w .env.example"
+  - "testy jest dla przypadków użycia logowania z atrapą repozytorium"
+fixes_known_bugs:
+  - "App.tsx: [initializing] w zależnościach efektu podwójnie rejestruje nasłuch logowania"
+human_steps:
+  - "CP-SECRETS: client ID Google (web, iOS), konfiguracja Apple w Supabase Auth"
+  - "CP-DEVICE: test logowania na iPhonie i Androidzie (dev client)"

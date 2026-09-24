@@ -1,0 +1,21 @@
+id: F1-09
+title: Composition root zamiast tworzenia serwisów w ekranach
+phase: 1
+role: mobile
+branch: refactor/F1-09-composition-root
+depends_on: [F1-08]
+roadmap: "Composition root: ekrany nie tworzą serwisów z `infrastructure`"
+read_first:
+  - docs/02-architektura.md#3-warstwy-w-aplikacji-klienckiej
+scope:
+  write:
+    - src/**
+    - App.tsx
+context: |
+  Utwórz src/composition/ (jedyne miejsce, które importuje infrastructure i łączy ją z application).
+  Ekrany i store'y dostają zależności przez kontekst React / fabryki, nie przez new ...Service().
+  Dziś zasadę łamią OnboardingScreen i store'y.
+acceptance:
+  - "żaden plik w src/presentation/ nie importuje src/infrastructure/ (bramka layers na całym src/presentation)"
+  - "store'y w src/application/ nie importują infrastructure"
+  - "testy jest przypadków użycia z atrapami wstrzykniętymi przez composition root"

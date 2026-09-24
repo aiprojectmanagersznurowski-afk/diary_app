@@ -1,0 +1,31 @@
+id: F2-07
+title: Lista notatek i status nagrań na żywo
+phase: 2
+role: mobile
+branch: feat/F2-07-notes-realtime
+depends_on: [F2-02, F2-04]
+roadmap: "Aplikacja: lista notatek, status nagrań na żywo (Realtime), ponowienie po błędzie"
+read_first:
+  - docs/01-zakres.md  # M1 status nagrań
+  - docs/02-architektura.md#61-nagranie-z-telefonu
+scope:
+  write:
+    - src/domain/**
+    - src/application/**
+    - src/infrastructure/supabase/**
+    - src/presentation/**
+    - src/composition/**
+context: |
+  Statusy w UI: w kolejce (lokalnie), wysłane, przetwarzane, gotowe, błąd (z ponowieniem).
+  Subskrypcja Realtime na recordings użytkownika; lista dokumentów kind='note'.
+  Ponowienie po błędzie: ustawienie statusu do ponownego przetworzenia (bez nowych wywołań AI z klienta).
+  Obecny DetailScreen/recordAndProcess przełącz na nowy model, bez usuwania dziennika dnia (F3).
+acceptance:
+  - "status nagrania zmienia się na ekranie bez odświeżania"
+  - "nagranie ze statusem failed można ponowić z aplikacji"
+  - "lista notatek pokazuje typ, tytuł, kategorię"
+  - "testy jest mapowania statusów"
+fixes_known_bugs:
+  - "recordAndProcess.ts: tekst dnia doklejany i przepisywany przez LLM (część dotycząca nagrań)"
+human_steps:
+  - "CP-DEVICE: pełny przepływ nagranie → notatki na iOS i Androidzie"

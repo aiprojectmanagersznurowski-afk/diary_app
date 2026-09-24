@@ -1,0 +1,34 @@
+id: F2-01
+title: Lokalna kolejka nagrań (expo-sqlite) z ponawianiem
+phase: 2
+role: mobile
+branch: feat/F2-01-recording-queue
+depends_on: [F1-09]
+roadmap: "Lokalna kolejka nagrań (`expo-sqlite`) z ponawianiem wysyłki"
+read_first:
+  - docs/02-architektura.md#61-nagranie-z-telefonu
+  - docs/02-architektura.md#9-niezawodność
+scope:
+  write:
+    - src/domain/**
+    - src/application/**
+    - src/infrastructure/queue/**
+    - src/infrastructure/audio/**
+    - src/composition/**
+    - package.json
+    - package-lock.json
+context: |
+  Po stopie nagrania: plik przeniesiony do trwałego katalogu aplikacji + wiersz w tabeli lokalnej
+  (id UUID, path, recorded_at, duration_ms, source, status, attempts, next_attempt_at).
+  Interfejs RecordingQueue w domain; implementacja expo-sqlite w infrastructure.
+  Ponawianie z wykładniczym odstępem; wyzwalacze: start aplikacji, powrót na pierwszy plan,
+  odzyskanie sieci. Sama wysyłka do Supabase to F2-02 — tu interfejs Uploader z atrapą.
+  Plik audio usuwamy lokalnie dopiero po potwierdzeniu INSERT na serwerze.
+acceptance:
+  - "nagranie trafia do kolejki, zanim cokolwiek zostanie wysłane"
+  - "restart aplikacji nie gubi nagrań z kolejki"
+  - "testy jest: odstęp wykładniczy, limit prób, idempotentne ponowienie, brak usunięcia pliku przy błędzie"
+fixes_known_bugs:
+  - "useDiaryStore.ts: błąd przetwarzania gubi nagranie (brak kolejki i ponawiania)"
+human_steps:
+  - "CP-DEVICE: nagranie w trybie samolotowym, zamknięcie aplikacji, ponowne otwarcie"

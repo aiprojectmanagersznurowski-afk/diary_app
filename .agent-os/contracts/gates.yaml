@@ -1,0 +1,152 @@
+# Bramki jakości (gate rules). Plik chroniony: zmienia go wyłącznie człowiek.
+# Każda bramka ma test mutacyjny w .agent-os/selftest/ (node .agent-os/selftest/run.mjs --mutate).
+#
+# Tryby uruchomienia gate.mjs:
+#   --staged         pre-commit: tylko zmiany w indeksie
+#   --worktree       (domyślnie) gałąź + niezacommitowane zmiany względem bazy
+#   --base [ref]     pre-push / CI: commity gałęzi względem bazy
+#   --finish         + bramki ukończenia i komendy DoD
+#   --pr             + recenzja krzyżowa i komunikaty wszystkich commitów (CI)
+
+version: 1
+
+base_refs: [origin/main, main]
+
+fast: [branch, scope, secrets, ai-boundary, layers, native, migrations, prompts, logging, adr, contracts, checkpoints]
+finish: [roadmap, handoff, tests-present]
+pr: [review, commits]
+
+branch:
+  protected: [main, master]
+  # typ/ID-zadania-opis  albo  typ/opis (bez zadania -> rola planner)
+  pattern: '^(feat|fix|build|chore|docs|refactor|test)/((F\d+-\d{2})-)?[a-z0-9][a-z0-9-]*$'
+  task_id: 'F\d+-\d{2}'
+
+commit_msg:
+  pattern: '^(feat|fix|build|chore|docs|refactor|test|ci|perf|revert)(\([a-z0-9._-]+\))?!?: \S.{2,}$'
+  forbid_in_subject: '[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]'   # komunikaty po angielsku
+  max_subject: 100
+  allow: ['^Merge ', '^Revert "']
+
+secrets:
+  patterns:
+    - { id: groq-key,    regex: 'gsk_[A-Za-z0-9]{20,}',                        msg: 'klucz Groq w kodzie' }
+    - { id: google-key,  regex: 'AIza[0-9A-Za-z_\-]{35}',                       msg: 'klucz Google API w kodzie' }
+    - { id: openai-key,  regex: 'sk-(proj-)?[A-Za-z0-9]{20,}',                  msg: 'klucz typu sk- w kodzie' }
+    - { id: jwt,         regex: 'eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}', msg: 'token JWT (np. anon/service_role) wpisany na stałe' }
+    - { id: private-key, regex: '-----BEGIN [A-Z ]*PRIVATE KEY-----',           msg: 'klucz prywatny w repozytorium' }
+  # Nazwy EXPO_PUBLIC_* trafiają do pakietu aplikacji
+  expo_public_forbidden: '(SECRET|API_KEY|PRIVATE|SERVICE_ROLE|TOKEN|PASSWORD)'
+  expo_public_allow: [EXPO_PUBLIC_SUPABASE_ANON_KEY, EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY]
+  service_role_client_paths: [src/**, App.tsx, modules/**, targets/**]
+  service_role_regex: '(SUPABASE_SERVICE_ROLE_KEY|service_role)'
+  # Tych plików nie wolno dodawać ani zmieniać (usuwać wolno)
+  forbidden_files:
+    - .env
+    - .env.*
+    - "**/.env"
+    - "**/.env.*"
+    - "!.env.example"
+    - "!**/.env.example"
+    - "**/google-services.json"
+    - "**/GoogleService-Info.plist"
+  skip_paths: [docs/**, "**/*.md", .agent-os/**]
+  warn:
+    - { id: ios-client-id, regex: '[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com', paths: [src/**, App.tsx], msg: 'client ID Google wpisany na stałe; przenieś do .env (EXPO_PUBLIC_...)' }
+
+ai_boundary:
+  client_paths: [src/**, App.tsx, modules/**, targets/**]
+  server_root: supabase/functions/**
+  server_ai_dir: supabase/functions/_shared/ai/**
+  forbidden_packages: [groq-sdk, '@google/generative-ai', '@google/genai', openai, '@anthropic-ai/sdk', '@ai-sdk/*', ai]
+  forbidden_hosts: [api.groq.com, generativelanguage.googleapis.com, aiplatform.googleapis.com, api.openai.com]
+
+layers:
+  root: src
+  aliases: { '@/': 'src/', '~/': 'src/' }
+  rules:
+    domain:
+      may_import: [domain]
+      external: []                                   # bez bibliotek
+    application:
+      may_import: [domain, application]
+      external: [zustand, 'zustand/*', '@react-native-async-storage/async-storage', zod, uuid, date-fns, 'date-fns/*']
+    infrastructure:
+      may_import: [domain, application, infrastructure]
+      external: '*'
+    presentation:
+      may_import: [domain, application, presentation]
+      external: '*'
+  # Composition root: jedyne miejsce, które może łączyć presentation z infrastructure
+  composition_root: [src/app/**, src/composition/**, App.tsx]
+
+native:
+  generated: [ios/**, android/**]
+
+migrations:
+  dir: supabase/migrations
+  filename: '^\d{14}_[a-z0-9_]+\.sql$'
+  rls_exempt_schemas: [extensions, cron, net, storage, auth]
+  # Pliki, które mogą towarzyszyć migracji w tym samym PR (reszta: osobny PR)
+  pr_companions: [supabase/migrations/**, supabase/tests/**, supabase/seed.sql, supabase/config.toml, docs/**, .agent-os/handoff/**, .agent-os/reviews/**]
+
+prompts:
+  dir: supabase/functions/_shared/prompts
+  filename: '^[a-z0-9-]+\.v\d+\.md$'
+  schemas_dir: supabase/functions/_shared/schemas
+  fragment_dirs: [supabase/functions/_shared/prompts/personalities/**, supabase/functions/_shared/prompts/fragments/**]
+
+logging:
+  paths: [src/**, App.tsx, supabase/functions/**]
+  call: '\b(console\.(log|info|warn|error|debug|trace)|log(ger)?\.(info|warn|error|debug))\s*\('
+  sensitive: '\b(raw_?transcript|rawTranscript|transcript(ion)?|body_?md|bodyMd|noteContent|note\.content|document\.content|chunk\.content|completion|llm_?response|llmResponse|choices\s*\[|\.text\(\))'
+
+adr:
+  file: docs/05-decyzje.md
+  open_questions_heading: '## Otwarte kwestie'
+  header: '^### ADR-(\d{3}):'
+  agent_status: proponowana
+
+roadmap:
+  file: docs/04-roadmapa.md
+
+tests_present:
+  test_file_regex: '(\.test\.tsx?$|_test\.ts$|^__tests__/|^supabase/tests/)'
+  rules:
+    - { changed: 'src/{domain,application}/**/*.{ts,tsx}', tests: ['src/**/*.test.{ts,tsx}', '__tests__/**'], msg: 'logika w domain/application wymaga testów jest' }
+    - { changed: 'supabase/functions/**/*.ts', tests: ['supabase/functions/**/*{_test,.test}.ts'], msg: 'Edge Functions wymagają testów deno test' }
+    - { changed: 'supabase/migrations/*.sql', tests: ['supabase/tests/**/*.sql'], msg: 'nowe tabele i polityki RLS wymagają testów pgTAP (supabase test db)' }
+
+review:
+  dir: .agent-os/reviews
+  require_cross_agent: true
+
+# Komendy definicji ukończenia (uruchamiane z --finish; pomijane z --no-dod)
+# Brak narzędzia lokalnie = ostrzeżenie; w CI (CI=true) = błąd.
+dod:
+  - id: tsc
+    run: npx --no-install tsc --noEmit
+    when_file: tsconfig.json
+    error_budget: 204         # zapadka: dziś 204 błędy (w tym design_exports/, nieskonfigurowany osobny projekt Vite).
+                              # F1-08 wyklucza design_exports/ z tsconfig.json i czyści resztę w src/; po nim człowiek ustawia 0.
+    count_regex: 'error TS\d+'
+  - id: lint
+    run: npx --no-install eslint . --max-warnings=0
+    when_package: eslint      # do F1-08 ESLint nie jest zainstalowany
+  - id: jest
+    run: npx --no-install jest --ci --passWithNoTests
+    when_package: jest-expo
+  - id: deno-test
+    run: deno test --allow-all supabase/functions
+    when_file: supabase/functions
+    tool: deno
+  - id: db-reset
+    run: supabase db reset --local
+    when_file: supabase/config.toml
+    tool: supabase
+    probe: supabase status        # lokalny stos musi działać (supabase start)
+  - id: db-test
+    run: supabase test db
+    when_file: supabase/tests
+    tool: supabase
+    probe: supabase status

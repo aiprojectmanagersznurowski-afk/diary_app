@@ -1,0 +1,63 @@
+# Checkpointy człowieka. Plik chroniony.
+#
+# Bramka "checkpoints" wykrywa wyzwalacze automatycznie i zgłasza ID checkpointu.
+# Agent MUSI wpisać każdy zgłoszony ID w sekcji "## Checkpointy" pliku handoff
+# (bramka "handoff" to sprawdza przy --finish), z opisem, czego potrzebuje od człowieka.
+# Akcje z "agent_never" blokują dodatkowo hooki Claude i Gemini CLI.
+
+version: 1
+
+checkpoints:
+  CP-ADR:
+    title: Decyzja architektoniczna
+    trigger: zmiana docs/05-decyzje.md (nowy ADR albo zmiana otwartej kwestii)
+    agent: dopisuje ADR ze statusem "proponowana" i zatrzymuje się
+    human: akceptuje (zmienia status na "przyjęta") albo odrzuca
+
+  CP-TASK:
+    title: Zmiana kontraktu zadania
+    trigger: zmiana plików w .agent-os/tasks/
+    agent: proponuje kontrakt (planista)
+    human: zatwierdza zakres (scope.write, scope.delete) przed startem zadania
+
+  CP-MIGRATION:
+    title: Migracja bazy
+    trigger: nowy plik w supabase/migrations/
+    agent: testuje lokalnie (supabase db reset, supabase test db)
+    human: przegląda SQL i RLS, wykonuje "supabase db push" na projekt zdalny
+
+  CP-DEP:
+    title: Nowa zależność
+    trigger: "nowy pakiet w package.json albo import npm:/jsr: w deno.json"
+    agent: uzasadnia w handoff (po co, alternatywy, licencja)
+    human: zatwierdza
+
+  CP-SECRETS:
+    title: Sekrety i klucze
+    trigger: nowa zmienna w .env.example albo nowe Deno.env.get(...)
+    agent: opisuje nazwę i przeznaczenie zmiennej, nigdy wartości
+    human: ustawia wartość ("supabase secrets set", .env lokalnie), unieważnia stare klucze
+
+  CP-DEVICE:
+    title: Test na urządzeniu
+    trigger: zmiany w app.json, plugins/, modules/, targets/, audio lub logowaniu
+    agent: opisuje scenariusz testu ręcznego w handoff
+    human: buduje (EAS / dev client) i testuje na iPhonie, Androidzie, Apple Watch
+
+  CP-GATE:
+    title: Zapadka bramki
+    trigger: zadanie F1-08 ukończone
+    agent: zgłasza w handoff, że błędy tsc spadły do zera
+    human: ustawia dod.tsc.error_budget = 0 w gates.yaml
+
+agent_never:
+  - { regex: '--no-verify',                                  msg: 'pomijanie hooków jest zabronione (06-zasady-pracy)' }
+  - { regex: '\bgit\s+push\b.*\b(main|master)\b',            msg: 'push na main robi człowiek przez PR' }
+  - { regex: '\bgit\s+push\b.*(--force|\s-f\b)',             msg: 'force push zabroniony' }
+  - { regex: '\bgit\s+(reset\s+--hard|clean\s+-[a-z]*f)',    msg: 'destrukcyjna operacja git; zapytaj człowieka' }
+  - { regex: '\bsupabase\s+(db\s+push|secrets\s+set|link|projects\s+delete)', msg: 'operacja na projekcie zdalnym Supabase: CP-MIGRATION / CP-SECRETS' }
+  - { regex: '\bsupabase\s+db\s+reset\b.*--linked',          msg: 'reset bazy zdalnej zabroniony' }
+  - { regex: '\beas\s+(submit|update)\b',                     msg: 'publikacja w sklepie / OTA robi człowiek' }
+  - { regex: '\beas\s+build\b.*production',                   msg: 'build produkcyjny robi człowiek' }
+  - { regex: 'AGENT_OS_(HUMAN|DISABLE_GATE|SELFTEST_ROOT)',   msg: 'przełączniki człowieka są niedostępne dla agenta' }
+  - { regex: '(cat|less|more|head|tail|bat|grep|sed|awk)\b[^|;&]*\.env(\.(?!example)[\w.]+)?(\s|$)', msg: 'odczyt .env zabroniony' }
