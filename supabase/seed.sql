@@ -1,0 +1,2 @@
+-- Dane startowe dla lokalnego `supabase db reset`. Puste do F1-02 (tabele domenowe) —
+-- ten plik istnieje już teraz, bo `supabase/config.toml` (db.seed.sql_paths) go referencjonuje.
