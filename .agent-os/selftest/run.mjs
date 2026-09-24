@@ -73,7 +73,7 @@ function runCase(c, disabled) {
   if (c.kind === 'hook') {
     const r = spawnSync(process.execPath, [path.join(repo, '.agent-os/scripts/hooks/pretool.mjs'), '--agent', c.agent], {
       cwd: repo, input: JSON.stringify({ cwd: repo, tool_name: c.tool, tool_input: c.input }), encoding: 'utf8',
-      env: { ...process.env, AGENT_OS_HUMAN: '', ...c.env },
+      env: { ...process.env, CI: '', GITHUB_HEAD_REF: '', GITHUB_EVENT_PATH: '', AGENT_OS_HUMAN: '', ...c.env },
     });
     const got = r.status;
     return { pass: got === c.expectExit, detail: `exit ${got}, oczekiwano ${c.expectExit} ${r.stderr.trim()}` };
