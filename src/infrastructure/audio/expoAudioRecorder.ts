@@ -1,5 +1,10 @@
-import { AudioModule, RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, AudioRecorder } from 'expo-audio';
-import { Platform } from 'react-native';
+import {
+  AudioModule,
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  AudioRecorder,
+} from 'expo-audio';
 import { IAudioRecorder } from '../../domain/services/IAudioRecorder';
 
 export class ExpoAvAudioRecorder implements IAudioRecorder {
@@ -24,10 +29,14 @@ export class ExpoAvAudioRecorder implements IAudioRecorder {
         isMeteringEnabled: true,
       };
 
+      // AudioModule.AudioRecorder is the documented non-hook constructor (see expo-audio's
+      // useAudioRecorder); the barrel's type-only re-export of AudioModule.types trips the
+      // static namespace check even though this is valid at runtime.
+      // eslint-disable-next-line import/namespace
       this.recording = new AudioModule.AudioRecorder(options as any);
-      
+
       // Some native modules only compute metering when there is at least one listener
-      this.statusSubscription = this.recording.addListener('RECORDING_STATUS_UPDATE', () => {});
+      this.statusSubscription = this.recording.addListener('recordingStatusUpdate', () => {});
 
       await this.recording.prepareToRecordAsync(options);
       this.recording.record();
@@ -57,7 +66,6 @@ export class ExpoAvAudioRecorder implements IAudioRecorder {
       return uri;
     } catch (err) {
       console.error('Failed to stop recording', err);
-      return null;
       return null;
     }
   }

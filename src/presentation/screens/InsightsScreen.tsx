@@ -7,19 +7,15 @@ import { LineChart } from 'react-native-gifted-charts';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 
 import { GlassCard, GradientText } from '../components/UIPrimitives';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { useDiaryStore } from '../../application/store/useDiaryStore';
 import { getAnalyticsData } from '../../application/useCases/statsUseCase';
+import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
 
 const { width } = Dimensions.get('window');
 
-
-
-import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
-
 // Circular Gauge Component
-const CircularGauge = ({ percentage, colors }: { percentage: number, colors: any }) => {
+const CircularGauge = ({ percentage, colors }: { percentage: number; colors: any }) => {
   const size = 180;
   const strokeWidth = 16;
   const radius = (size - strokeWidth) / 2;
@@ -60,11 +56,7 @@ const CircularGauge = ({ percentage, colors }: { percentage: number, colors: any
         />
       </Svg>
       <View style={styles.gaugeTextContainer}>
-        <GradientText 
-          text={`${percentage}%`} 
-          colors={['#A78BFA', '#F472B6', '#60A5FA']} 
-          style={styles.gaugeNumber} 
-        />
+        <GradientText text={`${percentage}%`} colors={['#A78BFA', '#F472B6', '#60A5FA']} style={styles.gaugeNumber} />
         <Text style={[styles.gaugeSubtext, { color: colors.textSecondary }]}>zgodności</Text>
       </View>
     </View>
@@ -74,7 +66,7 @@ const CircularGauge = ({ percentage, colors }: { percentage: number, colors: any
 export const InsightsScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  
+
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('7d');
   const { entries } = useDiaryStore();
   const { theme } = useSettingsStore();
@@ -92,7 +84,16 @@ export const InsightsScreen = () => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { borderColor: colors.tileBorder, backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)' }]}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={[
+            styles.backButton,
+            {
+              borderColor: colors.tileBorder,
+              backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
+            },
+          ]}
+        >
           <Feather name="chevron-left" size={20} color={colors.text} />
         </TouchableOpacity>
         <GradientText text="Twoje Analizy" style={styles.headerTitle} colors={['#A78BFA', '#F472B6', '#60A5FA']} />
@@ -100,30 +101,49 @@ export const InsightsScreen = () => {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
         {/* Time Segmented Control */}
         <View style={styles.segmentContainer}>
-          <View style={[styles.segmentCard, { backgroundColor: theme === 'AppleLight' || theme === 'Sepia' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)' }]}>
-            <TouchableOpacity 
-              style={[styles.segmentButton]} 
-              onPress={() => setTimeRange('7d')}
-              activeOpacity={0.8}
-            >
+          <View
+            style={[
+              styles.segmentCard,
+              {
+                backgroundColor:
+                  theme === 'AppleLight' || theme === 'Sepia' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)',
+              },
+            ]}
+          >
+            <TouchableOpacity style={[styles.segmentButton]} onPress={() => setTimeRange('7d')} activeOpacity={0.8}>
               {timeRange === '7d' && (
                 <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.primary, borderRadius: 12 }]} />
               )}
-              <Text style={[styles.segmentText, { color: timeRange === '7d' ? (theme === 'Sepia' ? '#FFFFFF' : '#FFFFFF') : colors.textSecondary, fontWeight: timeRange === '7d' ? 'bold' : 'normal' }]}>7 Dni</Text>
+              <Text
+                style={[
+                  styles.segmentText,
+                  {
+                    color: timeRange === '7d' ? (theme === 'Sepia' ? '#FFFFFF' : '#FFFFFF') : colors.textSecondary,
+                    fontWeight: timeRange === '7d' ? 'bold' : 'normal',
+                  },
+                ]}
+              >
+                7 Dni
+              </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.segmentButton} 
-              onPress={() => setTimeRange('30d')}
-              activeOpacity={0.8}
-            >
+
+            <TouchableOpacity style={styles.segmentButton} onPress={() => setTimeRange('30d')} activeOpacity={0.8}>
               {timeRange === '30d' && (
                 <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.primary, borderRadius: 12 }]} />
               )}
-              <Text style={[styles.segmentText, { color: timeRange === '30d' ? (theme === 'Sepia' ? '#FFFFFF' : '#FFFFFF') : colors.textSecondary, fontWeight: timeRange === '30d' ? 'bold' : 'normal' }]}>30 Dni</Text>
+              <Text
+                style={[
+                  styles.segmentText,
+                  {
+                    color: timeRange === '30d' ? (theme === 'Sepia' ? '#FFFFFF' : '#FFFFFF') : colors.textSecondary,
+                    fontWeight: timeRange === '30d' ? 'bold' : 'normal',
+                  },
+                ]}
+              >
+                30 Dni
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -156,7 +176,10 @@ export const InsightsScreen = () => {
               yAxisColor="transparent"
               xAxisColor={colors.tileBorder}
               yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
-              xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 11 }}
+              xAxisLabelTextStyle={{
+                color: colors.textSecondary,
+                fontSize: 11,
+              }}
               pointerConfig={{
                 pointerStripHeight: 160,
                 pointerStripColor: 'rgba(255,255,255,0.2)',
@@ -184,7 +207,9 @@ export const InsightsScreen = () => {
 
         {/* Chart 2: Energy Area Chart */}
         <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={styles.chartCard}>
-          <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>Energia / zmęczenie w ciągu tygodnia</Text>
+          <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>
+            Energia / zmęczenie w ciągu tygodnia
+          </Text>
           <View style={styles.chartWrapper}>
             <LineChart
               areaChart
@@ -206,7 +231,10 @@ export const InsightsScreen = () => {
               yAxisColor="transparent"
               xAxisColor={colors.tileBorder}
               yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
-              xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 11 }}
+              xAxisLabelTextStyle={{
+                color: colors.textSecondary,
+                fontSize: 11,
+              }}
             />
           </View>
         </GlassCard>
@@ -218,14 +246,13 @@ export const InsightsScreen = () => {
             <CircularGauge percentage={analyticsData.goalAlignment} colors={colors} />
           </View>
           <Text style={[styles.gaugeDescription, { color: colors.text }]}>
-            {analyticsData.goalAlignment > 70 
-              ? "Ostatnie dni świetnie przybliżyły Cię do celów"
+            {analyticsData.goalAlignment > 70
+              ? 'Ostatnie dni świetnie przybliżyły Cię do celów'
               : analyticsData.goalAlignment > 40
-              ? "Trzymasz się całkiem nieźle, oby tak dalej"
-              : "Bywało lepiej. Pamiętaj, że każdy ma słabsze dni"}
+                ? 'Trzymasz się całkiem nieźle, oby tak dalej'
+                : 'Bywało lepiej. Pamiętaj, że każdy ma słabsze dni'}
           </Text>
         </GlassCard>
-
       </ScrollView>
     </View>
   );
@@ -355,5 +382,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 24,
     fontWeight: '500',
-  }
+  },
 });

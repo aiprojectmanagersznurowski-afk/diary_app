@@ -22,7 +22,7 @@ flowchart LR
 - [ ] Wylogowanie czyści wszystkie store'y (dziś cele poprzedniego użytkownika zostają na urządzeniu)
 - [ ] Usunięcie Firebase i martwych zależności (lista w [03-stos-technologiczny.md](03-stos-technologiczny.md#do-usunięcia-))
 - [ ] Unieważnienie obecnego klucza Groq; klucze przeniesione do sekretów Supabase
-- [ ] ESLint zainstalowany, `design_exports/` wykluczony z `tsconfig.json`, `tsc --noEmit` bez błędów
+- [x] ESLint zainstalowany, `design_exports/` wykluczony z `tsconfig.json`, `tsc --noEmit` bez błędów
 - [ ] Composition root: ekrany nie tworzą serwisów z `infrastructure`
 
 **Gotowe, gdy:** można się zalogować (Google, Apple), przejść onboarding, a profil zapisuje się w Supabase. W kodzie nie ma Firebase, a `tsc` i lint przechodzą.
@@ -97,11 +97,8 @@ Pochodzą z audytu z 2026-09-23. Błędy związane z Firestore znikną razem z n
 | `src/application/store/useDiaryStore.ts` | błąd przetwarzania gubi nagranie (brak kolejki i ponawiania) | 2 |
 | `src/application/useCases/recordAndProcess.ts` | tekst dnia doklejany i za każdym razem przepisywany przez LLM; surowa transkrypcja nie jest przechowywana | 2–3 |
 | `src/presentation/screens/SettingsScreen.tsx`, `useSettingsStore.ts` | wylogowanie zostawia cele i motyw poprzedniego użytkownika | 1 |
-| `src/presentation/screens/DetailScreen.tsx` | `emotionTriggers` nie ma w `pData`, więc wyzwalacze emocji nigdy się nie wyświetlają | 3 |
-| `src/infrastructure/audio/expoAudioRecorder.ts` | nasłuch na złe zdarzenie (`'RECORDING_STATUS_UPDATE'`), zdublowane `return null`, nieudokumentowane `new AudioModule.AudioRecorder` | 2 |
 | `src/application/useCases/statsUseCase.ts` | `setHours` zmienia daty wpisów w stanie aplikacji; „zgodność z celami” to heurystyka, która pomija `goalImpactType` | 3 |
 | `src/infrastructure/ai/groqService.ts` | odpowiedź LLM tylko rzutowana na typ, bez walidacji | 2 |
 | `src/presentation/screens/OnboardingScreen.tsx` | `join('\\n\\n')` łączy odpowiedzi dosłownym tekstem „\n\n” | 1 |
-| `App.tsx` | `[initializing]` w zależnościach efektu podwójnie rejestruje nasłuch logowania | 1 |
-| `package.json` | lint-staged wywołuje niezainstalowany ESLint | 1 |
-| `tsconfig.json` | sprawdza `design_exports/`, co daje fałszywe błędy; w `src/` jest 13 błędów typów | 1 |
+
+Naprawione w F1-08: `DetailScreen.tsx` (brak `emotionTriggers` w `pData`), `expoAudioRecorder.ts` (zła nazwa zdarzenia, zdublowany `return null`), `App.tsx` (podwójny nasłuch logowania), `package.json` (ESLint), `tsconfig.json` (`design_exports/`, 13 błędów typów).
