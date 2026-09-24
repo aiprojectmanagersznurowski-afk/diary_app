@@ -1,0 +1,27 @@
+id: F2-02
+title: Wysyłka nagrań do Storage i INSERT recordings
+phase: 2
+role: mobile
+branch: feat/F2-02-recording-upload
+depends_on: [F2-01, F1-02, F1-03]
+roadmap: "Wysyłka do Storage + `INSERT recordings` z UUID klienta"
+read_first:
+  - docs/02-architektura.md#61-nagranie-z-telefonu
+  - docs/02-architektura.md#storage
+scope:
+  write:
+    - src/domain/**
+    - src/application/**
+    - src/infrastructure/queue/**
+    - src/infrastructure/supabase/**
+    - src/composition/**
+context: |
+  Uploader: upload do recordings/{uid}/{id}.m4a (upsert), potem INSERT recordings
+  (status 'uploaded') z id = UUID klienta. Konflikt klucza = sukces (ponowienie jest bezpieczne).
+  Zapytania przez supabase-js, bezpieczeństwo przez RLS.
+acceptance:
+  - "nagranie nagrane offline zostaje wysłane po odzyskaniu sieci, bez duplikatów"
+  - "ponowna wysyłka tego samego nagrania nie tworzy drugiego wiersza ani pliku"
+  - "testy jest: konflikt klucza traktowany jako sukces, błąd uploadu zostawia nagranie w kolejce"
+human_steps:
+  - "CP-DEVICE: tryb samolotowy → wysłanie po odzyskaniu sieci (iOS i Android)"

@@ -1,0 +1,34 @@
+id: F1-01
+title: Projekt Supabase i lokalne środowisko w repozytorium
+phase: 1
+role: db
+branch: build/F1-01-supabase-init
+depends_on: []
+roadmap: "Projekt Supabase, katalog `supabase/` w repozytorium (CLI, lokalne środowisko)"
+read_first:
+  - docs/02-architektura.md#1-przegląd
+  - docs/03-stos-technologiczny.md#backend-supabase
+  - docs/05-decyzje.md  # ADR-001, ADR-008
+scope:
+  write:
+    - supabase/config.toml
+    - supabase/.gitignore
+    - supabase/seed.sql
+    - supabase/migrations/**
+    - supabase/tests/**
+context: |
+  `supabase init` tworzy supabase/config.toml. Włącz rozszerzenia wymagane przez architekturę
+  (vector, pg_cron, pg_net, unaccent) pierwszą migracją. Dostawców Auth (Google, Apple)
+  konfigurujesz w config.toml przez env(...), bez wartości sekretów.
+  Tabele domenowe to zadanie F1-02, nie tutaj.
+acceptance:
+  - "supabase start i supabase db reset działają od zera na czystym klonie"
+  - "migracja włącza rozszerzenia vector, pg_cron, pg_net, unaccent"
+  - "config.toml: Auth z dostawcami google i apple przez env(...), bez wpisanych sekretów"
+  - "test pgTAP w supabase/tests/ sprawdza obecność rozszerzeń"
+human_steps:
+  - "CP-SECRETS: utworzenie projektu Supabase w chmurze, supabase link, ustawienie sekretów dostawców Auth"
+  - "CP-MIGRATION: supabase db push po przeglądzie"
+out_of_scope:
+  - tabele domenowe (F1-02)
+  - kod klienta

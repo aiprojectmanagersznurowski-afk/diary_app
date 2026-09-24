@@ -1,0 +1,34 @@
+id: F2-04
+title: Edge Function process-recording
+phase: 2
+role: edge
+branch: feat/F2-04-process-recording
+depends_on: [F2-03, F2-05, F1-02]
+roadmap: "Edge Function `process-recording`: transkrypcja → podział na notatki → dokumenty `.md` → chunki i embeddingi → powiązania"
+read_first:
+  - docs/02-architektura.md#61-nagranie-z-telefonu
+  - docs/02-architektura.md#5-dokumenty-markdown
+  - docs/02-architektura.md#7-warstwa-ai
+  - docs/05-decyzje.md  # ADR-004, ADR-005
+scope:
+  write:
+    - supabase/functions/process-recording/**
+    - supabase/functions/_shared/markdown/**
+    - supabase/functions/_shared/pipeline/**
+    - supabase/functions/_shared/db/**
+context: |
+  Kroki a–e z §6.1. Każdy krok sprawdza status i jest idempotentny (ponowne wywołanie kontynuuje).
+  raw_transcript nigdy nie jest nadpisywany. Markdown renderowany szablonem, bez LLM (ADR-004),
+  slug stały po utworzeniu, kolizje z krótkim sufiksem. Powiązania: similar_documents daje
+  kandydatów, LLM ocenia tylko ID z listy; ID spoza listy odrzucone.
+  RPC similar_documents nie istnieje przed F5 — jeśli potrzebne, zatrzymaj się: osobne zadanie db (CP-TASK).
+  Limit czasu Edge Functions: przy długich nagraniach rozbij kroki na osobne wywołania.
+  Logi: tylko ID, status, czasy.
+acceptance:
+  - "nagranie z trzema myślami daje trzy dokumenty kind='note' z typem, kategorią, tagami"
+  - "błąd AI ustawia status 'failed' z last_error; nagranie i audio zostają"
+  - "ponowne wywołanie po błędzie kontynuuje od ostatniego udanego kroku, bez duplikatów"
+  - "pliki .md w buckecie documents zgodne z szablonem notatki z §5"
+  - "deno test: pełny przepływ z atrapami dostawców AI i bazy"
+human_steps:
+  - "CP-SECRETS: zmienne modeli; deploy funkcji (supabase functions deploy) robi człowiek"

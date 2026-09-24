@@ -1,0 +1,19 @@
+# Skopiuj do .github/CODEOWNERS i wpisz swój login GitHub.
+# Ścieżki chronione Agent OS wymagają akceptacji człowieka.
+/.agent-os/contracts/   @TWOJ-LOGIN
+/.agent-os/scripts/     @TWOJ-LOGIN
+/.agent-os/selftest/    @TWOJ-LOGIN
+/.agent-os/roles/       @TWOJ-LOGIN
+/.agent-os/workflows/   @TWOJ-LOGIN
+/.agent-os/templates/   @TWOJ-LOGIN
+/.agent-os/tasks/       @TWOJ-LOGIN
+/.claude/               @TWOJ-LOGIN
+/.gemini/               @TWOJ-LOGIN
+/.agents/               @TWOJ-LOGIN
+/.husky/                @TWOJ-LOGIN
+/.github/               @TWOJ-LOGIN
+/AGENTS.md              @TWOJ-LOGIN
+/CLAUDE.md              @TWOJ-LOGIN
+/GEMINI.md              @TWOJ-LOGIN
+/supabase/migrations/   @TWOJ-LOGIN
+/docs/05-decyzje.md     @TWOJ-LOGIN

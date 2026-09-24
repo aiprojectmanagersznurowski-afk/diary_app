@@ -1,0 +1,35 @@
+id: F1-08
+title: ESLint, tsconfig bez design_exports, tsc bez błędów
+phase: 1
+role: mobile
+branch: build/F1-08-lint-typecheck
+depends_on: []
+roadmap: "ESLint zainstalowany, `design_exports/` wykluczony z `tsconfig.json`, `tsc --noEmit` bez błędów"
+read_first:
+  - docs/03-stos-technologiczny.md#narzędzia-deweloperskie
+scope:
+  write:
+    - tsconfig.json
+    - package.json
+    - package-lock.json
+    - eslint.config.{js,mjs,cjs}
+    - .eslintignore
+    - jest.config.{js,ts}
+    - jest.setup.{js,ts}
+    - src/**
+    - App.tsx
+context: |
+  Zadanie numer jeden: lint-staged w pre-commit wywołuje niezainstalowany ESLint.
+  Zainstaluj eslint + eslint-config-expo (flat config), jest-expo dla testów.
+  Wyklucz design_exports/ w tsconfig.json. Napraw 13 błędów typów w src/ minimalnymi zmianami,
+  bez zmian zachowania. Nie refaktoruj przy okazji.
+acceptance:
+  - "npx tsc --noEmit: 0 błędów"
+  - "npx eslint . --max-warnings=0 przechodzi"
+  - "commit z plikiem .ts przechodzi przez pre-commit (lint-staged + bramki)"
+  - "npx jest --ci --passWithNoTests działa (jest-expo skonfigurowany)"
+fixes_known_bugs:
+  - "package.json: lint-staged wywołuje niezainstalowany ESLint"
+  - "tsconfig.json: sprawdza design_exports/; 13 błędów typów w src/"
+human_steps:
+  - "CP-GATE: po scaleniu ustawić dod.tsc.error_budget = 0 w .agent-os/contracts/gates.yaml"

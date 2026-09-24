@@ -1,0 +1,26 @@
+id: F2-08
+title: Ustawienia nagrywania pod mowę i poprawki rejestratora
+phase: 2
+role: mobile
+branch: fix/F2-08-speech-recording
+depends_on: [F1-08]
+roadmap: "Ustawienia nagrywania pod mowę, poprawka nazwy zdarzenia w `expoAudioRecorder.ts`"
+read_first:
+  - docs/03-stos-technologiczny.md#aplikacja-mobilna-i-webowa
+scope:
+  write:
+    - src/infrastructure/audio/**
+    - src/domain/**
+    - src/application/**
+context: |
+  expo-audio z SDK 54 (dokumentacja v54). Nagrywanie mono, AAC, bitrate/częstotliwość pod mowę
+  zamiast HIGH_QUALITY. Poprawna nazwa zdarzenia statusu, usunięcie zdublowanego return null
+  i nieudokumentowanego new AudioModule.AudioRecorder (użyj API z dokumentacji).
+acceptance:
+  - "plik nagrania jest mono AAC .m4a i wyraźnie mniejszy niż dziś przy tej samej długości"
+  - "wizualizacja poziomu dźwięku i licznik działają"
+  - "brak nieudokumentowanych API expo-audio"
+fixes_known_bugs:
+  - "expoAudioRecorder.ts: złe zdarzenie RECORDING_STATUS_UPDATE, zdublowane return null, nieudokumentowane new AudioModule.AudioRecorder"
+human_steps:
+  - "CP-DEVICE: nagranie 1 min na iOS i Androidzie, odsłuch"

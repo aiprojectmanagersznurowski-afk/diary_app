@@ -1,0 +1,27 @@
+id: F1-05
+title: Wylogowanie czyści stan aplikacji
+phase: 1
+role: mobile
+branch: fix/F1-05-logout-reset
+depends_on: [F1-04]
+roadmap: "Wylogowanie czyści wszystkie store'y (dziś cele poprzedniego użytkownika zostają na urządzeniu)"
+read_first:
+  - docs/04-roadmapa.md#znane-błędy-obecnego-kodu
+scope:
+  write:
+    - src/application/**
+    - src/domain/**
+    - src/presentation/screens/SettingsScreen.tsx
+    - src/infrastructure/auth/**
+    - src/infrastructure/supabase/**
+context: |
+  Jeden przypadek użycia signOut: wylogowanie z Supabase, reset każdego store'u zustand
+  (także utrwalonych przez persist) i czyszczenie danych lokalnych użytkownika.
+  Lokalna kolejka nagrań (F2-01) nie istnieje jeszcze — zostaw punkt rozszerzenia.
+acceptance:
+  - "po wylogowaniu i zalogowaniu innym kontem nie widać celów, motywu ani wpisów poprzedniego użytkownika"
+  - "test jest: signOut resetuje wszystkie store'y"
+fixes_known_bugs:
+  - "SettingsScreen.tsx, useSettingsStore.ts: wylogowanie zostawia cele i motyw poprzedniego użytkownika"
+human_steps:
+  - "CP-DEVICE: scenariusz dwóch kont na jednym urządzeniu"

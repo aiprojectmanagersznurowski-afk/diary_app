@@ -1,0 +1,25 @@
+id: F2-06
+title: Webhook bazy i ponawianie przez pg_cron
+phase: 2
+role: db
+branch: feat/F2-06-webhook-cron
+depends_on: [F2-04]
+roadmap: "Webhook bazy + ponawianie przez `pg_cron`"
+read_first:
+  - docs/02-architektura.md#61-nagranie-z-telefonu
+  - docs/02-architektura.md#9-niezawodność
+scope:
+  write:
+    - supabase/migrations/**
+    - supabase/tests/**
+context: |
+  Trigger AFTER INSERT na recordings wywołuje process-recording przez pg_net.
+  pg_cron co kilka minut ponawia nagrania z statusem innym niż 'done'/'failed' starsze niż próg,
+  z limitem attempts. Adres funkcji i klucz do wywołania z Vault, nie wpisane w migracji.
+acceptance:
+  - "INSERT recordings wywołuje funkcję (test z atrapą: wpis w net.http_request_queue)"
+  - "zadanie pg_cron wybiera tylko utknięte nagrania poniżej limitu prób (test pgTAP)"
+  - "brak sekretów w migracji"
+human_steps:
+  - "CP-SECRETS: wpisy w Vault (URL funkcji, klucz)"
+  - "CP-MIGRATION: przegląd i supabase db push"

@@ -1,0 +1,35 @@
+id: F1-02
+title: Migracje modelu danych, RLS, indeksy i Storage
+phase: 1
+role: db
+branch: feat/F1-02-schema-rls
+depends_on: [F1-01]
+roadmap: "Migracje: wszystkie tabele z [02-architektura.md](02-architektura.md#4-model-danych), RLS, indeksy, buckety i polityki Storage"
+read_first:
+  - docs/02-architektura.md#4-model-danych
+  - docs/02-architektura.md#8-bezpieczeństwo-i-prywatność
+  - docs/02-architektura.md#9-niezawodność
+scope:
+  write:
+    - supabase/migrations/**
+    - supabase/tests/**
+    - supabase/seed.sql
+context: |
+  Tabele: profiles, recordings, documents, document_chunks, links, categories, day_rebuild_queue,
+  chat_threads, chat_messages dokładnie wg §4. Wektor 1536 + HNSW vector_cosine_ops,
+  fts generowane ('simple' + unaccent; unaccent wymaga opakowania immutable), GIN na fts,
+  btree (user_id, day), (user_id, kind). Częściowy unikalny indeks dla wpisu dnia.
+  Buckety recordings i documents prywatne; polityki storage.objects: pierwszy segment = auth.uid()::text.
+  Funkcje RPC (search_chunks, similar_documents, get_graph) należą do faz 5 i 6, nie tutaj.
+  Jeśli migracja rośnie, podziel ją na kilka plików w tym samym zadaniu.
+acceptance:
+  - "wszystkie tabele z §4 istnieją z kolumnami i ograniczeniami jak w dokumentacji"
+  - "każda tabela ma RLS i polityki user_id = (select auth.uid()); test pgTAP: użytkownik A nie widzi i nie zmienia danych B (każda tabela)"
+  - "indeksy: HNSW na embedding, GIN na fts, btree (user_id, day) i (user_id, kind)"
+  - "buckety prywatne; test pgTAP: A nie może czytać ani zapisać ścieżki {uid_B}/..."
+  - "supabase db reset i supabase test db przechodzą"
+human_steps:
+  - "CP-MIGRATION: przegląd SQL i supabase db push"
+out_of_scope:
+  - funkcje RPC wyszukiwania i grafu (F5, F6)
+  - webhook i pg_cron (F2-06)

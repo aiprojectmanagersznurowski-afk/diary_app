@@ -1,0 +1,31 @@
+id: F2-03
+title: Warstwa _shared/ai z adapterami Groq i Gemini
+phase: 2
+role: edge
+branch: feat/F2-03-shared-ai
+depends_on: [F1-01, F1-07]
+roadmap: "`_shared/ai`: interfejsy i adaptery Groq i Gemini, konfiguracja przez zmienne środowiskowe"
+read_first:
+  - docs/02-architektura.md#7-warstwa-ai
+  - docs/03-stos-technologiczny.md#modele-ai
+  - docs/05-decyzje.md  # ADR-003, ADR-006
+scope:
+  write:
+    - supabase/functions/_shared/ai/**
+    - supabase/functions/_shared/config/**
+    - supabase/functions/deno.json
+    - supabase/functions/import_map.json
+    - .env.example
+context: |
+  Interfejsy SttProvider, LlmProvider (w tym odpowiedź JSON i strumieniowanie), EmbeddingProvider.
+  Adaptery groq (STT whisper, LLM) i gemini (LLM, embeddingi z output_dimensionality = EMBED_DIM).
+  Fabryka wybiera dostawcę i model per zadanie z env (STT_*, LLM_STRUCTURE_*, LLM_DIGEST_*,
+  LLM_LINK_*, LLM_CHAT_*, EMBED_*). Nazwy modeli zweryfikuj w dokumentacji dostawców.
+  Wywołania przez fetch (bez SDK) albo SDK zgłoszone jako CP-DEP. Ponawianie przy 429/5xx.
+acceptance:
+  - "zmiana dostawcy/modelu zadania wymaga tylko zmiany zmiennej środowiskowej"
+  - "embeddingi mają długość EMBED_DIM (1536); inna długość = błąd"
+  - "deno test: każdy adapter z atrapą fetch (sukces, 429 z ponowieniem, błąd), bez prawdziwych kluczy"
+  - "żaden plik poza _shared/ai nie woła dostawców (bramka ai-boundary)"
+human_steps:
+  - "CP-SECRETS: sekrety i zmienne modeli w Supabase"

@@ -1,0 +1,121 @@
+# Role agentów i ich uprawnienia zapisu.
+# Plik chroniony: zmienia go wyłącznie człowiek (patrz global_deny).
+#
+# Plik wolno zmienić, gdy:
+#   pasuje do scope.write zadania   AND   (pasuje do roles.<rola>.write  OR  common_write)
+#   i nie pasuje do global_deny.
+# Usunięcie pliku dopuszcza też scope.delete zadania (wpisane przez człowieka w kontrakcie).
+# Glob: ** = dowolna liczba katalogów, * = w obrębie segmentu, {a,b} = alternatywa, !wzorzec = wyjątek.
+
+version: 1
+
+# Rola używana, gdy gałąź nie zawiera identyfikatora zadania (np. docs/..., chore/...)
+default_role: planner
+
+# Każda rola wykonawcza może to zmieniać, jeśli zadanie tego wymaga (DoD: roadmapa, dokumentacja, handoff).
+common_write:
+  - .agent-os/handoff/**
+  - .agent-os/reviews/**
+  - docs/04-roadmapa.md
+  - docs/02-architektura.md
+  - docs/03-stos-technologiczny.md
+  - docs/05-decyzje.md          # tylko dopisywanie; pilnuje bramka "adr"
+
+# Nikt z agentów. Zmienia człowiek (lokalnie AGENT_OS_HUMAN=1, w CI etykieta PR "agent-os:human-approved").
+global_deny:
+  - .env
+  - .env.*
+  - "**/.env"
+  - "**/.env.*"
+  - "!.env.example"
+  - "!**/.env.example"
+  - ios/**
+  - android/**
+  - .agent-os/contracts/**
+  - .agent-os/scripts/**
+  - .agent-os/selftest/**
+  - .agent-os/roles/**
+  - .agent-os/workflows/**
+  - .agent-os/templates/**
+  - .claude/**
+  - .gemini/**
+  - .agents/**
+  - .husky/**
+  - .github/**
+  - AGENTS.md
+  - CLAUDE.md
+  - GEMINI.md
+
+roles:
+  planner:
+    title: Planista
+    description: Rozpisuje fazy roadmapy na kontrakty zadań, prowadzi ADR i otwarte kwestie. Nie pisze kodu.
+    write:
+      - docs/**
+      - .agent-os/tasks/**
+      - .agent-os/handoff/**
+
+  db:
+    title: Baza danych (Supabase Postgres)
+    description: Migracje, RLS, indeksy, funkcje RPC, buckety i polityki Storage, pg_cron, webhooki bazy.
+    write:
+      - supabase/migrations/**
+      - supabase/seed.sql
+      - supabase/tests/**
+      - supabase/config.toml
+      - supabase/.gitignore
+
+  edge:
+    title: Edge Functions i warstwa AI
+    description: Supabase Edge Functions (Deno), _shared/ai, prompty, schematy zod, testy deno.
+    write:
+      - supabase/functions/**
+      - supabase/config.toml
+      - supabase/.gitignore
+      - .env.example
+
+  mobile:
+    title: Aplikacja Expo (iOS, Android, web)
+    description: Kod w src/ z podziałem na warstwy, konfiguracja Expo, zależności npm, narzędzia (ESLint, jest).
+    write:
+      - src/**
+      - App.tsx
+      - index.{ts,js}
+      - app.json
+      - app.config.{ts,js}
+      - eas.json
+      - package.json
+      - package-lock.json
+      - tsconfig.json
+      - babel.config.js
+      - metro.config.js
+      - eslint.config.{js,mjs,cjs}
+      - .eslintrc*
+      - .eslintignore
+      - .prettierrc*
+      - .prettierignore
+      - jest.config.{js,ts}
+      - jest.setup.{js,ts}
+      - __tests__/**
+      - assets/**
+      - plugins/**
+      - .gitignore
+      - .env.example
+
+  native:
+    title: Apple Watch i moduły natywne
+    description: Aplikacja SwiftUI w targets/watch/, lokalne moduły Expo w modules/, wtyczki konfiguracyjne.
+    write:
+      - targets/**
+      - modules/**
+      - plugins/**
+      - app.json
+      - app.config.{ts,js}
+      - package.json
+      - package-lock.json
+
+  reviewer:
+    title: Recenzent
+    description: Recenzuje cudzą gałąź. Pisze wyłącznie raport recenzji; niczego nie poprawia w kodzie.
+    write:
+      - .agent-os/reviews/**

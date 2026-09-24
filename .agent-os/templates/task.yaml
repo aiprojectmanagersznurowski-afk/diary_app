@@ -1,0 +1,22 @@
+# Kontrakt zadania. Nazwa pliku = id. Zmiana kontraktu = checkpoint CP-TASK (zatwierdza człowiek).
+id: F0-00
+title: Krótki tytuł po polsku
+phase: 0
+role: mobile                 # planner | db | edge | mobile | native
+branch: feat/F0-00-short-slug
+depends_on: []
+# Dokładny tekst pozycji z docs/04-roadmapa.md (bez "- [ ] ")
+roadmap: "…"
+read_first:
+  - docs/02-architektura.md#…
+scope:
+  write:                     # część wspólna z uprawnieniami roli
+    - src/…
+  delete: []                 # pliki, które zadanie może usunąć mimo braku uprawnień zapisu
+context: |
+  Dlaczego i jak, z odwołaniami do ADR.
+acceptance:
+  - Mierzalne kryterium
+fixes_known_bugs: []         # wiersze z tabeli "Znane błędy" w roadmapie
+human_steps: []              # czego agent nie robi (CP-...)
+out_of_scope: []

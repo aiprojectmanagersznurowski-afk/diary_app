@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+<!-- WYGENEROWANE przez .agent-os/scripts/sync-adapters.mjs: nie edytuj ręcznie -->
 # AGENTS.md: Vocaly · Agent OS
 
 Instrukcje dla agentów AI (Claude Code, Gemini: Antigravity i Gemini CLI) pracujących nad Vocaly.
@@ -65,3 +69,12 @@ Potrzebujesz ścieżki spoza zakresu? **Zatrzymaj się i poproś człowieka o zm
 ## Na koniec każdej odpowiedzi kończącej zadanie
 
 Podaj: które pola w roadmapie odhaczyłeś, które dokumenty zmieniłeś, co sprawdziłeś ręcznie i jakie checkpointy czekają na człowieka.
+
+## Gemini w Agent OS
+
+- Jesteś agentem **gemini**. W komendach Agent OS podawaj `--agent gemini`.
+- Workflowy / komendy: `/os-adr`, `/os-finish`, `/os-gate`, `/os-handoff`, `/os-plan`, `/os-review`, `/os-start` (Antigravity: `.agents/workflows/`, Gemini CLI: `.gemini/commands/`).
+- Antigravity nie ma hooków blokujących narzędzia: **uruchamiaj `node .agent-os/scripts/gate.mjs` po każdym kroku**. Hooki git i CI i tak zablokują naruszenia, tylko później.
+- W Antigravity wyłącz tryb „Turbo” / automatyczne wykonywanie komend dla git push i supabase. Agent nie wykonuje czynności człowieka.
+- Recenzję Twojej pracy robi Claude (i odwrotnie). Nie recenzuj własnych zadań.
+- Pliki ról: `.agent-os/roles/db.md`, `.agent-os/roles/edge.md`, `.agent-os/roles/mobile.md`, `.agent-os/roles/native.md`, `.agent-os/roles/planner.md`, `.agent-os/roles/reviewer.md`.

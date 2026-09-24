@@ -1,0 +1,30 @@
+id: F2-05
+title: Schematy zod i wersjonowane prompty
+phase: 2
+role: edge
+branch: feat/F2-05-schemas-prompts
+depends_on: [F2-03]
+roadmap: "Schematy zod dla odpowiedzi LLM, prompty jako wersjonowane pliki"
+read_first:
+  - docs/02-architektura.md#7-warstwa-ai
+  - docs/02-architektura.md#wpis-dnia
+  - docs/01-zakres.md  # M2, M3, M8 (osobowości)
+scope:
+  write:
+    - supabase/functions/_shared/prompts/**
+    - supabase/functions/_shared/schemas/**
+    - supabase/functions/_shared/ai/validate.ts
+    - supabase/functions/_shared/ai/validate_test.ts
+context: |
+  Prompty: structure (podział na notatki + typ/tytuł/kategoria/tagi), link (ocena kandydatów),
+  digest (wpis dnia, przeniesiony z obecnego groqService.ts), onboarding-goals.
+  Osobowości (Po prostu przyjaciel, Buddha, Józef Piłsudski, Stefan Banach) jako fragmenty
+  w prompts/personalities/ ze schema: none. Język odpowiedzi: polski.
+  Transkrypcja oddzielona od poleceń (prompt injection). Walidacja: jedna próba naprawy, potem błąd.
+  Schemat digest odpowiada ParsedDiaryData (src/domain/models/DiaryEntry.ts) + ideas[].
+acceptance:
+  - "każdy prompt ma plik <nazwa>.v1.md z schema: i schemat zod w _shared/schemas/"
+  - "deno test: poprawny JSON, JSON do naprawy, JSON nie do naprawy dla każdego schematu"
+  - "schemat digest zgodny z ParsedDiaryData + ideas: { documentId, title, oneLiner }[]"
+fixes_known_bugs:
+  - "groqService.ts: odpowiedź LLM tylko rzutowana na typ, bez walidacji"

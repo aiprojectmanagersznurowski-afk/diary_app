@@ -1,0 +1,36 @@
+id: F1-06
+title: Usunięcie Firebase i martwych zależności
+phase: 1
+role: mobile
+branch: build/F1-06-remove-firebase
+depends_on: [F1-03, F1-04, F1-05]
+roadmap: "Usunięcie Firebase i martwych zależności (lista w [03-stos-technologiczny.md](03-stos-technologiczny.md#do-usunięcia-))"
+read_first:
+  - docs/03-stos-technologiczny.md#do-usunięcia-
+  - docs/05-decyzje.md  # ADR-008, ADR-009
+scope:
+  write:
+    - src/**
+    - App.tsx
+    - app.json
+    - package.json
+    - package-lock.json
+  delete:
+    - google-services.json
+    - GoogleService-Info.plist
+    - "**/google-services.json"
+    - "**/GoogleService-Info.plist"
+    - test-metering.js
+context: |
+  Usuń pakiety @react-native-firebase/*, expo-av (paczka i wtyczka), drizzle-orm, drizzle-kit;
+  pliki konfiguracyjne Firebase, wpisy googleServicesFile i wtyczki Firebase w app.json,
+  ustawienia expo-build-properties potrzebne tylko Firebase. Bez migracji danych (ADR-008).
+  groq-sdk i groqService.ts zostają do F2 (logika przechodzi do Edge Functions) — nie psuj
+  obecnego przetwarzania, chyba że F2 jest już scalone.
+  Nieaktualne src/*/README.md zaktualizuj albo usuń (ADR-009).
+acceptance:
+  - "w kodzie i package.json nie ma Firebase ani expo-av, drizzle-orm, drizzle-kit"
+  - "npx expo-doctor bez błędów; dev client buduje się na iOS i Androidzie"
+  - "tsc i lint w budżecie"
+human_steps:
+  - "CP-DEVICE: pełny build dev client po zmianie natywnych zależności"

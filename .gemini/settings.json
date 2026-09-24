@@ -1,0 +1,35 @@
+{
+  "context": {
+    "fileName": [
+      "GEMINI.md"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "name": "agent-os-status",
+            "type": "command",
+            "command": "node \"$GEMINI_PROJECT_DIR/.agent-os/scripts/hooks/session-start.mjs\" --agent gemini",
+            "timeout": 15000
+          }
+        ]
+      }
+    ],
+    "BeforeTool": [
+      {
+        "matcher": "write_file|replace|edit|run_shell_command",
+        "hooks": [
+          {
+            "name": "agent-os-scope",
+            "type": "command",
+            "command": "node \"$GEMINI_PROJECT_DIR/.agent-os/scripts/hooks/pretool.mjs\" --agent gemini",
+            "timeout": 15000,
+            "description": "Agent OS: zakres zapisu i komendy zakazane"
+          }
+        ]
+      }
+    ]
+  }
+}
