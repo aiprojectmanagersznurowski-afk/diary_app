@@ -88,7 +88,7 @@ migrations:
   filename: '^\d{14}_[a-z0-9_]+\.sql$'
   rls_exempt_schemas: [extensions, cron, net, storage, auth]
   # Pliki, które mogą towarzyszyć migracji w tym samym PR (reszta: osobny PR)
-  pr_companions: [supabase/migrations/**, supabase/tests/**, supabase/seed.sql, supabase/config.toml, docs/**, .agent-os/handoff/**, .agent-os/reviews/**]
+  pr_companions: [supabase/migrations/**, supabase/tests/**, supabase/seed.sql, supabase/config.toml, supabase/.gitignore, docs/**, .agent-os/handoff/**, .agent-os/reviews/**]
 
 prompts:
   dir: supabase/functions/_shared/prompts
