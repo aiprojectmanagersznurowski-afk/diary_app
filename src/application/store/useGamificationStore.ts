@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { db, auth } from '../../infrastructure/firebase/firebaseConfig';
+import { Profile } from '../../domain/models/Profile';
+import { IProfileRepository } from '../../domain/repositories/IProfileRepository';
+import { useAuthStore } from './useAuthStore';
 
 export interface BadgeDef {
   id: string;
@@ -15,20 +17,20 @@ export const BADGES_DICTIONARY: BadgeDef[] = [
     id: 'first_step',
     title: 'Pierwszy Krok',
     description: 'Dodaj swój pierwszy wpis do pamiętnika.',
-    icon: 'star'
+    icon: 'star',
   },
   {
     id: 'streak_3',
     title: 'Trzy Dni Refleksji',
     description: 'Spisuj swoje myśli przez 3 dni z rzędu.',
-    icon: 'award'
+    icon: 'award',
   },
   {
     id: 'streak_7',
     title: 'Tydzień Świadomości',
     description: 'Spisuj swoje myśli przez 7 dni z rzędu.',
-    icon: 'zap'
-  }
+    icon: 'zap',
+  },
 ];
 
 interface GamificationState {
@@ -36,18 +38,24 @@ interface GamificationState {
   lastEntryDate: string | null;
   unlockedBadges: string[];
   newlyUnlockedBadge: BadgeDef | null;
-  
+
   // Actions
   processNewEntry: (dateIso: string) => void;
   clearGamification: () => void;
-  syncFromCloud: () => Promise<void>;
+  syncFromCloud: (targetUserId?: string) => Promise<void>;
+  applyProfile: (profile: Partial<Profile>) => void;
   dismissBadgeAlert: () => void;
 }
+
+let activeProfileRepository: IProfileRepository | null = null;
+
+export const setGamificationProfileRepository = (repo: IProfileRepository | null) => {
+  activeProfileRepository = repo;
+};
 
 // Helpers
 const getLocalYYYYMMDD = (dateString: string) => {
   const date = new Date(dateString);
-  // Using local timezone extraction
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -63,21 +71,19 @@ const getDaysDifference = (date1: string, date2: string) => {
   return Math.round(diffTime / (1000 * 60 * 60 * 24));
 };
 
-const syncToCloud = async (state: Partial<GamificationState>) => {
-  const user = auth.currentUser;
-  if (!user) return;
-  try {
-    const dataToSync: any = {};
-    if (state.currentStreak !== undefined) dataToSync.currentStreak = state.currentStreak;
-    if (state.lastEntryDate !== undefined) dataToSync.lastEntryDate = state.lastEntryDate;
-    if (state.unlockedBadges !== undefined) dataToSync.unlockedBadges = state.unlockedBadges;
+const syncGamificationToCloud = (state: Partial<Profile>) => {
+  if (!activeProfileRepository) return;
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
 
-    if (Object.keys(dataToSync).length > 0) {
-      await db.collection('users').doc(user.uid).set({ gamification: dataToSync }, { merge: true });
-    }
-  } catch (error) {
-    console.error('Failed to sync gamification to cloud', error);
-  }
+  activeProfileRepository
+    .upsertProfile({
+      userId,
+      ...state,
+    })
+    .catch((error) => {
+      console.warn('Failed to sync gamification to Supabase', error);
+    });
 };
 
 export const useGamificationStore = create<GamificationState>()(
@@ -97,34 +103,43 @@ export const useGamificationStore = create<GamificationState>()(
           currentStreak: 0,
           lastEntryDate: null,
           unlockedBadges: [],
-          newlyUnlockedBadge: null
+          newlyUnlockedBadge: null,
         });
       },
 
-      syncFromCloud: async () => {
-        const user = auth.currentUser;
-        if (!user) return;
+      applyProfile: (profile: Partial<Profile>) => {
+        set((state) => ({
+          currentStreak: profile.currentStreak !== undefined ? profile.currentStreak : state.currentStreak,
+          lastEntryDate: profile.lastEntryDay !== undefined ? profile.lastEntryDay : state.lastEntryDate,
+          unlockedBadges: profile.badges !== undefined ? profile.badges : state.unlockedBadges,
+        }));
+      },
+
+      syncFromCloud: async (targetUserId?: string) => {
+        if (!activeProfileRepository) return;
+        const userId = targetUserId || useAuthStore.getState().user?.id;
+        if (!userId) return;
+
         try {
-          const doc = await db.collection('users').doc(user.uid).get();
-          const data = doc.data();
-          if (data && data.gamification) {
-            set({
-              currentStreak: data.gamification.currentStreak || 0,
-              lastEntryDate: data.gamification.lastEntryDate || null,
-              unlockedBadges: data.gamification.unlockedBadges || []
-            });
+          const profile = await activeProfileRepository.getProfile(userId);
+          if (profile) {
+            set((state) => ({
+              currentStreak: profile.currentStreak ?? state.currentStreak,
+              lastEntryDate: profile.lastEntryDay ?? state.lastEntryDate,
+              unlockedBadges: profile.badges ?? state.unlockedBadges,
+            }));
           }
         } catch (error) {
-          console.error('Failed to fetch gamification from cloud', error);
+          console.warn('Failed to fetch gamification from Supabase', error);
         }
       },
 
       processNewEntry: (dateIso: string) => {
         const state = get();
         const newDateStr = getLocalYYYYMMDD(dateIso);
-        
+
         let newStreak = state.currentStreak;
-        let newUnlocked = [...state.unlockedBadges];
+        const newUnlocked = [...state.unlockedBadges];
         let newlyUnlocked: BadgeDef | null = null;
 
         if (state.lastEntryDate) {
@@ -147,7 +162,7 @@ export const useGamificationStore = create<GamificationState>()(
         const unlockBadge = (id: string) => {
           if (!newUnlocked.includes(id)) {
             newUnlocked.push(id);
-            const badgeDef = BADGES_DICTIONARY.find(b => b.id === id);
+            const badgeDef = BADGES_DICTIONARY.find((b) => b.id === id);
             if (badgeDef) newlyUnlocked = badgeDef;
           }
         };
@@ -160,20 +175,20 @@ export const useGamificationStore = create<GamificationState>()(
           currentStreak: newStreak,
           lastEntryDate: newDateStr,
           unlockedBadges: newUnlocked,
-          ...(newlyUnlocked ? { newlyUnlockedBadge: newlyUnlocked } : {})
+          ...(newlyUnlocked ? { newlyUnlockedBadge: newlyUnlocked } : {}),
         });
 
-        // Sync to Firestore
-        syncToCloud({
+        // Sync to Supabase profiles
+        syncGamificationToCloud({
           currentStreak: newStreak,
-          lastEntryDate: newDateStr,
-          unlockedBadges: newUnlocked
+          lastEntryDay: newDateStr,
+          badges: newUnlocked,
         });
-      }
+      },
     }),
     {
       name: 'gamification-storage',
-      storage: createJSONStorage(() => AsyncStorage)
-    }
-  )
+      storage: createJSONStorage(() => AsyncStorage),
+    },
+  ),
 );

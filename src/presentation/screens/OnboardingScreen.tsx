@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Dimensions, TouchableOpacity } from 'react-native';
 import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
-import { ExpoAvAudioRecorder } from '../../infrastructure/audio/expoAudioRecorder';
-import { GroqAiService } from '../../infrastructure/ai/groqService';
+import { useAuthStore } from '../../application/store/useAuthStore';
+import { audioRecorder, aiService } from '../../composition/onboarding';
+import { profileService } from '../../composition/profile';
 import { Feather } from '@expo/vector-icons';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { GradientText, GlassCard } from '../components/UIPrimitives';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const audioRecorder = new ExpoAvAudioRecorder();
-const aiService = new GroqAiService();
 
 const ONBOARDING_QUESTIONS = [
   'Jaki jest Twój najważniejszy cel osobisty lub zdrowotny?',
@@ -27,20 +25,63 @@ export const OnboardingScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
-  const { setGoals, theme } = useSettingsStore();
+  const { setGoals, theme, aiPersonality } = useSettingsStore();
   const colors = THEMES[theme];
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     if (showConfetti) {
-      timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(async () => {
+        const user = useAuthStore.getState().user;
+        const timezone =
+          typeof Intl !== 'undefined' && Intl.DateTimeFormat
+            ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+            : 'UTC';
+
+        if (user) {
+          try {
+            await profileService.completeOnboarding({
+              userId: user.id,
+              lifeGoals: transcripts,
+              aiPersonality,
+              theme,
+              timezone,
+            });
+          } catch (err) {
+            console.warn('Failed to save profile during onboarding', err);
+          }
+        }
         setGoals(transcripts);
       }, 3500);
     }
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [showConfetti, setGoals, transcripts]);
+  }, [showConfetti, setGoals, transcripts, aiPersonality, theme]);
+
+  const handleSkip = async () => {
+    const defaultGoals = ['Chcę prowadzić pamiętnik i dbać o swój nastrój'];
+    const user = useAuthStore.getState().user;
+    const timezone =
+      typeof Intl !== 'undefined' && Intl.DateTimeFormat
+        ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+        : 'UTC';
+
+    if (user) {
+      try {
+        await profileService.completeOnboarding({
+          userId: user.id,
+          lifeGoals: defaultGoals,
+          aiPersonality,
+          theme,
+          timezone,
+        });
+      } catch (err) {
+        console.warn('Failed to save profile during onboarding skip', err);
+      }
+    }
+    setGoals(defaultGoals);
+  };
 
   const handleRecordPress = async () => {
     if (isRecording) {
@@ -63,7 +104,7 @@ export const OnboardingScreen = () => {
           setCurrentStep((prev) => prev + 1);
           setIsProcessing(false);
         } else {
-          const combinedTranscript = newTranscripts.join('\\n\\n');
+          const combinedTranscript = newTranscripts.join('\n\n');
           const goals = await aiService.extractLifeGoalsFromTranscript(combinedTranscript);
 
           if (goals && goals.length > 0) {
@@ -130,7 +171,7 @@ export const OnboardingScreen = () => {
             backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
           },
         ]}
-        onPress={() => setGoals(['Chcę prowadzić pamiętnik i dbać o swój nastrój'])}
+        onPress={handleSkip}
       >
         <Feather name="chevron-left" size={20} color={colors.text} />
       </TouchableOpacity>
