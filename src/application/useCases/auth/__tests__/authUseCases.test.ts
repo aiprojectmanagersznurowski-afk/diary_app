@@ -35,17 +35,6 @@ jest.mock('expo-audio', () => ({
   RecordingPresets: {},
   requestRecordingPermissionsAsync: jest.fn(),
 }));
-jest.mock('@react-native-firebase/app', () => ({}));
-jest.mock('@react-native-firebase/auth', () => () => ({}));
-jest.mock('@react-native-firebase/firestore', () => {
-  const fn = () => ({
-    settings: jest.fn(),
-    collection: jest.fn(),
-  });
-  fn.CACHE_SIZE_UNLIMITED = -1;
-  return fn;
-});
-jest.mock('../../../../infrastructure/db/diaryRepository');
 
 describe('Auth Use Cases', () => {
   const mockUser: User = {
