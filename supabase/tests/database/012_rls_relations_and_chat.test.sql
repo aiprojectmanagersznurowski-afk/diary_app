@@ -26,6 +26,7 @@ begin;
     where s.slug = 'rel-b1' and t.slug = 'rel-b2';
 
   select tests.authenticate_as('rls-rel-a@test.local');
+  do $$ begin raise notice 'DEBUG links count=% docs count=%', (select count(*) from public.links), (select count(*) from public.documents); end $$;
   select results_eq(
     'select count(*) from public.links',
     array[1::bigint],
@@ -47,6 +48,7 @@ begin;
   insert into public.day_rebuild_queue (user_id, day) values (tests.get_supabase_uid('rls-rel-b@test.local'), current_date);
 
   select tests.authenticate_as('rls-rel-a@test.local');
+  do $$ begin raise notice 'DEBUG day_rebuild_queue count=%', (select count(*) from public.day_rebuild_queue); end $$;
   select results_eq(
     'select count(*) from public.day_rebuild_queue',
     array[1::bigint],
@@ -68,6 +70,7 @@ begin;
   insert into public.chat_threads (user_id, title) values (tests.get_supabase_uid('rls-rel-b@test.local'), 'Wątek B');
 
   select tests.authenticate_as('rls-rel-a@test.local');
+  do $$ begin raise notice 'DEBUG chat_threads count=%', (select count(*) from public.chat_threads); end $$;
   select results_eq(
     'select count(*) from public.chat_threads',
     array[1::bigint],
@@ -91,6 +94,7 @@ begin;
     select id, user_id, 'user', 'Pytanie B' from public.chat_threads where title = 'Wątek B';
 
   select tests.authenticate_as('rls-rel-a@test.local');
+  do $$ begin raise notice 'DEBUG chat_messages count=%', (select count(*) from public.chat_messages); end $$;
   select results_eq(
     'select count(*) from public.chat_messages',
     array[1::bigint],

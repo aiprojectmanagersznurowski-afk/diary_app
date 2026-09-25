@@ -5,6 +5,14 @@
 begin;
   select plan(6);
 
+  do $$
+  declare r record;
+  begin
+    for r in select policyname, cmd from pg_policies where schemaname = 'storage' and tablename = 'objects' order by 1 loop
+      raise notice 'DEBUG storage.objects policy: % (%)', r.policyname, r.cmd;
+    end loop;
+  end $$;
+
   select tests.create_supabase_user('rls-storage-a@test.local');
   select tests.create_supabase_user('rls-storage-b@test.local');
 

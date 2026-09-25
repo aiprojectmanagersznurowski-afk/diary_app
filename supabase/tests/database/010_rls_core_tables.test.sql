@@ -72,7 +72,6 @@ begin;
     'recordings: A nie może usunąć nagrania B'
   );
 
-  do $$ begin raise notice 'DEBUG 010 reached finish()'; end $$;
   select * from finish();
 rollback;
 

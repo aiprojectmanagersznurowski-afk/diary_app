@@ -28,7 +28,6 @@ begin;
     'btree (user_id, kind) na documents istnieje'
   );
 
-  do $$ begin raise notice 'DEBUG 020_indexes reached finish()'; end $$;
   select * from finish();
 rollback;
 
