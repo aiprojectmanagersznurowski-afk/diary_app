@@ -60,6 +60,7 @@ begin;
     'documents: A widzi swój plik'
   );
 
+  do $$ begin raise notice 'DEBUG 021_storage reached finish()'; end $$;
   select * from finish();
 rollback;
 

@@ -105,6 +105,7 @@ begin;
     'chat_messages: A nie może usunąć wiadomości B'
   );
 
+  do $$ begin raise notice 'DEBUG 012_rls_relations_and_chat reached finish()'; end $$;
   select * from finish();
 rollback;
 

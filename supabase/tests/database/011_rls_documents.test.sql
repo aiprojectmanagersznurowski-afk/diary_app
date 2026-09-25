@@ -53,6 +53,7 @@ begin;
     'document_chunks: A nie może usunąć fragmentu B'
   );
 
+  do $$ begin raise notice 'DEBUG 011_rls_documents reached finish()'; end $$;
   select * from finish();
 rollback;
 
