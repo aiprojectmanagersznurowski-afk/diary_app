@@ -127,8 +127,8 @@ dod:
   - id: tsc
     run: npx --no-install tsc --noEmit
     when_file: tsconfig.json
-    error_budget: 204         # zapadka: dziś 204 błędy (w tym design_exports/, nieskonfigurowany osobny projekt Vite).
-                              # F1-08 wyklucza design_exports/ z tsconfig.json i czyści resztę w src/; po nim człowiek ustawia 0.
+    error_budget: 0           # F1-08 (scalone) wykluczyło design_exports/ z tsconfig.json i wyczyściło
+                              # resztę błędów w src/; budżet zaostrzony do zera przez człowieka po scaleniu (CP-GATE).
     count_regex: 'error TS\d+'
   - id: lint
     run: npx --no-install eslint . --max-warnings=0
