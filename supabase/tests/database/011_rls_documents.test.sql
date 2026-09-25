@@ -56,4 +56,3 @@ begin;
   select * from finish();
 rollback;
 
-do $$ begin raise notice 'MARKER_DONE_011_rls_documents'; end $$;

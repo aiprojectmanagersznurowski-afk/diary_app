@@ -63,4 +63,3 @@ begin;
   select * from finish();
 rollback;
 
-do $$ begin raise notice 'MARKER_DONE_021_storage'; end $$;

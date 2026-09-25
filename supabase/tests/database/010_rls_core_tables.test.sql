@@ -13,6 +13,17 @@ begin;
   insert into public.profiles (user_id, timezone) values (tests.get_supabase_uid('rls-core-b@test.local'), 'Europe/Warsaw');
 
   select tests.authenticate_as('rls-core-a@test.local');
+
+  -- DIAGNOSTYKA TYMCZASOWA: realne wartości, żeby znaleźć przyczynę "not ok" bez zgadywania.
+  do $$
+  begin
+    raise notice 'DEBUG current_user=% session_user=%', current_user, session_user;
+    raise notice 'DEBUG auth.uid()=%', auth.uid();
+    raise notice 'DEBUG expected A uid=%', tests.get_supabase_uid('rls-core-a@test.local');
+    raise notice 'DEBUG expected B uid=%', tests.get_supabase_uid('rls-core-b@test.local');
+    raise notice 'DEBUG profiles total rows (bypasses RLS via count in plpgsql? no, same session)=%', (select count(*) from public.profiles);
+  end $$;
+
   select results_eq(
     'select count(*) from public.profiles',
     array[1::bigint],
@@ -74,4 +85,3 @@ begin;
   select * from finish();
 rollback;
 
-do $$ begin raise notice 'MARKER_DONE_010_rls_core_tables'; end $$;

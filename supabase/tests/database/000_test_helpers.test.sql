@@ -99,4 +99,3 @@ begin;
   select * from finish();
 rollback;
 
-do $$ begin raise notice 'MARKER_DONE_000_test_helpers'; end $$;
