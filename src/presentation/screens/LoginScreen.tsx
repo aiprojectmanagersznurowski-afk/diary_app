@@ -1,61 +1,77 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, ActivityIndicator } from 'react-native';
 import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import authModule from '@react-native-firebase/auth';
-import { auth } from '../../infrastructure/firebase/firebaseConfig';
+import * as Crypto from 'expo-crypto';
+import { authService } from '../../composition/auth';
 import { Ionicons } from '@expo/vector-icons';
 
-// Ensure Google Sign-In is configured somewhere, optimally here or in App.tsx
 GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '742826207719-9uqp7ddlt3q4m39g6vtmtcinf4ki62ue.apps.googleusercontent.com',
-  iosClientId: '742826207719-3vgqhqmjgprtsr35hoov0gluoupoe2il.apps.googleusercontent.com',
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
 });
 
 export const LoginScreen = () => {
   const { theme } = useSettingsStore();
   const colors = THEMES[theme];
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const onAppleButtonPress = async () => {
     try {
+      setLoading(true);
+      setErrorMessage(null);
+
+      const rawNonce = Crypto.randomUUID();
+
       const appleAuthRequestResponse = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
+        nonce: rawNonce,
       });
 
       const { identityToken } = appleAuthRequestResponse;
 
-      if (identityToken) {
-        const appleCredential = authModule.AppleAuthProvider.credential(identityToken);
-        await auth.signInWithCredential(appleCredential);
+      if (!identityToken) {
+        throw new Error('Nie otrzymano tokenu tożsamości z usługi Apple.');
       }
+
+      await authService.signInWithApple(identityToken, rawNonce);
     } catch (error: any) {
-      if (error.code === 'ERR_REQUEST_CANCELED') {
-        // handle that the user canceled the sign-in flow
+      if (error?.code === 'ERR_REQUEST_CANCELED') {
+        // Użytkownik anulował logowanie
       } else {
-        console.error('Apple SignIn Error:', error);
+        setErrorMessage(error?.message || 'Błąd podczas logowania przez Apple.');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
   const onGoogleButtonPress = async () => {
     try {
+      setLoading(true);
+      setErrorMessage(null);
+
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const response = await GoogleSignin.signIn();
-      
-      if (response.type === 'success') {
-        const idToken = response.data?.idToken;
-        if (!idToken) throw new Error('Brak tokenu ID. Upewnij się, że Web Client ID jest poprawne.');
-        const googleCredential = authModule.GoogleAuthProvider.credential(idToken);
-        await auth.signInWithCredential(googleCredential);
+
+      if (response.data?.idToken) {
+        await authService.signInWithGoogle(response.data.idToken);
+      } else if (response.type === 'cancelled') {
+        // Użytkownik anulował logowanie
       } else {
-        console.log('Google sign-in cancelled by user or other issue:', response);
+        throw new Error('Brak tokenu ID Google. Upewnij się, że Client ID jest poprawnie skonfigurowany.');
       }
-    } catch (error) {
-      console.log('Google SignIn Error:', error);
+    } catch (error: any) {
+      if (error?.code !== 'SIGN_IN_CANCELLED') {
+        setErrorMessage(error?.message || 'Błąd podczas logowania przez Google.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,38 +80,41 @@ export const LoginScreen = () => {
       <View style={styles.content}>
         <Image source={require('../../../assets/icon.png')} style={styles.logo} />
         <Text style={[styles.title, { color: colors.text }]}>Vocaly</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary, marginBottom: 50 }]}>Your Voice Diary</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Twój pamiętnik głosowy</Text>
+
+        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
+        {loading ? (
+          <ActivityIndicator size="large" color={colors.primary || '#ffffff'} style={{ marginVertical: 20 }} />
+        ) : null}
 
         <View style={styles.buttonContainer}>
-          <AppleAuthentication.AppleAuthenticationButton
-            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-            buttonStyle={
-              theme === 'AppleDark'
-                ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-                : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-            }
-            cornerRadius={16}
-            style={styles.appleButton}
-            onPress={onAppleButtonPress}
-          />
+          {Platform.OS === 'ios' ? (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={
+                theme === 'AppleDark'
+                  ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                  : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+              }
+              cornerRadius={16}
+              style={styles.appleButton}
+              onPress={onAppleButtonPress}
+            />
+          ) : null}
 
           <TouchableOpacity
-            style={[
-              styles.googleButton,
-              { backgroundColor: theme === 'AppleDark' ? '#FFFFFF' : '#000000' }
-            ]}
+            style={[styles.googleButton, { backgroundColor: theme === 'AppleDark' ? '#FFFFFF' : '#000000' }]}
             onPress={onGoogleButtonPress}
+            disabled={loading}
           >
-            <Ionicons 
-              name="logo-google" 
-              size={20} 
-              color={theme === 'AppleDark' ? '#000000' : '#FFFFFF'} 
+            <Ionicons
+              name="logo-google"
+              size={20}
+              color={theme === 'AppleDark' ? '#000000' : '#FFFFFF'}
               style={{ marginRight: 10 }}
             />
-            <Text style={[
-              styles.googleButtonText,
-              { color: theme === 'AppleDark' ? '#000000' : '#FFFFFF' }
-            ]}>
+            <Text style={[styles.googleButtonText, { color: theme === 'AppleDark' ? '#000000' : '#FFFFFF' }]}>
               Zaloguj z Google
             </Text>
           </TouchableOpacity>
@@ -130,8 +149,15 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
-    marginBottom: 50,
+    marginBottom: 40,
     lineHeight: 24,
+  },
+  errorText: {
+    color: '#ff4d4f',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 10,
   },
   buttonContainer: {
     width: '100%',
@@ -152,5 +178,5 @@ const styles = StyleSheet.create({
   googleButtonText: {
     fontSize: 19,
     fontWeight: '500',
-  }
+  },
 });

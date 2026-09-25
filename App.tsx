@@ -11,26 +11,26 @@ import { OnboardingScreen } from './src/presentation/screens/OnboardingScreen';
 import { SettingsScreen } from './src/presentation/screens/SettingsScreen';
 import { RootStackParamList } from './src/navigation/types';
 import { useSettingsStore, THEMES } from './src/application/store/useSettingsStore';
-import { auth } from './src/infrastructure/firebase/firebaseConfig';
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { useGamificationStore } from './src/application/store/useGamificationStore';
+import { User } from './src/domain/models/User';
+import { authService } from './src/composition/auth';
+import { useAuthStore } from './src/application/store/useAuthStore';
 
 import { InsightsScreen } from './src/presentation/screens/InsightsScreen';
 import { BadgesScreen } from './src/presentation/screens/BadgesScreen';
-import { useGamificationStore } from './src/application/store/useGamificationStore';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   const [initializing, setInitializing] = useState(true);
-  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const { hasHydrated, lifeGoals, theme } = useSettingsStore();
 
   useEffect(() => {
-    // Listener rejestrowany raz na całe życie komponentu: syncGoalsFromCloud/syncFromCloud
-    // pobierane przez getState(), żeby nie wymuszać ponownej subskrypcji (i podwójnej
-    // synchronizacji) przy każdej zmianie referencji akcji ze store'ów.
-    const subscriber = auth.onAuthStateChanged((currentUser: FirebaseAuthTypes.User | null) => {
+    // Nasłuch zmian sesji Supabase Auth rejestrowany dokładnie raz na cykl życia aplikacji.
+    const unsubscribe = authService.onAuthStateChange((currentUser: User | null) => {
       setUser(currentUser);
+      useAuthStore.getState().setUser(currentUser);
       if (currentUser) {
         Promise.all([
           useSettingsStore.getState().syncGoalsFromCloud(),
@@ -40,7 +40,10 @@ export default function App() {
         setInitializing(false);
       }
     });
-    return subscriber; // unsubscribe on unmount
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   if (initializing || !hasHydrated) {
