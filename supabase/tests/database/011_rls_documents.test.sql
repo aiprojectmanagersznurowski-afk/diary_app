@@ -15,6 +15,10 @@ begin;
     values (tests.get_supabase_uid('rls-doc-b@test.local'), 'note', current_date, 'Notatka B', 'notatka-b');
 
   select tests.authenticate_as('rls-doc-a@test.local');
+  do $$
+  begin
+    raise notice 'DEBUG documents count=% auth.uid()=%', (select count(*) from public.documents), auth.uid();
+  end $$;
   select results_eq(
     'select count(*) from public.documents',
     array[1::bigint],
@@ -39,6 +43,12 @@ begin;
     select id, user_id, 0, 'treść B' from public.documents where slug = 'notatka-b';
 
   select tests.authenticate_as('rls-doc-a@test.local');
+  do $$
+  begin
+    raise notice 'DEBUG document_chunks count=% content_seen=%',
+      (select count(*) from public.document_chunks),
+      (select string_agg(content, ', ') from public.document_chunks);
+  end $$;
   select results_eq(
     'select count(*) from public.document_chunks',
     array[1::bigint],
