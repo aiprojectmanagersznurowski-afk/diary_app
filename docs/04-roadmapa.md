@@ -23,7 +23,7 @@ flowchart LR
 - [x] Usunięcie Firebase i martwych zależności (lista w [03-stos-technologiczny.md](03-stos-technologiczny.md#do-usunięcia-))
 - [x] Unieważnienie obecnego klucza Groq; klucze przeniesione do sekretów Supabase
 - [x] ESLint zainstalowany, `design_exports/` wykluczony z `tsconfig.json`, `tsc --noEmit` bez błędów
-- [ ] Composition root: ekrany nie tworzą serwisów z `infrastructure`
+- [x] Composition root: ekrany nie tworzą serwisów z `infrastructure`
 
 **Gotowe, gdy:** można się zalogować (Google, Apple), przejść onboarding, a profil zapisuje się w Supabase. W kodzie nie ma Firebase, a `tsc` i lint przechodzą.
 

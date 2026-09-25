@@ -4,10 +4,11 @@ import { useNavigation } from '@react-navigation/native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettingsStore, THEMES, ThemeName, AIPersonality } from '../../application/store/useSettingsStore';
-import { authService } from '../../composition/auth';
+import { useAuthService } from '../../composition';
 import { GlassCard, GradientText } from '../components/UIPrimitives';
 
 export const SettingsScreen = () => {
+  const authService = useAuthService();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { theme, setTheme, clearGoals, lifeGoals, aiPersonality, setAIPersonality } = useSettingsStore();
