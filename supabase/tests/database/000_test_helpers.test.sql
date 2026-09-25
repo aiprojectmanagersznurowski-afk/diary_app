@@ -82,6 +82,8 @@ alter default privileges in schema tests
 begin;
   select plan(3);
 
+  do $$ begin raise notice 'DEBUG 000 starting, current_user=%', current_user; end $$;
+
   select ok(
     tests.create_supabase_user('helper-check-a@test.local') is not null,
     'create_supabase_user zwraca id'
@@ -96,6 +98,9 @@ begin;
     'authenticate_as nie rzuca wyjątku dla istniejącego użytkownika'
   );
 
+  do $$ begin raise notice 'DEBUG 000 before finish, current_user=%', current_user; end $$;
   select * from finish();
 rollback;
+
+do $$ begin raise notice 'DEBUG 000 after rollback, current_user=%', current_user; end $$;
 
