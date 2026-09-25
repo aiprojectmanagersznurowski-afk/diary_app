@@ -16,7 +16,7 @@ flowchart LR
 ## Faza 1: Fundament Supabase
 
 - [x] Projekt Supabase, katalog `supabase/` w repozytorium (CLI, lokalne środowisko)
-- [ ] Migracje: wszystkie tabele z [02-architektura.md](02-architektura.md#4-model-danych), RLS, indeksy, buckety i polityki Storage
+- [x] Migracje: wszystkie tabele z [02-architektura.md](02-architektura.md#4-model-danych), RLS, indeksy, buckety i polityki Storage
 - [ ] Logowanie Google przez `signInWithIdToken`; Sign in with Apple na iOS
 - [ ] Tabela `profiles` zamiast synchronizacji ustawień przez Firestore/AsyncStorage (cele, osobowość, motyw, strefa czasowa, grywalizacja)
 - [ ] Wylogowanie czyści wszystkie store'y (dziś cele poprzedniego użytkownika zostają na urządzeniu)
