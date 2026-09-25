@@ -131,7 +131,7 @@ function main() {
     const loc = r.file ? `${r.file}${r.line ? ':' + r.line : ''}: ` : '';
     const line = `[${r.gate}] ${loc}${r.msg}`;
     console.log(r.level === 'error' ? C.r('✖ ' + line) : C.y('⚠ ' + line));
-    if (r.tail) console.log(C.d(r.tail.split('\n').slice(-25).join('\n')));
+    if (r.tail) console.log(C.d(r.tail.split('\n').slice(-200).join('\n')));
   }
   for (const d of dod) if (d.level === 'ok' || d.level === 'skip') console.log(C.d(`· [dod:${d.id}] ${d.level === 'ok' ? d.msg : 'pominięte: ' + d.msg}`));
   if (summary.checkpoints.length) {
