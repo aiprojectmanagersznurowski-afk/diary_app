@@ -13,9 +13,8 @@ import { RootStackParamList } from './src/navigation/types';
 import { useSettingsStore, THEMES } from './src/application/store/useSettingsStore';
 import { useGamificationStore } from './src/application/store/useGamificationStore';
 import { User } from './src/domain/models/User';
-import { authService } from './src/composition/auth';
+import { authService, DependenciesProvider } from './src/composition';
 import { useAuthStore } from './src/application/store/useAuthStore';
-import './src/composition/profile';
 
 import { InsightsScreen } from './src/presentation/screens/InsightsScreen';
 import { BadgesScreen } from './src/presentation/screens/BadgesScreen';
@@ -66,29 +65,31 @@ export default function App() {
   };
 
   return (
-    <NavigationContainer theme={appTheme}>
-      <StatusBar style="light" />
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          animation: 'fade_from_bottom',
-        }}
-      >
-        {!user ? (
-          <Stack.Screen name="Login" component={LoginScreen} />
-        ) : lifeGoals.length === 0 ? (
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-        ) : (
-          <>
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="Detail" component={DetailScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="Insights" component={InsightsScreen} />
-            <Stack.Screen name="Badges" component={BadgesScreen} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <DependenciesProvider>
+      <NavigationContainer theme={appTheme}>
+        <StatusBar style="light" />
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            animation: 'fade_from_bottom',
+          }}
+        >
+          {!user ? (
+            <Stack.Screen name="Login" component={LoginScreen} />
+          ) : lifeGoals.length === 0 ? (
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          ) : (
+            <>
+              <Stack.Screen name="Home" component={HomeScreen} />
+              <Stack.Screen name="Detail" component={DetailScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
+              <Stack.Screen name="Insights" component={InsightsScreen} />
+              <Stack.Screen name="Badges" component={BadgesScreen} />
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </DependenciesProvider>
   );
 }
 

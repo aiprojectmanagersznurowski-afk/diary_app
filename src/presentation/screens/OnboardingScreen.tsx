@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Dimensions, TouchableOpacity } from 'react-native';
 import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
 import { useAuthStore } from '../../application/store/useAuthStore';
-import { audioRecorder, aiService } from '../../composition/onboarding';
-import { profileService } from '../../composition/profile';
+import { useOnboardingServices } from '../../composition/context';
 import { Feather } from '@expo/vector-icons';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { GradientText, GlassCard } from '../components/UIPrimitives';
@@ -18,6 +17,7 @@ const ONBOARDING_QUESTIONS = [
 const { width } = Dimensions.get('window');
 
 export const OnboardingScreen = () => {
+  const { audioRecorder, aiService, profileService } = useOnboardingServices();
   const [currentStep, setCurrentStep] = useState(0);
   const [transcripts, setTranscripts] = useState<string[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -57,7 +57,7 @@ export const OnboardingScreen = () => {
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [showConfetti, setGoals, transcripts, aiPersonality, theme]);
+  }, [showConfetti, setGoals, transcripts, aiPersonality, theme, profileService]);
 
   const handleSkip = async () => {
     const defaultGoals = ['Chcę prowadzić pamiętnik i dbać o swój nastrój'];

@@ -2,15 +2,23 @@ import { create } from 'zustand';
 import { useSettingsStore } from './useSettingsStore';
 import { useGamificationStore } from './useGamificationStore';
 import { DiaryEntry } from '../../domain/models/DiaryEntry';
-import { ExpoAvAudioRecorder } from '../../infrastructure/audio/expoAudioRecorder';
-import { GroqAiService } from '../../infrastructure/ai/groqService';
-import { FirestoreDiaryRepository } from '../../infrastructure/db/diaryRepository';
+import { IDiaryRepository } from '../../domain/repositories/IDiaryRepository';
 import { RecordAndProcessEntryUseCase } from '../useCases/recordAndProcess';
 
-const audioRecorder = new ExpoAvAudioRecorder();
-const aiService = new GroqAiService();
-const diaryRepository = new FirestoreDiaryRepository();
-const recordUseCase = new RecordAndProcessEntryUseCase(audioRecorder, aiService, diaryRepository);
+let activeRecordUseCase: RecordAndProcessEntryUseCase | null = null;
+let activeDiaryRepository: IDiaryRepository | null = null;
+
+export const setDiaryDependencies = (deps: {
+  recordUseCase?: RecordAndProcessEntryUseCase | null;
+  diaryRepository?: IDiaryRepository | null;
+}) => {
+  if (deps.recordUseCase !== undefined) {
+    activeRecordUseCase = deps.recordUseCase;
+  }
+  if (deps.diaryRepository !== undefined) {
+    activeDiaryRepository = deps.diaryRepository;
+  }
+};
 
 interface DiaryState {
   entries: DiaryEntry[];
@@ -46,7 +54,11 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   fetchEntries: async () => {
     set({ isLoading: true, error: null });
     try {
-      const entries = await diaryRepository.getAll();
+      if (!activeDiaryRepository) {
+        set({ entries: [], isLoading: false });
+        return;
+      }
+      const entries = await activeDiaryRepository.getAll();
       set({ entries, isLoading: false });
     } catch (error) {
       set({ error: String(error), isLoading: false });
@@ -56,7 +68,8 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   startRecording: async () => {
     set({ error: null, isRecording: true });
     try {
-      await recordUseCase.startRecording();
+      if (!activeRecordUseCase) throw new Error('RecordUseCase is not initialized');
+      await activeRecordUseCase.startRecording();
     } catch (error) {
       set({ error: String(error), isRecording: false });
     }
@@ -65,8 +78,9 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   stopRecordingAndProcess: async () => {
     set({ isRecording: false, isProcessing: true });
     try {
+      if (!activeRecordUseCase) throw new Error('RecordUseCase is not initialized');
       const { lifeGoals, aiPersonality } = useSettingsStore.getState();
-      const newEntry = await recordUseCase.stopRecordingAndProcess(lifeGoals, aiPersonality);
+      const newEntry = await activeRecordUseCase.stopRecordingAndProcess(lifeGoals, aiPersonality);
       if (newEntry) {
         useGamificationStore.getState().processNewEntry(newEntry.createdAt.toISOString());
         await get().fetchEntries();
@@ -80,10 +94,10 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   },
 
   getCurrentMetering: () => {
-    return recordUseCase.getCurrentMetering();
+    return activeRecordUseCase?.getCurrentMetering() ?? 0;
   },
 
   getRecordingDuration: () => {
-    return recordUseCase.getRecordingDuration();
+    return activeRecordUseCase?.getRecordingDuration() ?? 0;
   },
 }));

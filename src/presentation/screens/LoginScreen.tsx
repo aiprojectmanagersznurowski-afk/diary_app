@@ -4,7 +4,7 @@ import { useSettingsStore, THEMES } from '../../application/store/useSettingsSto
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as Crypto from 'expo-crypto';
-import { authService } from '../../composition/auth';
+import { useAuthService } from '../../composition';
 import { Ionicons } from '@expo/vector-icons';
 
 GoogleSignin.configure({
@@ -13,6 +13,7 @@ GoogleSignin.configure({
 });
 
 export const LoginScreen = () => {
+  const authService = useAuthService();
   const { theme } = useSettingsStore();
   const colors = THEMES[theme];
   const [loading, setLoading] = useState(false);
