@@ -49,16 +49,18 @@ as $$
   select id from auth.users where auth.users.email = user_email;
 $$;
 
+-- Postgres zabrania "set local role" wewnątrz funkcji SECURITY DEFINER ("cannot set parameter
+-- 'role' within security-definer function") — stąd rozbicie na dwie funkcje: odczyt auth.users
+-- (wymaga SECURITY DEFINER, bo `authenticated` nie ma do niego dostępu) i samo przełączenie roli
+-- (musi wykonać się jako zwykła funkcja, bez podniesionych uprawnień).
 create or replace function tests.authenticate_as(user_email text)
 returns void
 language plpgsql
-security definer
 set search_path = ''
 as $$
 declare
-  uid uuid;
+  uid uuid := tests.get_supabase_uid(user_email);
 begin
-  select id into uid from auth.users where auth.users.email = user_email;
   if uid is null then
     raise exception 'test user % not found; call tests.create_supabase_user first', user_email;
   end if;
