@@ -399,6 +399,10 @@ deno_version = 2
 
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
+# Sekrety dla Edge Functions (F1-07, ADR-003): GROQ_API_KEY, GEMINI_API_KEY
+# W chmurze: supabase secrets set GROQ_API_KEY=... GEMINI_API_KEY=...
+# Lokalnie: supabase/functions/.env (niecommitowany) lub zmienne środowiskowe
+
 
 [analytics]
 enabled = true
