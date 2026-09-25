@@ -20,7 +20,7 @@ flowchart LR
 - [x] Logowanie Google przez `signInWithIdToken`; Sign in with Apple na iOS
 - [x] Tabela `profiles` zamiast synchronizacji ustawień przez Firestore/AsyncStorage (cele, osobowość, motyw, strefa czasowa, grywalizacja)
 - [x] Wylogowanie czyści wszystkie store'y (dziś cele poprzedniego użytkownika zostają na urządzeniu)
-- [ ] Usunięcie Firebase i martwych zależności (lista w [03-stos-technologiczny.md](03-stos-technologiczny.md#do-usunięcia-))
+- [x] Usunięcie Firebase i martwych zależności (lista w [03-stos-technologiczny.md](03-stos-technologiczny.md#do-usunięcia-))
 - [ ] Unieważnienie obecnego klucza Groq; klucze przeniesione do sekretów Supabase
 - [x] ESLint zainstalowany, `design_exports/` wykluczony z `tsconfig.json`, `tsc --noEmit` bez błędów
 - [ ] Composition root: ekrany nie tworzą serwisów z `infrastructure`

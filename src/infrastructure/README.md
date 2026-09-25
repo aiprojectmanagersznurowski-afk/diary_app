@@ -1,5 +1,9 @@
-CEL: Integracje zewnętrzne i AI. 
-WYMÓG 1: Kod do obsługi mikrofonu (expo-av).
-WYMÓG 2: Cała komunikacja z LLM musi być realizowana przez 'groq-sdk'. ZAKAZ implementacji własnych rozwiązań na GCP. Używaj szybkiego modelu (np. llama3-70b-8192 lub whisper-large-v3 dla audio).
-WYMÓG 3: Klucze API pobieraj bezpiecznie ze zmiennych środowiskowych.
-WYMÓG 4: Do udostępniania na Instagramie użyj 'react-native-view-shot' i 'expo-sharing'.
+# Warstwa Infrastruktury (Infrastructure)
+
+Warstwa odpowiedzialna za integracje z usługami zewnętrznymi, bazą danych i sprzętem:
+- **Baza danych i Auth**: Klient Supabase (`@supabase/supabase-js`) oraz implementacje repozytoriów (`SupabaseAuthRepository`, `SupabaseProfileRepository`).
+- **Dźwięk**: Nagrywanie audio zoptymalizowane pod mowę przez oficjalny moduł `expo-audio`.
+- **Sztuczna Inteligencja**: Integracja z modelami AI (Groq API, docelowo Edge Functions Supabase).
+
+Zgodnie z Clean Architecture warstwa ta może importować z `domain`, `application` oraz `infrastructure`.
+Ekrany z warstwy `presentation` nie mogą importować z tej warstwy bezpośrednio — powiązanie odbywa się w composition root (`src/composition/`).
