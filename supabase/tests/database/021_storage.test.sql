@@ -19,6 +19,7 @@ begin;
       $$insert into storage.objects (bucket_id, name) values ('recordings', %L || '/hacked.m4a')$$,
       tests.get_supabase_uid('rls-storage-a@test.local')::text
     ),
+    '42501',
     'recordings: B nie może zapisać w folderze A'
   );
   select results_eq(
@@ -45,6 +46,7 @@ begin;
       $$insert into storage.objects (bucket_id, name) values ('documents', %L || '/hacked.md')$$,
       tests.get_supabase_uid('rls-storage-a@test.local')::text
     ),
+    '42501',
     'documents: B nie może zapisać w folderze A'
   );
   select results_eq(
