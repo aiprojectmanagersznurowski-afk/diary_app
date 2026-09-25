@@ -5,7 +5,7 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettingsStore, THEMES, ThemeName, AIPersonality } from '../../application/store/useSettingsStore';
 import { useGamificationStore } from '../../application/store/useGamificationStore';
-import { auth } from '../../infrastructure/firebase/firebaseConfig';
+import { authService } from '../../composition/auth';
 import { GlassCard, GradientText } from '../components/UIPrimitives';
 
 export const SettingsScreen = () => {
@@ -19,7 +19,7 @@ export const SettingsScreen = () => {
   const handleLogout = async () => {
     try {
       clearGamification();
-      await auth.signOut();
+      await authService.signOut();
     } catch (e) {
       console.error(e);
     }

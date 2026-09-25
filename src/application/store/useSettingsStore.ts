@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { db, auth } from '../../infrastructure/firebase/firebaseConfig';
+import { Profile } from '../../domain/models/Profile';
+import { IProfileRepository } from '../../domain/repositories/IProfileRepository';
+import { useAuthStore } from './useAuthStore';
 
 export type ThemeName = 'AppleDark' | 'Sepia' | 'AppleLight';
 export type AIPersonality = 'Po prostu przyjaciel' | 'Buddha' | 'Józef Piłsudski' | 'Stefan Banach';
@@ -43,7 +45,7 @@ export const THEMES: Record<ThemeName, ThemeColors> = {
     tileBorder: 'rgba(0,0,0,0.05)',
     tileTint: 'light',
     gradientColors: ['#007AFF', '#5856D6', '#FF2D55'],
-  }
+  },
 };
 
 interface SettingsState {
@@ -58,17 +60,29 @@ interface SettingsState {
   clearGoals: () => void;
   setTheme: (theme: ThemeName) => void;
   setAIPersonality: (personality: AIPersonality) => void;
-  syncGoalsFromCloud: () => Promise<void>;
+  applyProfile: (profile: Partial<Profile>) => void;
+  syncGoalsFromCloud: (targetUserId?: string) => Promise<void>;
 }
 
-const syncToCloud = async (dataToSync: Partial<SettingsState>) => {
-  const user = auth.currentUser;
-  if (!user) return;
-  try {
-    await db.collection('users').doc(user.uid).set(dataToSync, { merge: true });
-  } catch (error) {
-    console.error('Failed to sync to cloud', error);
-  }
+let activeProfileRepository: IProfileRepository | null = null;
+
+export const setProfileRepository = (repo: IProfileRepository | null) => {
+  activeProfileRepository = repo;
+};
+
+const syncProfileToCloud = (dataToSync: Partial<Profile>) => {
+  if (!activeProfileRepository) return;
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+
+  activeProfileRepository
+    .upsertProfile({
+      userId,
+      ...dataToSync,
+    })
+    .catch((error) => {
+      console.warn('Failed to sync profile to Supabase', error);
+    });
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -81,53 +95,57 @@ export const useSettingsStore = create<SettingsState>()(
       setHasHydrated: (state) => set({ hasHydrated: state }),
       setGoals: (goals) => {
         set({ lifeGoals: goals });
-        syncToCloud({ lifeGoals: goals });
+        syncProfileToCloud({ lifeGoals: goals });
       },
       addGoal: (goal) => {
         set((state) => {
           const newGoals = [...state.lifeGoals, goal];
-          syncToCloud({ lifeGoals: newGoals });
+          syncProfileToCloud({ lifeGoals: newGoals });
           return { lifeGoals: newGoals };
         });
       },
       removeGoal: (goal) => {
         set((state) => {
-          const newGoals = state.lifeGoals.filter(g => g !== goal);
-          syncToCloud({ lifeGoals: newGoals });
+          const newGoals = state.lifeGoals.filter((g) => g !== goal);
+          syncProfileToCloud({ lifeGoals: newGoals });
           return { lifeGoals: newGoals };
         });
       },
       clearGoals: () => {
         set({ lifeGoals: [] });
-        syncToCloud({ lifeGoals: [] });
+        syncProfileToCloud({ lifeGoals: [] });
       },
       setTheme: (theme) => {
         set({ theme });
-        syncToCloud({ theme });
+        syncProfileToCloud({ theme });
       },
       setAIPersonality: (aiPersonality) => {
         set({ aiPersonality });
-        syncToCloud({ aiPersonality });
+        syncProfileToCloud({ aiPersonality });
       },
-      syncGoalsFromCloud: async () => {
-        const user = auth.currentUser;
-        if (!user) return;
+      applyProfile: (profile) => {
+        set((state) => ({
+          lifeGoals: profile.lifeGoals !== undefined ? profile.lifeGoals : state.lifeGoals,
+          theme: (profile.theme as ThemeName) || state.theme,
+          aiPersonality: (profile.aiPersonality as AIPersonality) || state.aiPersonality,
+        }));
+      },
+      syncGoalsFromCloud: async (targetUserId?: string) => {
+        if (!activeProfileRepository) return;
+        const userId = targetUserId || useAuthStore.getState().user?.id;
+        if (!userId) return;
+
         try {
-          const doc = await db.collection('users').doc(user.uid).get();
-          const data = doc.data();
-          if (data) {
-            if (data.lifeGoals) {
-              set({ lifeGoals: data.lifeGoals });
-            }
-            if (data.theme) {
-              set({ theme: data.theme });
-            }
-            if (data.aiPersonality) {
-              set({ aiPersonality: data.aiPersonality });
-            }
+          const profile = await activeProfileRepository.getProfile(userId);
+          if (profile) {
+            set((state) => ({
+              lifeGoals: profile.lifeGoals ?? state.lifeGoals,
+              theme: (profile.theme as ThemeName) || state.theme,
+              aiPersonality: (profile.aiPersonality as AIPersonality) || state.aiPersonality,
+            }));
           }
         } catch (error) {
-          console.error('Failed to fetch from cloud', error);
+          console.warn('Failed to fetch profile from Supabase', error);
         }
       },
     }),
@@ -137,6 +155,6 @@ export const useSettingsStore = create<SettingsState>()(
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
-    }
-  )
+    },
+  ),
 );

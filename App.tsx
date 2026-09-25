@@ -15,6 +15,7 @@ import { useGamificationStore } from './src/application/store/useGamificationSto
 import { User } from './src/domain/models/User';
 import { authService } from './src/composition/auth';
 import { useAuthStore } from './src/application/store/useAuthStore';
+import './src/composition/profile';
 
 import { InsightsScreen } from './src/presentation/screens/InsightsScreen';
 import { BadgesScreen } from './src/presentation/screens/BadgesScreen';
@@ -33,8 +34,8 @@ export default function App() {
       useAuthStore.getState().setUser(currentUser);
       if (currentUser) {
         Promise.all([
-          useSettingsStore.getState().syncGoalsFromCloud(),
-          useGamificationStore.getState().syncFromCloud(),
+          useSettingsStore.getState().syncGoalsFromCloud(currentUser.id),
+          useGamificationStore.getState().syncFromCloud(currentUser.id),
         ]).finally(() => setInitializing(false));
       } else {
         setInitializing(false);

@@ -18,7 +18,7 @@ flowchart LR
 - [x] Projekt Supabase, katalog `supabase/` w repozytorium (CLI, lokalne środowisko)
 - [x] Migracje: wszystkie tabele z [02-architektura.md](02-architektura.md#4-model-danych), RLS, indeksy, buckety i polityki Storage
 - [x] Logowanie Google przez `signInWithIdToken`; Sign in with Apple na iOS
-- [ ] Tabela `profiles` zamiast synchronizacji ustawień przez Firestore/AsyncStorage (cele, osobowość, motyw, strefa czasowa, grywalizacja)
+- [x] Tabela `profiles` zamiast synchronizacji ustawień przez Firestore/AsyncStorage (cele, osobowość, motyw, strefa czasowa, grywalizacja)
 - [ ] Wylogowanie czyści wszystkie store'y (dziś cele poprzedniego użytkownika zostają na urządzeniu)
 - [ ] Usunięcie Firebase i martwych zależności (lista w [03-stos-technologiczny.md](03-stos-technologiczny.md#do-usunięcia-))
 - [ ] Unieważnienie obecnego klucza Groq; klucze przeniesione do sekretów Supabase
