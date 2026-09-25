@@ -45,6 +45,12 @@ begin;
   insert into public.categories (user_id, name) values (tests.get_supabase_uid('rls-core-b@test.local'), 'Praca');
 
   select tests.authenticate_as('rls-core-a@test.local');
+  do $$
+  begin
+    raise notice 'DEBUG categories count=% update_would_affect=%',
+      (select count(*) from public.categories),
+      (select count(*) from public.categories where user_id = tests.get_supabase_uid('rls-core-b@test.local'));
+  end $$;
   select results_eq(
     'select count(*) from public.categories',
     array[1::bigint],
@@ -68,6 +74,12 @@ begin;
     values (gen_random_uuid(), tests.get_supabase_uid('rls-core-b@test.local'), 'phone', now());
 
   select tests.authenticate_as('rls-core-a@test.local');
+  do $$
+  begin
+    raise notice 'DEBUG recordings count=% update_would_affect=%',
+      (select count(*) from public.recordings),
+      (select count(*) from public.recordings where user_id = tests.get_supabase_uid('rls-core-b@test.local'));
+  end $$;
   select results_eq(
     'select count(*) from public.recordings',
     array[1::bigint],
@@ -82,6 +94,7 @@ begin;
     'recordings: A nie może usunąć nagrania B'
   );
 
+  do $$ begin raise notice 'DEBUG 010 reached finish()'; end $$;
   select * from finish();
 rollback;
 
