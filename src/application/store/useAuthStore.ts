@@ -10,6 +10,7 @@ interface AuthState {
   setInitializing: (initializing: boolean) => void;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
+  resetAuth: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -21,4 +22,5 @@ export const useAuthStore = create<AuthState>((set) => ({
   setInitializing: (initializing) => set({ initializing }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
+  resetAuth: () => set({ user: null, initializing: false, isLoading: false, error: null }),
 }));

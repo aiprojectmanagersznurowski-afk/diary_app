@@ -42,6 +42,7 @@ interface GamificationState {
   // Actions
   processNewEntry: (dateIso: string) => void;
   clearGamification: () => void;
+  resetGamification: () => void;
   syncFromCloud: (targetUserId?: string) => Promise<void>;
   applyProfile: (profile: Partial<Profile>) => void;
   dismissBadgeAlert: () => void;
@@ -105,6 +106,17 @@ export const useGamificationStore = create<GamificationState>()(
           unlockedBadges: [],
           newlyUnlockedBadge: null,
         });
+        AsyncStorage.removeItem('gamification-storage').catch(() => {});
+      },
+
+      resetGamification: () => {
+        set({
+          currentStreak: 0,
+          lastEntryDate: null,
+          unlockedBadges: [],
+          newlyUnlockedBadge: null,
+        });
+        AsyncStorage.removeItem('gamification-storage').catch(() => {});
       },
 
       applyProfile: (profile: Partial<Profile>) => {
