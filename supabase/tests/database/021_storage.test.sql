@@ -20,6 +20,7 @@ begin;
       tests.get_supabase_uid('rls-storage-a@test.local')::text
     ),
     '42501',
+    'new row violates row-level security policy for table "objects"',
     'recordings: B nie może zapisać w folderze A'
   );
   select results_eq(
@@ -47,6 +48,7 @@ begin;
       tests.get_supabase_uid('rls-storage-a@test.local')::text
     ),
     '42501',
+    'new row violates row-level security policy for table "objects"',
     'documents: B nie może zapisać w folderze A'
   );
   select results_eq(
