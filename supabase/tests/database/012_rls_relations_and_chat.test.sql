@@ -107,3 +107,5 @@ begin;
 
   select * from finish();
 rollback;
+
+do $$ begin raise notice 'MARKER_DONE_012_rls_relations_and_chat'; end $$;

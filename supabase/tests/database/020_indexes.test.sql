@@ -22,3 +22,5 @@ begin;
 
   select * from finish();
 rollback;
+
+do $$ begin raise notice 'MARKER_DONE_020_indexes'; end $$;

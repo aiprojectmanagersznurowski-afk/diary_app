@@ -73,3 +73,5 @@ begin;
 
   select * from finish();
 rollback;
+
+do $$ begin raise notice 'MARKER_DONE_010_rls_core_tables'; end $$;
