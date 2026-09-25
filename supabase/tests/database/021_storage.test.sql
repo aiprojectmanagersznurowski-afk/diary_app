@@ -5,14 +5,6 @@
 begin;
   select plan(6);
 
-  do $$
-  declare r record;
-  begin
-    for r in select policyname, cmd from pg_policies where schemaname = 'storage' and tablename = 'objects' order by 1 loop
-      raise notice 'DEBUG storage.objects policy: % (%)', r.policyname, r.cmd;
-    end loop;
-  end $$;
-
   select tests.create_supabase_user('rls-storage-a@test.local');
   select tests.create_supabase_user('rls-storage-b@test.local');
 
@@ -22,6 +14,7 @@ begin;
     values ('recordings', tests.get_supabase_uid('rls-storage-a@test.local')::text || '/note.m4a');
 
   select tests.authenticate_as('rls-storage-b@test.local');
+  do $$ begin raise notice 'DEBUG recordings names visible to B: %', (select string_agg(name, ', ') from storage.objects where bucket_id = 'recordings'); end $$;
   select throws_ok(
     format(
       $$insert into storage.objects (bucket_id, name) values ('recordings', %L || '/hacked.m4a')$$,

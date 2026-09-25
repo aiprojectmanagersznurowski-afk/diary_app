@@ -70,7 +70,6 @@ begin;
   insert into public.chat_threads (user_id, title) values (tests.get_supabase_uid('rls-rel-b@test.local'), 'Wątek B');
 
   select tests.authenticate_as('rls-rel-a@test.local');
-  do $$ begin raise notice 'DEBUG chat_threads count=%', (select count(*) from public.chat_threads); end $$;
   select results_eq(
     'select count(*) from public.chat_threads',
     array[1::bigint],
@@ -94,7 +93,6 @@ begin;
     select id, user_id, 'user', 'Pytanie B' from public.chat_threads where title = 'Wątek B';
 
   select tests.authenticate_as('rls-rel-a@test.local');
-  do $$ begin raise notice 'DEBUG chat_messages count=%', (select count(*) from public.chat_messages); end $$;
   select results_eq(
     'select count(*) from public.chat_messages',
     array[1::bigint],

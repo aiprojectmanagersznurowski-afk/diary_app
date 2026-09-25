@@ -3,14 +3,6 @@
 begin;
   select plan(4);
 
-  do $$
-  declare r record;
-  begin
-    for r in select tablename, indexname from pg_indexes where schemaname = 'public' and tablename in ('documents', 'document_chunks') order by 1, 2 loop
-      raise notice 'DEBUG index: %.%', r.tablename, r.indexname;
-    end loop;
-  end $$;
-
   select has_index(
     'public', 'document_chunks', 'document_chunks_embedding_hnsw',
     'HNSW na document_chunks.embedding istnieje'
