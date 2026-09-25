@@ -62,6 +62,7 @@ interface SettingsState {
   setAIPersonality: (personality: AIPersonality) => void;
   applyProfile: (profile: Partial<Profile>) => void;
   syncGoalsFromCloud: (targetUserId?: string) => Promise<void>;
+  resetSettings: () => void;
 }
 
 let activeProfileRepository: IProfileRepository | null = null;
@@ -147,6 +148,14 @@ export const useSettingsStore = create<SettingsState>()(
         } catch (error) {
           console.warn('Failed to fetch profile from Supabase', error);
         }
+      },
+      resetSettings: () => {
+        set({
+          lifeGoals: [],
+          theme: 'AppleDark',
+          aiPersonality: 'Po prostu przyjaciel',
+        });
+        AsyncStorage.removeItem('settings-storage').catch(() => {});
       },
     }),
     {

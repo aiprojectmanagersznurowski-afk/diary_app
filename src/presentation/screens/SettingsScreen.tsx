@@ -4,7 +4,6 @@ import { useNavigation } from '@react-navigation/native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettingsStore, THEMES, ThemeName, AIPersonality } from '../../application/store/useSettingsStore';
-import { useGamificationStore } from '../../application/store/useGamificationStore';
 import { authService } from '../../composition/auth';
 import { GlassCard, GradientText } from '../components/UIPrimitives';
 
@@ -12,13 +11,11 @@ export const SettingsScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { theme, setTheme, clearGoals, lifeGoals, aiPersonality, setAIPersonality } = useSettingsStore();
-  const { clearGamification } = useGamificationStore();
 
   const colors = THEMES[theme];
 
   const handleLogout = async () => {
     try {
-      clearGamification();
       await authService.signOut();
     } catch (e) {
       console.error(e);

@@ -23,6 +23,7 @@ interface DiaryState {
   stopRecordingAndProcess: () => Promise<void>;
   getCurrentMetering: () => number;
   getRecordingDuration: () => number;
+  clearEntries: () => void;
 }
 
 export const useDiaryStore = create<DiaryState>((set, get) => ({
@@ -31,6 +32,16 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   isRecording: false,
   isProcessing: false,
   error: null,
+
+  clearEntries: () => {
+    set({
+      entries: [],
+      isLoading: false,
+      isRecording: false,
+      isProcessing: false,
+      error: null,
+    });
+  },
 
   fetchEntries: async () => {
     set({ isLoading: true, error: null });
