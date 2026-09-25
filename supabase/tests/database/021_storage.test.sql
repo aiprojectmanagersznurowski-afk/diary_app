@@ -14,7 +14,6 @@ begin;
     values ('recordings', tests.get_supabase_uid('rls-storage-a@test.local')::text || '/note.m4a');
 
   select tests.authenticate_as('rls-storage-b@test.local');
-  do $$ begin raise notice 'DEBUG recordings names visible to B: %', (select string_agg(name, ', ') from storage.objects where bucket_id = 'recordings'); end $$;
   select throws_ok(
     format(
       $$insert into storage.objects (bucket_id, name) values ('recordings', %L || '/hacked.m4a')$$,
@@ -61,7 +60,6 @@ begin;
     'documents: A widzi swój plik'
   );
 
-  do $$ begin raise notice 'DEBUG 021_storage reached finish()'; end $$;
   select * from finish();
 rollback;
 

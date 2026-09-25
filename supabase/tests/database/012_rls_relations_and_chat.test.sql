@@ -26,7 +26,6 @@ begin;
     where s.slug = 'rel-b1' and t.slug = 'rel-b2';
 
   select tests.authenticate_as('rls-rel-a@test.local');
-  do $$ begin raise notice 'DEBUG links count=% docs count=%', (select count(*) from public.links), (select count(*) from public.documents); end $$;
   select results_eq(
     'select count(*) from public.links',
     array[1::bigint],
@@ -48,7 +47,6 @@ begin;
   insert into public.day_rebuild_queue (user_id, day) values (tests.get_supabase_uid('rls-rel-b@test.local'), current_date);
 
   select tests.authenticate_as('rls-rel-a@test.local');
-  do $$ begin raise notice 'DEBUG day_rebuild_queue count=%', (select count(*) from public.day_rebuild_queue); end $$;
   select results_eq(
     'select count(*) from public.day_rebuild_queue',
     array[1::bigint],
@@ -107,7 +105,6 @@ begin;
     'chat_messages: A nie może usunąć wiadomości B'
   );
 
-  do $$ begin raise notice 'DEBUG 012_rls_relations_and_chat reached finish()'; end $$;
   select * from finish();
 rollback;
 
