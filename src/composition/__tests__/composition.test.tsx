@@ -13,6 +13,7 @@ import {
   useProfileService,
   useOnboardingServices,
   useDiaryServices,
+  useRecordingQueueServices,
   AppDependencies,
 } from '../context';
 
@@ -236,6 +237,7 @@ describe('Composition Root & Use Cases with Mocks', () => {
       let capturedProfile: any = null;
       let capturedOnboarding: any = null;
       let capturedDiary: any = null;
+      let capturedQueue: any = null;
 
       const TestComponent = () => {
         capturedDeps = useDependencies();
@@ -243,6 +245,7 @@ describe('Composition Root & Use Cases with Mocks', () => {
         capturedProfile = useProfileService();
         capturedOnboarding = useOnboardingServices();
         capturedDiary = useDiaryServices();
+        capturedQueue = useRecordingQueueServices();
         return null;
       };
 
@@ -260,6 +263,8 @@ describe('Composition Root & Use Cases with Mocks', () => {
       expect(capturedOnboarding.audioRecorder).toBe(mockRecorder);
       expect(capturedOnboarding.aiService).toBe(mockAi);
       expect(capturedDiary.diaryRepository).toBe(mockRepo);
+      expect(capturedQueue).toBeDefined();
+      expect(capturedQueue.recordingQueue).toBeDefined();
     });
   });
 });
