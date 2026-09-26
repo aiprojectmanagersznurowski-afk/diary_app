@@ -5,7 +5,8 @@ import { EnqueueRecordingUseCase } from '../application/useCases/recording/enque
 import { ProcessRecordingQueueUseCase } from '../application/useCases/recording/processRecordingQueueUseCase';
 import { SqliteRecordingQueue } from '../infrastructure/queue/sqliteRecordingQueue';
 import { ExpoFileStorage } from '../infrastructure/audio/expoFileStorage';
-import { MockRecordingUploader } from '../infrastructure/queue/mockRecordingUploader';
+import { supabase } from '../infrastructure/supabase/supabaseClient';
+import { SupabaseRecordingUploader } from '../infrastructure/supabase/supabaseRecordingUploader';
 import { setDiaryDependencies } from '../application/store/useDiaryStore';
 import { IAudioRecorder } from '../domain/services/IAudioRecorder';
 import { IAiService } from '../domain/services/IAiService';
@@ -27,7 +28,7 @@ export function createRecordAndProcessUseCase(
 
 export const recordingQueue: IRecordingQueue = new SqliteRecordingQueue();
 export const fileStorage: IFileStorage = new ExpoFileStorage();
-export const recordingUploader: IRecordingUploader = new MockRecordingUploader();
+export const recordingUploader: IRecordingUploader = new SupabaseRecordingUploader(supabase);
 
 export const enqueueRecordingUseCase = new EnqueueRecordingUseCase(recordingQueue, fileStorage, () =>
   Crypto.randomUUID(),

@@ -30,7 +30,7 @@ flowchart LR
 ## Faza 2: Przetwarzanie nagrań
 
 - [x] Lokalna kolejka nagrań (`expo-sqlite`) z ponawianiem wysyłki
-- [ ] Wysyłka do Storage + `INSERT recordings` z UUID klienta
+- [x] Wysyłka do Storage + `INSERT recordings` z UUID klienta
 - [ ] `_shared/ai`: interfejsy i adaptery Groq i Gemini, konfiguracja przez zmienne środowiskowe
 - [ ] Edge Function `process-recording`: transkrypcja → podział na notatki → dokumenty `.md` → chunki i embeddingi → powiązania
 - [ ] Schematy zod dla odpowiedzi LLM, prompty jako wersjonowane pliki
