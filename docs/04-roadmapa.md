@@ -31,7 +31,7 @@ flowchart LR
 
 - [x] Lokalna kolejka nagrań (`expo-sqlite`) z ponawianiem wysyłki
 - [x] Wysyłka do Storage + `INSERT recordings` z UUID klienta
-- [ ] `_shared/ai`: interfejsy i adaptery Groq i Gemini, konfiguracja przez zmienne środowiskowe
+- [x] `_shared/ai`: interfejsy i adaptery Groq i Gemini, konfiguracja przez zmienne środowiskowe
 - [ ] Edge Function `process-recording`: transkrypcja → podział na notatki → dokumenty `.md` → chunki i embeddingi → powiązania
 - [ ] Schematy zod dla odpowiedzi LLM, prompty jako wersjonowane pliki
 - [ ] Webhook bazy + ponawianie przez `pg_cron`
