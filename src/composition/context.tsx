@@ -10,6 +10,10 @@ import {
   recordingUploader,
   enqueueRecordingUseCase,
   processRecordingQueueUseCase,
+  recordingRepository,
+  noteRepository,
+  retryRecordingUseCase,
+  getNotesUseCase,
 } from './diary';
 import { IDiaryRepository } from '../domain/repositories/IDiaryRepository';
 import { IAudioRecorder } from '../domain/services/IAudioRecorder';
@@ -17,9 +21,13 @@ import { IAiService } from '../domain/services/IAiService';
 import { IRecordingQueue } from '../domain/services/IRecordingQueue';
 import { IFileStorage } from '../domain/services/IFileStorage';
 import { IRecordingUploader } from '../domain/services/IRecordingUploader';
+import { IRecordingRepository } from '../domain/repositories/IRecordingRepository';
+import { INoteRepository } from '../domain/repositories/INoteRepository';
 import { RecordAndProcessEntryUseCase } from '../application/useCases/recordAndProcess';
 import { EnqueueRecordingUseCase } from '../application/useCases/recording/enqueueRecordingUseCase';
 import { ProcessRecordingQueueUseCase } from '../application/useCases/recording/processRecordingQueueUseCase';
+import { RetryRecordingUseCase } from '../application/useCases/recording/retryRecordingUseCase';
+import { GetNotesUseCase } from '../application/useCases/notes/getNotesUseCase';
 
 export interface AppDependencies {
   authService: typeof authService;
@@ -33,6 +41,10 @@ export interface AppDependencies {
   recordingUploader: IRecordingUploader;
   enqueueRecordingUseCase: EnqueueRecordingUseCase;
   processRecordingQueueUseCase: ProcessRecordingQueueUseCase;
+  recordingRepository: IRecordingRepository;
+  noteRepository: INoteRepository;
+  retryRecordingUseCase: RetryRecordingUseCase;
+  getNotesUseCase: GetNotesUseCase;
 }
 
 export const defaultDependencies: AppDependencies = {
@@ -47,6 +59,10 @@ export const defaultDependencies: AppDependencies = {
   recordingUploader,
   enqueueRecordingUseCase,
   processRecordingQueueUseCase,
+  recordingRepository,
+  noteRepository,
+  retryRecordingUseCase,
+  getNotesUseCase,
 };
 
 export const DependenciesContext = createContext<AppDependencies>(defaultDependencies);
@@ -92,5 +108,15 @@ export const useRecordingQueueServices = () => {
     recordingUploader,
     enqueueRecordingUseCase,
     processRecordingQueueUseCase,
+  };
+};
+
+export const useNotesServices = () => {
+  const { recordingRepository, noteRepository, retryRecordingUseCase, getNotesUseCase } = useDependencies();
+  return {
+    recordingRepository,
+    noteRepository,
+    retryRecordingUseCase,
+    getNotesUseCase,
   };
 };
