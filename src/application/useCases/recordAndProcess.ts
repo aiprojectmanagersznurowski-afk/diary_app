@@ -59,27 +59,16 @@ export class RecordAndProcessEntryUseCase {
       throw new Error('Transcription resulted in empty text');
     }
 
-    // 2. Append Mode: Check if there's already an entry for today
+    // Nowy model (F2-07): nagranie analizowane jest atomowo, bez doklejania i ponownego przepisywania całego dnia przez LLM
+    const analysis = await this.aiService.extractData(newTranscript, lifeGoals, aiPersonality);
+
     const today = new Date();
     const existingEntry = await this.diaryRepository.findByDate(today);
 
-    let finalTranscript = newTranscript;
-
-    if (existingEntry) {
-      const now = new Date();
-      const timeString = now.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
-      const separator = `\n\n--- Kolejne nagranie dodane o ${timeString} ---\n\n`;
-      finalTranscript = existingEntry.fullText + separator + newTranscript;
-    }
-
-    // 3. Extract structured data via LLM
-    const analysis = await this.aiService.extractData(finalTranscript, lifeGoals, aiPersonality);
-
-    // 4. Save or Update to database
     if (existingEntry) {
       const updatedEntry = await this.diaryRepository.update(existingEntry.id, {
         date: existingEntry.date,
-        fullText: analysis.full_text,
+        fullText: existingEntry.fullText + '\n\n' + newTranscript,
         parsedData: analysis.parsedData,
       });
       return updatedEntry;

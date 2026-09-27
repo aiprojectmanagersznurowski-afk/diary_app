@@ -1,3 +1,4 @@
+import * as Crypto from 'expo-crypto';
 import { audioRecorder, aiService } from './onboarding';
 import { InMemoryDiaryRepository } from '../infrastructure/db/diaryRepository';
 import { RecordAndProcessEntryUseCase } from '../application/useCases/recordAndProcess';
@@ -13,8 +14,14 @@ import { IAiService } from '../domain/services/IAiService';
 import { IDiaryRepository } from '../domain/repositories/IDiaryRepository';
 import { IRecordingQueue } from '../domain/services/IRecordingQueue';
 import { IFileStorage } from '../domain/services/IFileStorage';
-import * as Crypto from 'expo-crypto';
 import { IRecordingUploader } from '../domain/services/IRecordingUploader';
+import { IRecordingRepository } from '../domain/repositories/IRecordingRepository';
+import { INoteRepository } from '../domain/repositories/INoteRepository';
+import { SupabaseRecordingRepository } from '../infrastructure/supabase/supabaseRecordingRepository';
+import { SupabaseNoteRepository } from '../infrastructure/supabase/supabaseNoteRepository';
+import { RetryRecordingUseCase } from '../application/useCases/recording/retryRecordingUseCase';
+import { GetNotesUseCase } from '../application/useCases/notes/getNotesUseCase';
+import { setNotesDependencies } from '../application/store/useNotesStore';
 
 export function createRecordAndProcessUseCase(
   recorder: IAudioRecorder,
@@ -48,8 +55,18 @@ export const recordUseCase: RecordAndProcessEntryUseCase = createRecordAndProces
   processRecordingQueueUseCase,
 );
 
-// Inicjalizacja domyślnych zależności w store'ze pamiętnika
+export const recordingRepository: IRecordingRepository = new SupabaseRecordingRepository(supabase);
+export const noteRepository: INoteRepository = new SupabaseNoteRepository(supabase);
+export const retryRecordingUseCase = new RetryRecordingUseCase(recordingRepository);
+export const getNotesUseCase = new GetNotesUseCase(noteRepository);
+
+// Inicjalizacja domyślnych zależności w store'ach
 setDiaryDependencies({
   recordUseCase,
   diaryRepository,
+});
+
+setNotesDependencies({
+  recordingRepository,
+  noteRepository,
 });

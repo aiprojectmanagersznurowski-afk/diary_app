@@ -1,13 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useDiaryStore } from '../../application/store/useDiaryStore';
+import { useNotesStore } from '../../application/store/useNotesStore';
+import { useAuthStore } from '../../application/store/useAuthStore';
 import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
 import { getAnalyticsData, getWeeklyCalmPercentage } from '../../application/useCases/statsUseCase';
 import { Feather } from '@expo/vector-icons';
 import { GlassCard, GradientText, EmotionPill } from '../components/UIPrimitives';
 import { BadgeAlertModal } from '../components/BadgeAlertModal';
 import { RecordingOverlay } from '../components/RecordingOverlay';
+import { RecordingStatusList } from '../components/RecordingStatusList';
+import { NotesList } from '../components/NotesList';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const formatDate = (iso: string | Date | number) => {
@@ -37,28 +41,58 @@ const formatDate = (iso: string | Date | number) => {
 export const HomeScreen = () => {
   const {
     entries,
-    isLoading,
+    isLoading: isDiaryLoading,
     isRecording,
     isProcessing,
-    error,
+    error: diaryError,
     fetchEntries,
     startRecording,
     stopRecordingAndProcess,
   } = useDiaryStore();
+
+  const {
+    recordings,
+    notes,
+    activeFilter,
+    isLoadingNotes,
+    error: notesError,
+    setFilter,
+    fetchRecordings,
+    fetchNotes,
+    retryRecording,
+    subscribeToRealtime,
+  } = useNotesStore();
+
+  const { user } = useAuthStore();
   const { theme } = useSettingsStore();
   const colors = THEMES[theme];
   const navigation = useNavigation<any>();
+
+  const [activeTab, setActiveTab] = useState<'entries' | 'notes'>('entries');
 
   const calmPercentage = getWeeklyCalmPercentage(entries);
   const { calm: calmData } = getAnalyticsData(entries, 7);
 
   useEffect(() => {
     fetchEntries();
-  }, [fetchEntries]);
+    fetchRecordings();
+    fetchNotes();
+
+    if (user?.id) {
+      const unsubscribe = subscribeToRealtime(user.id);
+      return () => {
+        unsubscribe();
+      };
+    }
+  }, [user?.id, fetchEntries, fetchRecordings, fetchNotes, subscribeToRealtime]);
 
   const handleRecordPress = () => {
     if (isRecording) {
       stopRecordingAndProcess();
+      // Po zakończeniu nagrania odśwież listę nagrań
+      setTimeout(() => {
+        fetchRecordings();
+      }, 500);
     } else {
       startRecording();
     }
@@ -135,9 +169,41 @@ export const HomeScreen = () => {
         </GlassCard>
       </TouchableOpacity>
 
-      <Text style={[styles.recentEntriesTitle, { color: colors.textSecondary }]}>Ostatnie wpisy</Text>
+      {/* Status nagrań na żywo (Realtime) */}
+      <RecordingStatusList
+        recordings={recordings}
+        onRetry={retryRecording}
+        textColor={colors.text}
+        secondaryTextColor={colors.textSecondary}
+      />
+
+      {/* Przełącznik zakładek Wpisy / Notatki */}
+      <View style={[styles.tabSwitcher, { borderColor: colors.tileBorder }]}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setActiveTab('entries')}
+          style={[styles.tabButton, activeTab === 'entries' && styles.tabButtonActive]}
+        >
+          <Text style={[styles.tabText, { color: activeTab === 'entries' ? '#ffffff' : colors.textSecondary }]}>
+            Wpisy dnia
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setActiveTab('notes')}
+          style={[styles.tabButton, activeTab === 'notes' && styles.tabButtonActive]}
+        >
+          <Text style={[styles.tabText, { color: activeTab === 'notes' ? '#ffffff' : colors.textSecondary }]}>
+            Notatki ({notes.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
+
+  const error = diaryError || notesError;
+  const isLoading = isDiaryLoading || isLoadingNotes;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -149,7 +215,26 @@ export const HomeScreen = () => {
         </View>
       ) : null}
 
-      {isLoading ? (
+      {activeTab === 'notes' ? (
+        <FlatList
+          data={[]}
+          renderItem={null}
+          ListHeaderComponent={
+            <View>
+              {renderHeader()}
+              <NotesList
+                notes={notes}
+                activeFilter={activeFilter}
+                onFilterChange={setFilter}
+                textColor={colors.text}
+                secondaryTextColor={colors.textSecondary}
+              />
+            </View>
+          }
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : isLoading ? (
         <ActivityIndicator size="large" color="#F472B6" style={styles.loader} />
       ) : (
         <FlatList
@@ -158,6 +243,14 @@ export const HomeScreen = () => {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <GlassCard intensity={15} style={styles.emptyCard}>
+              <Feather name="calendar" size={32} color={colors.textSecondary} style={{ marginBottom: 8 }} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                Brak wpisów dnia. Nagraj myśli, a wieczorem wygeneruje się podsumowanie!
+              </Text>
+            </GlassCard>
+          }
           renderItem={({ item }) => {
             const d = formatDate(item.createdAt || item.date);
             const parsed = (item.parsedData as any) || {};
@@ -243,36 +336,29 @@ const styles = StyleSheet.create({
   headerTextContainer: {
     flex: 1,
   },
-  welcomeText: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 13,
-    marginBottom: 0,
-  },
   titleText: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
   headerIcons: {
     flexDirection: 'row',
-    marginTop: 4,
+    gap: 8,
   },
   iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 8,
   },
   analyticsBanner: {
-    padding: 16,
-    marginBottom: 28,
+    padding: 18,
+    marginBottom: 20,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     overflow: 'hidden',
   },
   analyticsContent: {
@@ -281,67 +367,107 @@ const styles = StyleSheet.create({
   analyticsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    gap: 6,
+    marginBottom: 6,
   },
   analyticsHeaderText: {
-    color: 'rgba(255,255,255,0.5)',
     fontSize: 12,
-    marginLeft: 8,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   analyticsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 4,
   },
   analyticsMainText: {
-    color: '#ffffff',
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
   },
   analyticsSubText: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 13,
+    fontWeight: '500',
   },
   chartPlaceholder: {
-    width: 96,
-    height: 56,
+    width: 90,
+    height: 40,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     position: 'relative',
-    justifyContent: 'flex-end',
   },
   chartLine: {
     position: 'absolute',
     bottom: 0,
-    width: 3,
-    borderRadius: 1.5,
+    width: 6,
+    borderRadius: 3,
   },
-  recentEntriesTitle: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 13,
+  tabSwitcher: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 16,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+  tabButtonActive: {
+    backgroundColor: '#A78BFA',
+  },
+  tabText: {
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: 12,
-    paddingHorizontal: 4,
+  },
+  loader: {
+    marginTop: 40,
+  },
+  errorBox: {
+    marginHorizontal: 20,
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: '#EF4444',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 13,
+  },
+  emptyCard: {
+    padding: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  emptyText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   entryCard: {
-    padding: 16,
-    marginBottom: 12,
+    padding: 18,
+    marginBottom: 14,
   },
   entryCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 8,
   },
   entryCardDate: {
-    color: 'rgba(255,255,255,0.9)',
     fontSize: 15,
     fontWeight: '600',
   },
   entryCardTime: {
-    color: 'rgba(255,255,255,0.35)',
-    fontSize: 12,
+    fontSize: 13,
   },
   entryCardSummary: {
-    color: 'rgba(255,255,255,0.6)',
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 12,
@@ -349,58 +475,39 @@ const styles = StyleSheet.create({
   emotionsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-  },
-  loader: {
-    marginTop: 50,
-  },
-  errorBox: {
-    backgroundColor: 'rgba(255, 0, 0, 0.2)',
-    padding: 15,
-    marginHorizontal: 20,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  errorText: {
-    color: '#F87171',
-    textAlign: 'center',
+    gap: 6,
   },
   fabContainer: {
     position: 'absolute',
-    bottom: 32,
+    bottom: 40,
     left: 0,
     right: 0,
     alignItems: 'center',
   },
-  processingPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 16,
-  },
-  processingText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
   fabWrapper: {
+    shadowColor: '#A78BFA',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  fabButton: {
     width: 68,
     height: 68,
     borderRadius: 34,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    shadowColor: '#A78BFA',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 30,
-    elevation: 10,
-  },
-  fabButton: {
-    flex: 1,
-    borderRadius: 34,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  processingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 12,
+  },
+  processingText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 });
