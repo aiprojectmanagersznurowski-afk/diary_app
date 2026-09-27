@@ -33,7 +33,7 @@ flowchart LR
 - [x] Wysyłka do Storage + `INSERT recordings` z UUID klienta
 - [x] `_shared/ai`: interfejsy i adaptery Groq i Gemini, konfiguracja przez zmienne środowiskowe
 - [ ] Edge Function `process-recording`: transkrypcja → podział na notatki → dokumenty `.md` → chunki i embeddingi → powiązania
-- [ ] Schematy zod dla odpowiedzi LLM, prompty jako wersjonowane pliki
+- [x] Schematy zod dla odpowiedzi LLM, prompty jako wersjonowane pliki
 - [ ] Webhook bazy + ponawianie przez `pg_cron`
 - [ ] Aplikacja: lista notatek, status nagrań na żywo (Realtime), ponowienie po błędzie
 - [ ] Ustawienia nagrywania pod mowę, poprawka nazwy zdarzenia w `expoAudioRecorder.ts`
