@@ -1,0 +1,243 @@
+import { IDatabaseClient, IStorageClient, DocumentInsert, DocumentChunkInsert, LinkInsert } from '../db/types.ts';
+import { AiProviders } from '../ai/factory.ts';
+import { structureSchema, StructuredNote } from '../schemas/structure.ts';
+import { linkSchema, LinkItem } from '../schemas/link.ts';
+import { validateAndRepairJson } from '../ai/validate.ts';
+import { renderNoteMarkdown, generateNoteSlug } from '../markdown/noteTemplate.ts';
+
+export interface PipelineOptions {
+  recordingId: string;
+  db: IDatabaseClient;
+  storage: IStorageClient;
+  aiProviders: AiProviders;
+  structurePromptTemplate?: string;
+  linkPromptTemplate?: string;
+}
+
+export interface PipelineResult {
+  recordingId: string;
+  status: 'done' | 'failed';
+  documentIds: string[];
+}
+
+const DEFAULT_STRUCTURE_PROMPT = `Jesteś asystentem AI dzielącym transkrypcję głosową na atomowe notatki.
+Podziel poniższą wypowiedź na 1 lub więcej notatek.
+Dozwolone typy notatek: idea, task, reflection, event.
+Odpowiedź zwróć w formacie JSON zgodnym ze schematem structure.
+<transcript>
+{{TRANSCRIPT}}
+</transcript>`;
+
+const DEFAULT_LINK_PROMPT = `Jesteś asystentem AI oceniającym powiązania między notatkami.
+Oceń powiązania między notatką źródłową a podanymi kandydatami.
+Wolno Ci wybrać WYŁĄCZNIE identyfikatory z listy kandydatów.
+Odpowiedź zwróć w formacie JSON zgodnym ze schematem link.
+<source_note>
+{{SOURCE_NOTE}}
+</source_note>
+<candidates>
+{{CANDIDATES}}
+</candidates>`;
+
+/**
+ * Główny przepływ przetwarzania nagrania (kroki a-e z docs/02-architektura.md §6.1).
+ * Każdy krok sprawdza status i jest w pełni idempotentny.
+ */
+export async function processRecordingPipeline(options: PipelineOptions): Promise<PipelineResult> {
+  const { recordingId, db, storage, aiProviders } = options;
+
+  const recording = await db.getRecording(recordingId);
+  if (!recording) {
+    throw new Error(`Nagranie ${recordingId} nie zostało odnalezione`);
+  }
+
+  // Idempotencja: jeśli nagranie jest już zakończone sukcesem, natychmiast zwróć dokumenty
+  if (recording.status === 'done') {
+    const existingDocs = await db.getDocumentsByRecordingId(recordingId);
+    return {
+      recordingId,
+      status: 'done',
+      documentIds: existingDocs.map((d) => d.id),
+    };
+  }
+
+  try {
+    let currentStatus = recording.status;
+    let transcript = recording.raw_transcript;
+
+    // --- KROK A: Transkrypcja STT (status 'uploaded' -> 'transcribed') ---
+    if (!transcript) {
+      const audioPath = recording.audio_path || `${recording.user_id}/${recording.id}.m4a`;
+      const audioData = await storage.downloadAudio(audioPath);
+      transcript = await aiProviders.stt.transcribe(audioData, { language: 'pl' });
+
+      // Zapisujemy raw_transcript - reguła: raw_transcript nigdy nie jest nadpisywany po zapisaniu
+      await db.updateRecording(recordingId, {
+        raw_transcript: transcript,
+        status: 'transcribed',
+      });
+      currentStatus = 'transcribed';
+    }
+
+    // --- KROK B: Podział na notatki LLM (status 'transcribed' -> 'segmented') ---
+    let documents = await db.getDocumentsByRecordingId(recordingId);
+
+    if (currentStatus === 'uploaded' || currentStatus === 'transcribed' || documents.length === 0) {
+      const promptTemplate = options.structurePromptTemplate || DEFAULT_STRUCTURE_PROMPT;
+      const filledPrompt = promptTemplate.replace('{{TRANSCRIPT}}', transcript || '');
+
+      const structureResponseText = await aiProviders.structure.generateText([{ role: 'user', content: filledPrompt }]);
+
+      const repairCallback = async (errMsg: string, rawText: string) => {
+        const repairPrompt = `Popraw poniższy błąd w formacie JSON:\nBłąd: ${errMsg}\nPoprzednia odpowiedź: ${rawText}`;
+        return await aiProviders.structure.generateText([{ role: 'user', content: repairPrompt }]);
+      };
+
+      const structuredOutput = await validateAndRepairJson(structureResponseText, structureSchema, repairCallback);
+
+      const day = recording.recorded_at.slice(0, 10);
+      const docsToInsert: DocumentInsert[] = [];
+
+      for (let i = 0; i < structuredOutput.notes.length; i++) {
+        const note: StructuredNote = structuredOutput.notes[i];
+        const docId = crypto.randomUUID();
+
+        let categoryId: string | null = null;
+        if (note.category) {
+          categoryId = await db.getOrCreateCategory(recording.user_id, note.category);
+        }
+
+        let slug = generateNoteSlug(day, note.title);
+        const exists = await db.slugExists(recording.user_id, slug);
+        if (exists) {
+          slug = generateNoteSlug(day, note.title, docId);
+        }
+
+        const mdPath = `${recording.user_id}/notes/${slug}.md`;
+        const bodyMd = renderNoteMarkdown({
+          id: docId,
+          title: note.title,
+          noteType: note.noteType,
+          day,
+          recordedAt: recording.recorded_at,
+          category: note.category,
+          tags: note.tags,
+          source: recording.source,
+          content: note.content,
+        });
+
+        // Zapisujemy plik .md w Storage (deterministycznie, bez LLM - ADR-004)
+        await storage.uploadMarkdown(mdPath, bodyMd);
+
+        docsToInsert.push({
+          id: docId,
+          user_id: recording.user_id,
+          kind: 'note',
+          note_type: note.noteType,
+          day,
+          title: note.title,
+          slug,
+          data: {
+            title: note.title,
+            noteType: note.noteType,
+            category: note.category,
+            tags: note.tags,
+          },
+          body_md: bodyMd,
+          md_path: mdPath,
+          category_id: categoryId,
+          tags: note.tags,
+          recording_id: recordingId,
+          schema_version: 1,
+        });
+      }
+
+      await db.insertDocuments(docsToInsert);
+      await db.updateRecording(recordingId, { status: 'segmented' });
+      documents = docsToInsert;
+      currentStatus = 'segmented';
+    }
+
+    // --- KROK C & D: Chunki, embeddingi oraz powiązania links ---
+    for (const doc of documents) {
+      // Chunk 0: zawartość notatki
+      const chunkText = `${doc.title}\n\n${doc.body_md}`;
+      const embeddingVector = await aiProviders.embedding.embed(chunkText);
+
+      const chunk: DocumentChunkInsert = {
+        id: crypto.randomUUID(),
+        document_id: doc.id,
+        user_id: recording.user_id,
+        idx: 0,
+        content: chunkText,
+        embedding: embeddingVector,
+        embedding_model: aiProviders.embedding.model,
+      };
+
+      await db.insertDocumentChunks([chunk]);
+
+      // Powiązania (links): pobieramy kandydatów
+      const candidates = await db.getCandidateDocuments(recording.user_id, doc.id, 10);
+      if (candidates.length > 0) {
+        const allowedCandidateIds = new Set(candidates.map((c) => c.id));
+        const candidateDescriptions = candidates
+          .map((c) => `- ID: ${c.id}\n  Tytuł: ${c.title}\n  Fragment: ${c.snippet}`)
+          .join('\n');
+
+        const linkTemplate = options.linkPromptTemplate || DEFAULT_LINK_PROMPT;
+        const filledLinkPrompt = linkTemplate
+          .replace('{{SOURCE_NOTE}}', `Tytuł: ${doc.title}\nTreść: ${doc.body_md}`)
+          .replace('{{CANDIDATES}}', candidateDescriptions);
+
+        try {
+          const linkRespText = await aiProviders.link.generateText([{ role: 'user', content: filledLinkPrompt }]);
+
+          const linkRepairCallback = async (errMsg: string, rawText: string) => {
+            const repairPrompt = `Popraw błąd formatu JSON dla powiązań:\n${errMsg}\nPoprzednia odpowiedź:\n${rawText}`;
+            return await aiProviders.link.generateText([{ role: 'user', content: repairPrompt }]);
+          };
+
+          const linkOutput = await validateAndRepairJson(linkRespText, linkSchema, linkRepairCallback);
+
+          // Filtrujemy powiązania: dopuszczamy WYŁĄCZNIE ID z listy kandydatów
+          const validLinks: LinkInsert[] = linkOutput.links
+            .filter((item: LinkItem) => allowedCandidateIds.has(item.targetId))
+            .map((item: LinkItem) => ({
+              user_id: recording.user_id,
+              source_id: doc.id,
+              target_id: item.targetId,
+              kind: 'llm' as const,
+              score: item.score,
+              reason: item.reason,
+            }));
+
+          if (validLinks.length > 0) {
+            await db.insertLinks(validLinks);
+          }
+        } catch {
+          // Błąd oceny powiązań nie blokuje całego nagrania
+        }
+      }
+    }
+
+    // --- KROK E: Kolejka przebudowy dnia i status 'done' ---
+    const day = recording.recorded_at.slice(0, 10);
+    await db.upsertDayRebuildQueue(recording.user_id, day);
+    await db.updateRecording(recordingId, { status: 'done', last_error: null });
+
+    return {
+      recordingId,
+      status: 'done',
+      documentIds: documents.map((d) => d.id),
+    };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    await db.updateRecording(recordingId, {
+      status: 'failed',
+      last_error: errorMsg,
+      attempts: (recording.attempts || 0) + 1,
+    });
+
+    throw err;
+  }
+}
