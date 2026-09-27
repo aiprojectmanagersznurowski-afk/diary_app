@@ -34,7 +34,7 @@ flowchart LR
 - [x] `_shared/ai`: interfejsy i adaptery Groq i Gemini, konfiguracja przez zmienne środowiskowe
 - [x] Edge Function `process-recording`: transkrypcja → podział na notatki → dokumenty `.md` → chunki i embeddingi → powiązania
 - [x] Schematy zod dla odpowiedzi LLM, prompty jako wersjonowane pliki
-- [ ] Webhook bazy + ponawianie przez `pg_cron`
+- [x] Webhook bazy + ponawianie przez `pg_cron`
 - [ ] Aplikacja: lista notatek, status nagrań na żywo (Realtime), ponowienie po błędzie
 - [ ] Ustawienia nagrywania pod mowę, poprawka nazwy zdarzenia w `expoAudioRecorder.ts`
 
