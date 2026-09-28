@@ -36,7 +36,7 @@ flowchart LR
 - [x] Schematy zod dla odpowiedzi LLM, prompty jako wersjonowane pliki
 - [x] Webhook bazy + ponawianie przez `pg_cron`
 - [x] Aplikacja: lista notatek, status nagrań na żywo (Realtime), ponowienie po błędzie
-- [ ] Ustawienia nagrywania pod mowę, poprawka nazwy zdarzenia w `expoAudioRecorder.ts`
+- [x] Ustawienia nagrywania pod mowę, poprawka nazwy zdarzenia w `expoAudioRecorder.ts`
 
 **Gotowe, gdy:** nagranie w trybie samolotowym zostaje wysłane po odzyskaniu sieci, a jedno nagranie z trzema myślami daje trzy notatki z typami, kategoriami i powiązaniami. Błąd AI nie usuwa nagrania.
 
