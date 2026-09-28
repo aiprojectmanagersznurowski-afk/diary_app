@@ -1,0 +1,43 @@
+id: F3-02
+title: Edge Function build-daily
+phase: 3
+role: edge
+branch: feat/F3-02-build-daily
+depends_on: [F3-01]
+roadmap: "Edge Function `build-daily`: analiza dnia, sekcja „Pomysły, na które wpadłem” (odnośniki do notatek typu `idea`), szablon `.md` wpisu dnia, zapis do Storage, chunki i embeddingi, aktualizacja serii/odznak i zgodności z celami (`goalImpactType`) w `profiles`"
+read_first:
+  - docs/02-architektura.md#63-przebudowa-wpisu-dnia
+  - docs/02-architektura.md#7-warstwa-ai
+  - docs/05-decyzje.md
+scope:
+  write:
+    - supabase/functions/build-daily/**
+    - supabase/functions/_shared/pipeline/**
+    - supabase/functions/_shared/markdown/**
+    - supabase/functions/_shared/db/types.ts
+    - supabase/functions/_shared/prompts/**
+context: |
+  Istnieje robocza wersja tego kodu w git stash (stash@{0} "wip: Phase 3 build-daily", zapisana z
+  gałęzi fix/F2-08-speech-recording przed jej scaleniem): buildDailySingle/buildDailyBatch w
+  _shared/pipeline/buildDaily.ts, renderDailyMarkdown w _shared/markdown/dailyTemplate.ts,
+  rozszerzenie DocumentInsert i interfejs IBuildDailyDatabaseClient w _shared/db/types.ts. Do
+  przejrzenia i dostosowania pod ten kontrakt (w tym: implementacja IBuildDailyDatabaseClient jako
+  prawdziwego adaptera Supabase, endpoint Deno serve() w build-daily/index.ts, autoryzacja wywołania
+  z pg_net z F3-01) — NIE do bezpośredniego scalenia bez testów pgTAP/deno test.
+
+  Pipeline: pobiera notatki dnia + cele życiowe + osobowość z profiles → LLM tworzy DigestOutput
+  (schema już istnieje w _shared/schemas/digest.ts, walidacja przez _shared/ai/validate.ts) → wybiera
+  pomysły wyłącznie spośród notatek typu 'idea' podanych z ID (ADR-005: identyfikatory spoza listy
+  odrzucane) → renderuje .md deterministycznie bez LLM (ADR-004) → UPSERT documents (kind='daily'),
+  zapis do Storage, chunki+embeddingi, linki kind='day' (wpis dnia → notatki dnia) → aktualizuje
+  current_streak/last_entry_day/badges w profiles. Szablon notatki (noteTemplate.ts) już istnieje
+  z fazy 2 — nie dotykaj go w tym zadaniu, potrzebny jest tylko szablon wpisu dnia.
+acceptance:
+  - "kilka notatek z jednego dnia daje jeden dokument kind='daily' ze wszystkimi dotychczasowymi sekcjami"
+  - "sekcja pomysłów zawiera tylko odnośniki do istniejących notatek typu idea (żadnych wymyślonych ID)"
+  - "plik .md w Storage otwiera się poprawnie w Obsidianie (nagłówek YAML + odnośniki [[...]])"
+  - "ponowne wywołanie dla tego samego dnia jest idempotentne (UPSERT, bez duplikatów chunków/linków)"
+  - "test deno dla renderDailyMarkdown i buildDailySingle (atrapa IBuildDailyDatabaseClient)"
+  - "seria (current_streak) rośnie przy kolejnym dniu z rzędu i resetuje się po przerwie"
+fixes_known_bugs: []
+human_steps: []

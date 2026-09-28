@@ -1,0 +1,32 @@
+id: F3-04
+title: Analizy i seria dni w aplikacji z danych policzonych po stronie serwera
+phase: 3
+role: mobile
+branch: feat/F3-04-insights-server-stats
+depends_on: [F3-02]
+roadmap: "Analizy i seria dni w aplikacji czytają dane policzone po stronie serwera (bez lokalnego przeliczania)"
+read_first:
+  - docs/02-architektura.md#4-model-danych
+  - docs/04-roadmapa.md#znane-błędy-obecnego-kodu
+scope:
+  write:
+    - src/application/useCases/statsUseCase.ts
+    - src/presentation/screens/InsightsScreen.tsx
+    - src/presentation/screens/BadgesScreen.tsx
+    - src/presentation/components/BadgeAlertModal.tsx
+    - src/domain/**
+    - src/infrastructure/supabase/**
+context: |
+  statsUseCase.ts dziś liczy serię i „zgodność z celami” lokalnie na kliencie: setHours zmienia
+  daty wpisów w stanie aplikacji, a zgodność z celami to heurystyka pomijająca goalImpactType.
+  Po F3-02 current_streak, last_entry_day i badges są policzone i zapisane w profiles przez
+  build-daily, a zgodność z celami to pole goalImpactType w documents.data każdego wpisu dnia.
+  Ekrany InsightsScreen/BadgesScreen mają czytać te wartości wprost z profiles/documents zamiast
+  przeliczać je lokalnie.
+acceptance:
+  - "seria wyświetlana w aplikacji równa się current_streak z profiles, bez lokalnego przeliczania dat"
+  - "wskaźnik zgodności z celami liczy się z goalImpactType wpisów dnia, nie z heurystyki klienta"
+  - "brak w kodzie klienta mutacji dat wpisów (setHours) do celów statystycznych"
+fixes_known_bugs:
+  - "src/application/useCases/statsUseCase.ts: setHours zmienia daty wpisów w stanie aplikacji; „zgodność z celami” to heurystyka, która pomija goalImpactType"
+human_steps: []

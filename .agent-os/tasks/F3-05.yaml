@@ -1,0 +1,24 @@
+id: F3-05
+title: Udostępnianie kart na nowym modelu dokumentów
+phase: 3
+role: mobile
+branch: feat/F3-05-share-cards-documents
+depends_on: [F3-03]
+roadmap: "Udostępnianie kart działa na nowym modelu (`documents` zamiast starego store'u)"
+read_first:
+  - docs/02-architektura.md#4-model-danych
+scope:
+  write:
+    - src/presentation/screens/DetailScreen.tsx
+    - src/presentation/components/**
+    - src/application/useCases/**
+context: |
+  Udostępnianie karty dnia (przechwycenie widoku, react-native-share/ViewShot — patrz istniejący
+  kod w DetailScreen.tsx) dziś korzysta z pól starego modelu wpisu dnia. Po F3-03 ekran czyta
+  documents.data; karta do udostępnienia ma używać tych samych, nowych pól (dominantThought,
+  summary, quotes itd.), nie starych pól z useDiaryStore.
+acceptance:
+  - "wygenerowana karta pokazuje treść pochodzącą z documents.data bieżącego wpisu dnia"
+  - "udostępnianie działa dla wpisu dnia otwartego bezpośrednio z linku (bez przejścia przez listę)"
+human_steps:
+  - "CP-DEVICE: wizualna weryfikacja wygenerowanej karty na iOS i Androidzie"

@@ -1,0 +1,31 @@
+id: F3-01
+title: Harmonogram pg_cron i RPC żądania przebudowy wpisu dnia
+phase: 3
+role: db
+branch: feat/F3-01-daily-rebuild-schedule
+depends_on: [F2-06]
+roadmap: "Migracja: harmonogram `pg_cron` (odczekanie po zmianach w `day_rebuild_queue`) i RPC do żądania natychmiastowej przebudowy wpisu dnia"
+read_first:
+  - docs/02-architektura.md#63-przebudowa-wpisu-dnia
+  - docs/02-architektura.md#9-niezawodność
+scope:
+  write:
+    - supabase/migrations/**
+    - supabase/tests/**
+context: |
+  Wzorzec analogiczny do F2-06 (webhook + pg_cron dla recordings), tym razem dla day_rebuild_queue
+  (docs/02-architektura.md §6.3): pg_cron co 5 min wywołuje Edge Function build-daily (przez pg_net)
+  dla wpisów w day_rebuild_queue starszych niż próg odczekania (10 min, żeby poczekać na kolejne
+  nagrania z tego samego dnia). Dodatkowo RPC public.request_daily_rebuild(p_day date) dostępne dla
+  authenticated: UPSERT do day_rebuild_queue (user_id = auth.uid(), day, requested_at = now()) do
+  wywołania na żądanie z aplikacji (np. użytkownik otwiera dzisiejszy wpis). Adres funkcji i klucz
+  z Vault/app.settings, jak w get_process_recording_config (nie duplikuj sekretu — można go odczytać
+  ponownie tą samą funkcją, jeśli URL Edge Function jest inny, dodaj analogiczną funkcję pomocniczą).
+acceptance:
+  - "RPC request_daily_rebuild wstawia/aktualizuje wiersz w day_rebuild_queue tylko dla auth.uid() wywołującego (test pgTAP)"
+  - "zadanie pg_cron w cron.job jest zarejestrowane pod nazwą rebuild-due-daily-entries (test pgTAP)"
+  - "wywołanie dla wpisu młodszego niż próg odczekania nie jest jeszcze przetwarzane (test pgTAP)"
+  - "brak sekretów w migracji"
+human_steps:
+  - "CP-SECRETS: jeśli build-daily ma inny URL niż process-recording, wpis w Vault"
+  - "CP-MIGRATION: przegląd i supabase db push"

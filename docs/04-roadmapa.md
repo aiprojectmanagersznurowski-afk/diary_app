@@ -42,13 +42,11 @@ flowchart LR
 
 ## Faza 3: Pamiętnik jako dokument
 
-- [ ] Edge Function `build-daily` z odczekaniem (`day_rebuild_queue` + `pg_cron`) i wywołaniem na żądanie
-- [ ] Sekcja „Pomysły, na które wpadłem” (odnośniki do notatek typu `idea`)
-- [ ] Szablony `.md` dla notatki i wpisu dnia, zapis do Storage
+- [ ] Migracja: harmonogram `pg_cron` (odczekanie po zmianach w `day_rebuild_queue`) i RPC do żądania natychmiastowej przebudowy wpisu dnia
+- [ ] Edge Function `build-daily`: analiza dnia, sekcja „Pomysły, na które wpadłem” (odnośniki do notatek typu `idea`), szablon `.md` wpisu dnia, zapis do Storage, chunki i embeddingi, aktualizacja serii/odznak i zgodności z celami (`goalImpactType`) w `profiles`
 - [ ] Ekran szczegółów dnia czyta `documents.data`; podgląd `.md`
-- [ ] Analizy i seria dni liczone z wpisów dnia; seria i odznaki po stronie serwera
-- [ ] Zgodność z celami liczona z `goalImpactType`
-- [ ] Udostępnianie kart działa na nowym modelu
+- [ ] Analizy i seria dni w aplikacji czytają dane policzone po stronie serwera (bez lokalnego przeliczania)
+- [ ] Udostępnianie kart działa na nowym modelu (`documents` zamiast starego store'u)
 
 **Gotowe, gdy:** kilka nagrań z jednego dnia daje jeden wpis dnia ze wszystkimi dotychczasowymi sekcjami i listą pomysłów, a plik `.md` otwiera się poprawnie w Obsidianie.
 
