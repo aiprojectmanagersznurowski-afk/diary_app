@@ -2,8 +2,16 @@
 -- Zgodnie z docs/02-architektura.md §6.1, §9 oraz wytycznymi F2-06.
 -- Brak wpisanych sekretów: URL i klucz pobierane z Supabase Vault (lub app.settings w testach).
 
--- 1. Upewniamy się, że rozszerzenie vault jest włączone
-create extension if not exists vault with schema vault;
+-- 1. Upewniamy się, że rozszerzenie vault jest włączone. Niedostępne na części obrazów Postgresa
+-- używanych lokalnie/w CI (brak pliku kontrolnego rozszerzenia) — reszta tej migracji już zakłada
+-- taki brak i ma fallback do app.settings (patrz get_process_recording_config niżej), więc błąd
+-- tutaj jest tylko ostrzeżeniem, nie przerywa migracji.
+do $$
+begin
+  create extension if not exists vault with schema vault;
+exception when others then
+  raise warning 'Rozszerzenie vault niedostępne w tym środowisku, używam fallbacku app.settings: %', sqlerrm;
+end $$;
 
 -- 2. Funkcja pomocnicza do bezpiecznego odczytu konfiguracji Edge Function
 create or replace function public.get_process_recording_config()
