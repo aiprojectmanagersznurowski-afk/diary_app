@@ -4,20 +4,25 @@
 begin;
   select plan(9);
 
-  -- 1. Przygotowanie użytkownika i konfiguracji testowej
-  select tests.create_supabase_user('webhook-cron@test.local');
-  select tests.authenticate_as('webhook-cron@test.local');
-
   -- Konfiguracja testowa w app.settings (symulacja sekretu z Vault)
   select set_config('app.settings.process_recording_url', 'http://127.0.0.1:54321/functions/v1/process-recording', true);
   select set_config('app.settings.process_recording_auth', 'test-auth-key-123', true);
 
-  -- Test 1: get_process_recording_config zwraca poprawną konfigurację
+  -- Test 1: get_process_recording_config zwraca poprawną konfigurację. Wywołane PRZED
+  -- authenticate_as (czyli jako postgres, nie authenticated) — funkcja celowo ma
+  -- `revoke execute ... from public, anon, authenticated` (ujawnia sekret auth_header),
+  -- więc wywołanie jej jako zwykły zalogowany użytkownik zawsze zwróci "permission denied".
   select results_eq(
     $$select func_url, auth_header from public.get_process_recording_config()$$,
     $$values ('http://127.0.0.1:54321/functions/v1/process-recording'::text, 'Bearer test-auth-key-123'::text)$$,
     'get_process_recording_config zwraca poprawny URL i nagłówek autoryzacji'
   );
+
+  -- 1b. Przygotowanie użytkownika testowego dla pozostałych testów. Celowo BEZ authenticate_as:
+  -- get_process_recording_config i retry_stuck_recordings są `revoke`d od authenticated (patrz
+  -- migracja 20260927185942), więc cała reszta pliku musi działać jako postgres (superużytkownik,
+  -- pomija RLS), a create_supabase_user wystarcza do uzyskania poprawnego uid pod FK recordings.user_id.
+  select tests.create_supabase_user('webhook-cron@test.local');
 
   -- Test 2: INSERT recordings (status uploaded) dodaje wpis do net.http_request_queue
   do $$
