@@ -1,0 +1,28 @@
+id: F3-03
+title: Ekran szczegółów dnia na nowym modelu dokumentów
+phase: 3
+role: mobile
+branch: feat/F3-03-detail-screen-documents
+depends_on: [F3-02]
+roadmap: "Ekran szczegółów dnia czyta `documents.data`; podgląd `.md`"
+read_first:
+  - docs/02-architektura.md#4-model-danych
+  - docs/05-decyzje.md
+scope:
+  write:
+    - src/presentation/screens/DetailScreen.tsx
+    - src/application/useCases/**
+    - src/domain/**
+    - src/infrastructure/supabase/**
+context: |
+  DetailScreen.tsx dziś czyta stary model (wpis dnia jako doklejany, przepisywany tekst z
+  useDiaryStore, ADR-005 to zastępuje). Ekran ma pobierać dokument kind='daily' dla danego dnia
+  (documents.data — pola DigestOutput: summary, dominantThought, ideas, completedTasks,
+  importantEvents, emotionTriggers, gratefulFor, impactOnGoals, goalAdvice, quotes) i renderować
+  sekcje z tych danych strukturalnych, a nie z surowego .md. Dodatkowo podgląd wygenerowanego pliku
+  .md (np. zakładka/modal z treścią body_md) do weryfikacji przez użytkownika.
+acceptance:
+  - "ekran renderuje wszystkie sekcje wpisu dnia z documents.data (bez zapytań do starych store'ów Firestore/diaryStore dla tego ekranu)"
+  - "sekcja pomysłów prowadzi do notatek typu idea przez odnośniki (nawigacja do notatki)"
+  - "podgląd .md pokazuje treść body_md wygenerowaną przez build-daily"
+human_steps: []
