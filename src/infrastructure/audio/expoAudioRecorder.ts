@@ -1,11 +1,39 @@
-import {
-  AudioModule,
-  RecordingPresets,
-  requestRecordingPermissionsAsync,
-  setAudioModeAsync,
-  AudioRecorder,
-} from 'expo-audio';
+import { AudioModule, requestRecordingPermissionsAsync, setAudioModeAsync, AudioRecorder } from 'expo-audio';
+import type { RecordingOptions } from 'expo-audio';
 import { IAudioRecorder } from '../../domain/services/IAudioRecorder';
+
+/**
+ * Custom recording preset optimised for speech / voice diary.
+ *
+ * Key choices:
+ * - **Mono (1 channel)** — phone mic is mono; stereo doubles file size for no gain.
+ * - **16 kHz sample rate** — matches Whisper's native rate, avoids server-side
+ *   resampling while perfectly capturing the human speech band (≤8 kHz).
+ * - **32 kbps AAC** — transparent quality for speech at ~14 MB/hour
+ *   (vs ~58 MB/hour with HIGH_QUALITY stereo 128 kbps).
+ * - **AAC (.m4a)** — universally supported, streamable, good encoder on both platforms.
+ */
+const SPEECH_MONO: RecordingOptions = {
+  extension: '.m4a',
+  sampleRate: 16000,
+  numberOfChannels: 1,
+  bitRate: 32000,
+  android: {
+    outputFormat: 'mpeg4',
+    audioEncoder: 'aac',
+  },
+  ios: {
+    outputFormat: 'aac ', // IOSOutputFormat.MPEG4AAC
+    audioQuality: 0x40, // AudioQuality.MEDIUM — good enough for speech
+    linearPCMBitDepth: 16,
+    linearPCMIsBigEndian: false,
+    linearPCMIsFloat: false,
+  },
+  web: {
+    mimeType: 'audio/webm',
+    bitsPerSecond: 32000,
+  },
+};
 
 export class ExpoAvAudioRecorder implements IAudioRecorder {
   private recording: AudioRecorder | null = null;
@@ -23,9 +51,8 @@ export class ExpoAvAudioRecorder implements IAudioRecorder {
         playsInSilentMode: true,
       });
 
-      const baseOptions = RecordingPresets.HIGH_QUALITY;
       const options = {
-        ...baseOptions,
+        ...SPEECH_MONO,
         isMeteringEnabled: true,
       };
 
