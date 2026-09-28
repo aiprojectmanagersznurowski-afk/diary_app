@@ -18,9 +18,11 @@ begin;
     'get_process_recording_config zwraca poprawny URL i nagłówek autoryzacji'
   );
 
-  -- 1b. Przygotowanie użytkownika testowego dla pozostałych testów (insert recordings jako authenticated)
+  -- 1b. Przygotowanie użytkownika testowego dla pozostałych testów. Celowo BEZ authenticate_as:
+  -- get_process_recording_config i retry_stuck_recordings są `revoke`d od authenticated (patrz
+  -- migracja 20260927185942), więc cała reszta pliku musi działać jako postgres (superużytkownik,
+  -- pomija RLS), a create_supabase_user wystarcza do uzyskania poprawnego uid pod FK recordings.user_id.
   select tests.create_supabase_user('webhook-cron@test.local');
-  select tests.authenticate_as('webhook-cron@test.local');
 
   -- Test 2: INSERT recordings (status uploaded) dodaje wpis do net.http_request_queue
   do $$
