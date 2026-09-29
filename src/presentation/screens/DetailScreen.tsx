@@ -1,18 +1,21 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { DetailScreenRouteProp } from '../../navigation/types';
-import { useDiaryStore } from '../../application/store/useDiaryStore';
+import { DetailScreenRouteProp, DetailScreenNavigationProp } from '../../navigation/types';
 import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { GlassCard, GradientText, EmotionPill } from '../components/UIPrimitives';
+import { getDocumentUseCase } from '../../composition';
+import { AnyDocument } from '../../domain/repositories/IDocumentRepository';
+import { getNoteTypeLabel, getNoteTypeColor, getNoteTypeIcon } from '../../domain/models/NoteDocument';
 
 const { width } = Dimensions.get('window');
 
-const formatDate = (iso: string | Date | number) => {
-  const d = new Date(iso);
+const formatDate = (day: string) => {
+  const [y, m, d] = day.split('-').map(Number);
+  const date = new Date(y, (m || 1) - 1, d || 1);
   const days = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
   const months = [
     'stycznia',
@@ -29,73 +32,51 @@ const formatDate = (iso: string | Date | number) => {
     'grudnia',
   ];
   return {
-    weekday: days[d.getDay()],
-    full: `${d.getDate()} ${months[d.getMonth()]}`,
-    time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
+    weekday: days[date.getDay()],
+    full: `${date.getDate()} ${months[date.getMonth()]}`,
   };
 };
 
+const formatTime = (iso: string) => {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
+const hasContent = (text: string | null | undefined) => !!text && text.trim().length > 0;
+
 export const DetailScreen = () => {
   const route = useRoute<DetailScreenRouteProp>();
-  const navigation = useNavigation();
-  const { entries } = useDiaryStore();
+  const navigation = useNavigation<DetailScreenNavigationProp>();
   const { theme } = useSettingsStore();
   const colors = THEMES[theme];
-  const entry = entries.find((e) => e.id === route.params.entryId);
   const compositeRef = useRef<View>(null);
 
+  const [doc, setDoc] = useState<AnyDocument | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isShareMode, setIsShareMode] = useState(false);
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
-  const [isTranscriptVisible, setIsTranscriptVisible] = useState(false);
+  const [isMdPreviewVisible, setIsMdPreviewVisible] = useState(false);
 
-  if (!entry || !entry.parsedData) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Nie znaleziono wpisu lub brak analizy.</Text>
-      </View>
-    );
-  }
-
-  const { parsedData } = entry;
-  const d = formatDate(entry.createdAt || entry.date);
-
-  // Fallbacks for backward compatibility
-  const pData = {
-    dominantThought: parsedData.dominantThought || (parsedData as any).quote || 'Wpis',
-    summary: parsedData.summary || '',
-    importantQuotes:
-      parsedData.quotes || (parsedData as any).importantQuotes || (parsedData as any).important_quotes || [],
-    impactOnGoals: parsedData.impactOnGoals || (parsedData as any).goalAlignment?.reason || '',
-    tasksDone: parsedData.completedTasks || (parsedData as any).tasksDone || (parsedData as any).tasks_done || [],
-    emotions: parsedData.emotions || [],
-    emotionTriggers: parsedData.emotionTriggers || [],
-    fatigueLevel: parsedData.fatigueLevel || (parsedData as any).fatigue_level || '',
-    stressVsCalm: parsedData.stressVsCalm || '',
-    gratitude: parsedData.gratefulFor || (parsedData as any).gratitude || '',
-    importantEvents: parsedData.importantEvents || [],
-    angerTriggers:
-      parsedData.triggeredAnger || (parsedData as any).angerTriggers || (parsedData as any).anger_triggers || '',
-    joyTriggers: parsedData.triggeredJoy || (parsedData as any).joyTriggers || '',
-    calmTriggers: parsedData.triggeredCalm || (parsedData as any).calmTriggers || '',
-    stressTriggers: parsedData.triggeredStress || '',
-    goalImpactType: parsedData.goalImpactType || 'neutral',
-    goalAdvice: parsedData.goalAdvice || '',
-  };
-
-  const isValidData = (text: string | any) => {
-    if (!text) return false;
-    const str = String(text).toLowerCase().trim();
-    if (
-      str === '' ||
-      str === 'null' ||
-      str === 'brak' ||
-      str === 'nie dotyczy' ||
-      str === 'brak danych' ||
-      str === 'nie wspomniano'
-    )
-      return false;
-    return true;
-  };
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    setLoadError(null);
+    getDocumentUseCase
+      .execute(route.params.entryId)
+      .then((result) => {
+        if (!cancelled) setDoc(result);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [route.params.entryId]);
 
   const toggleSelection = (id: string) => {
     setSelectedCards((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
@@ -107,17 +88,12 @@ export const DetailScreen = () => {
       setSelectedCards(['dominantThought']);
       return;
     }
-
     if (selectedCards.length === 0) {
       setIsShareMode(false);
       return;
     }
-
     try {
-      const uri = await captureRef(compositeRef, {
-        format: 'png',
-        quality: 1,
-      });
+      const uri = await captureRef(compositeRef, { format: 'png', quality: 1 });
       await Sharing.shareAsync(uri);
       setIsShareMode(false);
       setSelectedCards([]);
@@ -128,14 +104,14 @@ export const DetailScreen = () => {
 
   const isSelected = (id: string) => selectedCards.includes(id);
 
-  const renderSelectableWrapper = (id: string, children: React.ReactNode, extraStyle?: any) => {
+  const renderSelectableWrapper = (id: string, children: React.ReactNode) => {
     const isWrapperSelectedStyle = isShareMode && isSelected(id);
     return (
       <TouchableOpacity
         key={id}
         activeOpacity={isShareMode ? 0.7 : 1}
         onPress={isShareMode ? () => toggleSelection(id) : undefined}
-        style={[styles.blockWrapper, isWrapperSelectedStyle && styles.selectedWrapper, extraStyle]}
+        style={[styles.blockWrapper, isWrapperSelectedStyle && styles.selectedWrapper]}
       >
         {isShareMode && (
           <Ionicons
@@ -150,222 +126,279 @@ export const DetailScreen = () => {
     );
   };
 
+  const renderHeader = (title: string, subtitle: string) => (
+    <View style={styles.header}>
+      <TouchableOpacity
+        onPress={() => (isShareMode ? setIsShareMode(false) : navigation.goBack())}
+        style={[
+          styles.backButton,
+          {
+            borderColor: colors.tileBorder,
+            backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
+          },
+        ]}
+      >
+        {isShareMode ? (
+          <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Anuluj</Text>
+        ) : (
+          <Feather name="chevron-left" size={20} color={colors.text} />
+        )}
+      </TouchableOpacity>
+      {!isShareMode && (
+        <View style={styles.headerTextContainer}>
+          <Text style={[styles.weekdayText, { color: colors.text }]}>{title}</Text>
+          <Text style={[styles.dateTimeText, { color: colors.textSecondary }]}>{subtitle}</Text>
+        </View>
+      )}
+      <TouchableOpacity onPress={handleShare} style={styles.headerAction}>
+        {isShareMode ? (
+          <Text style={styles.shareConfirmText}>Gotowe</Text>
+        ) : (
+          <View style={[styles.backButton, { backgroundColor: 'transparent', borderWidth: 0 }]}>
+            <Ionicons name="share-outline" size={20} color={colors.text} />
+          </View>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center' }]}>
+        <ActivityIndicator color={colors.text} />
+      </View>
+    );
+  }
+
+  if (loadError || !doc) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={styles.errorText}>{loadError || 'Nie znaleziono wpisu.'}</Text>
+      </View>
+    );
+  }
+
+  if (doc.kind === 'note') {
+    const note = doc;
+    const typeColor = getNoteTypeColor(note.noteType);
+    const d = formatDate(note.day);
+
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {renderHeader(d.weekday, `${d.full} · ${formatTime(note.createdAt)}`)}
+          <View style={styles.dashboard}>
+            <View style={styles.noteTypeBadgeRow}>
+              <View style={[styles.noteTypeBadge, { backgroundColor: `${typeColor}22`, borderColor: typeColor }]}>
+                <Feather name={getNoteTypeIcon(note.noteType) as any} size={14} color={typeColor} />
+                <Text style={[styles.noteTypeBadgeText, { color: typeColor }]}>{getNoteTypeLabel(note.noteType)}</Text>
+              </View>
+              {note.categoryName ? (
+                <Text style={[styles.noteCategory, { color: colors.textSecondary }]}>{note.categoryName}</Text>
+              ) : null}
+            </View>
+
+            <Text style={[styles.dominantThoughtText, { color: colors.text, textAlign: 'left', fontSize: 24 }]}>
+              {note.title}
+            </Text>
+
+            <GlassCard intensity={theme === 'AppleLight' ? 60 : 20} style={styles.summaryCard}>
+              <Text style={[styles.summaryText, { color: colors.text }]}>{note.content}</Text>
+            </GlassCard>
+
+            {note.tags.length > 0 && (
+              <View style={styles.emotionsRow}>
+                {note.tags.map((tag) => (
+                  <EmotionPill key={tag} id={tag} />
+                ))}
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  const daily = doc;
+  const d = formatDate(daily.day);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => (isShareMode ? setIsShareMode(false) : navigation.goBack())}
-            style={[
-              styles.backButton,
-              {
-                borderColor: colors.tileBorder,
-                backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
-              },
-            ]}
-          >
-            {isShareMode ? (
-              <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Anuluj</Text>
-            ) : (
-              <Feather name="chevron-left" size={20} color={colors.text} />
-            )}
-          </TouchableOpacity>
-          {!isShareMode && (
-            <View style={styles.headerTextContainer}>
-              <Text style={[styles.weekdayText, { color: colors.text }]}>{d.weekday}</Text>
-              <Text style={[styles.dateTimeText, { color: colors.textSecondary }]}>
-                {d.full} · {d.time}
-              </Text>
-            </View>
-          )}
-          <TouchableOpacity onPress={handleShare} style={styles.headerAction}>
-            {isShareMode ? (
-              <Text style={styles.shareConfirmText}>Gotowe</Text>
-            ) : (
-              <View style={[styles.backButton, { backgroundColor: 'transparent', borderWidth: 0 }]}>
-                <Ionicons name="share-outline" size={20} color={colors.text} />
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
+        {renderHeader(d.weekday, d.full)}
 
         <View style={styles.dashboard}>
-          {/* THE HOOK: Summary */}
-          {isValidData(pData.summary)
-            ? renderSelectableWrapper(
-                'summary',
-                <GlassCard
-                  intensity={theme === 'AppleLight' ? 60 : 20}
-                  style={[
-                    styles.summaryCard,
-                    {
-                      backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)',
-                    },
-                  ]}
-                >
-                  <Text style={[styles.summaryText, { color: colors.text }]}>{pData.summary}</Text>
-                </GlassCard>,
-              )
-            : null}
+          {hasContent(daily.summary) &&
+            renderSelectableWrapper(
+              'summary',
+              <GlassCard
+                intensity={theme === 'AppleLight' ? 60 : 20}
+                style={[
+                  styles.summaryCard,
+                  { backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)' },
+                ]}
+              >
+                <Text style={[styles.summaryText, { color: colors.text }]}>{daily.summary}</Text>
+              </GlassCard>,
+            )}
 
-          {/* THE STORY: Dominant Thought */}
-          {pData.dominantThought
-            ? renderSelectableWrapper(
-                'dominantThought',
-                <View style={styles.dominantThoughtContainer}>
-                  <GradientText
-                    text={`"${pData.dominantThought}"`}
-                    colors={['#A78BFA', '#F472B6', '#60A5FA']}
-                    style={styles.dominantThoughtText}
-                  />
-                </View>,
-              )
-            : null}
+          {hasContent(daily.dominantThought) &&
+            renderSelectableWrapper(
+              'dominantThought',
+              <View style={styles.dominantThoughtContainer}>
+                <GradientText
+                  text={`"${daily.dominantThought}"`}
+                  colors={['#A78BFA', '#F472B6', '#60A5FA']}
+                  style={styles.dominantThoughtText}
+                />
+              </View>,
+            )}
 
-          {/* EMOTIONS FELT */}
-          {(pData.emotionTriggers && pData.emotionTriggers.length > 0) ||
-          (pData.emotions && pData.emotions.length > 0 && pData.emotions.every(isValidData))
-            ? renderSelectableWrapper(
-                'emotions',
-                <View style={styles.sectionContainer}>
-                  <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Emocje</Text>
-                  <View style={styles.emotionsRow}>
-                    {pData.emotionTriggers && pData.emotionTriggers.length > 0
-                      ? pData.emotionTriggers.map((et, i) => (
-                          <EmotionPill key={i} id={et.emotion} trigger={et.trigger} />
-                        ))
-                      : pData.emotions.map((e: string, i: number) => <EmotionPill key={i} id={e} />)}
-                  </View>
-                </View>,
-              )
-            : null}
+          {(daily.emotionTriggers.length > 0 || daily.emotions.length > 0) &&
+            renderSelectableWrapper(
+              'emotions',
+              <View style={styles.sectionContainer}>
+                <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Emocje</Text>
+                <View style={styles.emotionsRow}>
+                  {daily.emotionTriggers.length > 0
+                    ? daily.emotionTriggers.map((et, i) => <EmotionPill key={i} id={et.emotion} trigger={et.trigger} />)
+                    : daily.emotions.map((e, i) => <EmotionPill key={i} id={e} />)}
+                </View>
+              </View>,
+            )}
 
-          {/* WHAT I DID TODAY */}
-          {pData.tasksDone && pData.tasksDone.length > 0 && pData.tasksDone.every(isValidData)
-            ? renderSelectableWrapper(
-                'tasks',
-                <View style={styles.sectionContainer}>
-                  <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Zrobione zadania</Text>
-                  {pData.tasksDone.map((task: string, index: number) => (
-                    <View key={`task-${index}`} style={styles.taskItem}>
-                      <Feather
-                        name="check-circle"
-                        size={16}
-                        color="#A78BFA"
-                        style={{ marginRight: 12, marginTop: 2 }}
-                      />
-                      <Text style={[styles.taskText, { color: colors.text }]}>{task}</Text>
+          {daily.ideas.length > 0 &&
+            renderSelectableWrapper(
+              'ideas',
+              <View style={styles.sectionContainer}>
+                <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>💡 Pomysły, na które wpadłem</Text>
+                {daily.ideas.map((idea) => (
+                  <TouchableOpacity
+                    key={idea.documentId}
+                    style={styles.ideaItem}
+                    activeOpacity={0.7}
+                    disabled={isShareMode}
+                    onPress={() => navigation.push('Detail', { entryId: idea.documentId })}
+                  >
+                    <Feather name="zap" size={16} color="#FBBF24" style={{ marginRight: 12, marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.ideaTitle, { color: colors.text }]}>{idea.title}</Text>
+                      <Text style={[styles.ideaOneLiner, { color: colors.textSecondary }]}>{idea.oneLiner}</Text>
                     </View>
-                  ))}
-                </View>,
-              )
-            : null}
+                    <Feather name="chevron-right" size={18} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                ))}
+              </View>,
+            )}
 
-          {/* IMPORTANT EVENTS */}
-          {pData.importantEvents && pData.importantEvents.length > 0 && pData.importantEvents.every(isValidData)
-            ? renderSelectableWrapper(
-                'events',
-                <View style={styles.sectionContainer}>
-                  <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Ważne wydarzenia</Text>
-                  {pData.importantEvents.map((event: string, index: number) => (
-                    <View key={`event-${index}`} style={styles.taskItem}>
-                      <Feather name="star" size={16} color="#FBBF24" style={{ marginRight: 12, marginTop: 2 }} />
-                      <Text style={[styles.taskText, { color: colors.text }]}>{event}</Text>
-                    </View>
-                  ))}
-                </View>,
-              )
-            : null}
-
-          {/* GRATEFUL FOR */}
-          {isValidData(pData.gratitude)
-            ? renderSelectableWrapper(
-                'gratitude',
-                <GlassCard
-                  intensity={theme === 'AppleLight' ? 60 : 15}
-                  style={[
-                    styles.triggerCard,
-                    {
-                      borderColor: 'rgba(251, 191, 36, 0.2)',
-                      backgroundColor: 'rgba(251, 191, 36, 0.05)',
-                    },
-                  ]}
-                >
-                  <View style={styles.triggerHeader}>
-                    <Feather name="heart" size={16} color="#FBBF24" />
-                    <Text style={[styles.triggerTitle, { color: '#FBBF24' }]}>Za to jestem wdzięczny</Text>
+          {daily.completedTasks.length > 0 &&
+            renderSelectableWrapper(
+              'tasks',
+              <View style={styles.sectionContainer}>
+                <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Zrobione</Text>
+                {daily.completedTasks.map((task, index) => (
+                  <View key={`task-${index}`} style={styles.taskItem}>
+                    <Feather name="check-circle" size={16} color="#A78BFA" style={{ marginRight: 12, marginTop: 2 }} />
+                    <Text style={[styles.taskText, { color: colors.text }]}>{task}</Text>
                   </View>
-                  <Text style={[styles.triggerText, { color: colors.text }]}>{pData.gratitude}</Text>
-                </GlassCard>,
-              )
-            : null}
+                ))}
+              </View>,
+            )}
 
-          {/* IMPACT ON GOALS */}
-          {isValidData(pData.impactOnGoals)
-            ? renderSelectableWrapper(
-                'impact',
-                <GlassCard
-                  intensity={theme === 'AppleLight' ? 60 : 15}
-                  style={[
-                    styles.triggerCard,
-                    {
-                      borderColor:
-                        pData.goalImpactType === 'positive'
-                          ? 'rgba(74, 222, 128, 0.2)'
-                          : pData.goalImpactType === 'negative'
-                            ? 'rgba(248, 113, 113, 0.2)'
-                            : 'rgba(156, 163, 175, 0.2)',
+          {daily.importantEvents.length > 0 &&
+            renderSelectableWrapper(
+              'events',
+              <View style={styles.sectionContainer}>
+                <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Ważne wydarzenia</Text>
+                {daily.importantEvents.map((event, index) => (
+                  <View key={`event-${index}`} style={styles.taskItem}>
+                    <Feather name="star" size={16} color="#FBBF24" style={{ marginRight: 12, marginTop: 2 }} />
+                    <Text style={[styles.taskText, { color: colors.text }]}>{event}</Text>
+                  </View>
+                ))}
+              </View>,
+            )}
+
+          {hasContent(daily.gratefulFor) &&
+            renderSelectableWrapper(
+              'gratitude',
+              <GlassCard
+                intensity={theme === 'AppleLight' ? 60 : 15}
+                style={[
+                  styles.triggerCard,
+                  { borderColor: 'rgba(251, 191, 36, 0.2)', backgroundColor: 'rgba(251, 191, 36, 0.05)' },
+                ]}
+              >
+                <View style={styles.triggerHeader}>
+                  <Feather name="heart" size={16} color="#FBBF24" />
+                  <Text style={[styles.triggerTitle, { color: '#FBBF24' }]}>Za to jestem wdzięczny</Text>
+                </View>
+                <Text style={[styles.triggerText, { color: colors.text }]}>{daily.gratefulFor}</Text>
+              </GlassCard>,
+            )}
+
+          {hasContent(daily.impactOnGoals) &&
+            renderSelectableWrapper(
+              'impact',
+              <GlassCard
+                intensity={theme === 'AppleLight' ? 60 : 15}
+                style={[
+                  styles.triggerCard,
+                  {
+                    borderColor:
+                      daily.goalImpactType === 'positive'
+                        ? 'rgba(74, 222, 128, 0.2)'
+                        : daily.goalImpactType === 'negative'
+                          ? 'rgba(248, 113, 113, 0.2)'
+                          : 'rgba(156, 163, 175, 0.2)',
+                    backgroundColor:
+                      daily.goalImpactType === 'positive'
+                        ? 'rgba(74, 222, 128, 0.05)'
+                        : daily.goalImpactType === 'negative'
+                          ? 'rgba(248, 113, 113, 0.05)'
+                          : 'rgba(156, 163, 175, 0.05)',
+                  },
+                ]}
+              >
+                <View style={styles.triggerHeader}>
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      marginRight: 8,
                       backgroundColor:
-                        pData.goalImpactType === 'positive'
-                          ? 'rgba(74, 222, 128, 0.05)'
-                          : pData.goalImpactType === 'negative'
-                            ? 'rgba(248, 113, 113, 0.05)'
-                            : 'rgba(156, 163, 175, 0.05)',
-                    },
-                  ]}
-                >
-                  <View style={styles.triggerHeader}>
-                    <View
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        marginRight: 8,
-                        backgroundColor:
-                          pData.goalImpactType === 'positive'
+                        daily.goalImpactType === 'positive'
+                          ? '#4ADE80'
+                          : daily.goalImpactType === 'negative'
+                            ? '#F87171'
+                            : '#9CA3AF',
+                    }}
+                  />
+                  <Text
+                    style={[
+                      styles.triggerTitle,
+                      {
+                        color:
+                          daily.goalImpactType === 'positive'
                             ? '#4ADE80'
-                            : pData.goalImpactType === 'negative'
+                            : daily.goalImpactType === 'negative'
                               ? '#F87171'
                               : '#9CA3AF',
-                      }}
-                    />
-                    <Text
-                      style={[
-                        styles.triggerTitle,
-                        {
-                          color:
-                            pData.goalImpactType === 'positive'
-                              ? '#4ADE80'
-                              : pData.goalImpactType === 'negative'
-                                ? '#F87171'
-                                : '#9CA3AF',
-                        },
-                      ]}
-                    >
-                      Wpływ na cele
-                    </Text>
-                  </View>
-                  <Text style={[styles.triggerText, { color: colors.text }]}>{pData.impactOnGoals}</Text>
-                </GlassCard>,
-              )
-            : null}
+                      },
+                    ]}
+                  >
+                    Wpływ na cele
+                  </Text>
+                </View>
+                <Text style={[styles.triggerText, { color: colors.text }]}>{daily.impactOnGoals}</Text>
+              </GlassCard>,
+            )}
 
-          {/* KEY QUOTES */}
-          {pData.importantQuotes && pData.importantQuotes.length > 0 && pData.importantQuotes.every(isValidData) ? (
+          {daily.quotes.length > 0 && (
             <View style={styles.quotesContainer}>
               <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Najważniejsze słowa</Text>
-              {pData.importantQuotes.map((quote: string, index: number) =>
+              {daily.quotes.map((quote, index) =>
                 renderSelectableWrapper(
                   `quote-${index}`,
                   <View style={styles.blockquote}>
@@ -375,178 +408,62 @@ export const DetailScreen = () => {
                 ),
               )}
             </View>
-          ) : null}
+          )}
 
-          {/* EMOTIONAL TRIGGERS */}
-          <View style={styles.triggersContainer}>
-            {isValidData(pData.joyTriggers)
-              ? renderSelectableWrapper(
-                  'joy',
-                  <GlassCard
-                    intensity={theme === 'AppleLight' ? 60 : 15}
-                    style={[styles.triggerCard, { borderColor: 'rgba(74, 222, 128, 0.2)' }]}
-                  >
-                    <View style={styles.triggerHeader}>
-                      <Feather name="smile" size={16} color="#4ADE80" />
-                      <Text style={[styles.triggerTitle, { color: '#4ADE80' }]}>Wyzwoliło radość</Text>
-                    </View>
-                    <View style={styles.emotionsRow}>
-                      {Array.isArray(pData.joyTriggers) ? (
-                        pData.joyTriggers.map((t: string, i: number) => <EmotionPill key={`joy-${i}`} id={t} />)
-                      ) : (
-                        <EmotionPill id={pData.joyTriggers} />
-                      )}
-                    </View>
-                  </GlassCard>,
-                )
-              : null}
+          {hasContent(daily.goalAdvice) &&
+            renderSelectableWrapper(
+              'advice',
+              <GlassCard
+                intensity={theme === 'AppleLight' ? 60 : 15}
+                style={[styles.triggerCard, { borderColor: 'rgba(167, 139, 250, 0.2)', marginBottom: 20 }]}
+              >
+                <View style={styles.triggerHeader}>
+                  <Feather name="compass" size={16} color="#A78BFA" />
+                  <Text style={[styles.triggerTitle, { color: '#A78BFA' }]}>Rada oparta na twoich celach</Text>
+                </View>
+                <Text style={[styles.triggerText, { color: colors.text }]}>{daily.goalAdvice}</Text>
+              </GlassCard>,
+            )}
 
-            {isValidData(pData.calmTriggers)
-              ? renderSelectableWrapper(
-                  'calm',
-                  <GlassCard
-                    intensity={theme === 'AppleLight' ? 60 : 15}
-                    style={[styles.triggerCard, { borderColor: 'rgba(56, 189, 248, 0.2)' }]}
-                  >
-                    <View style={styles.triggerHeader}>
-                      <Feather name="coffee" size={16} color="#38BDF8" />
-                      <Text style={[styles.triggerTitle, { color: '#38BDF8' }]}>Wyzwoliło spokój</Text>
-                    </View>
-                    <View style={styles.emotionsRow}>
-                      {Array.isArray(pData.calmTriggers) ? (
-                        pData.calmTriggers.map((t: string, i: number) => <EmotionPill key={`calm-${i}`} id={t} />)
-                      ) : (
-                        <EmotionPill id={pData.calmTriggers} />
-                      )}
-                    </View>
-                  </GlassCard>,
-                )
-              : null}
-
-            {isValidData(pData.stressTriggers)
-              ? renderSelectableWrapper(
-                  'stress',
-                  <GlassCard
-                    intensity={theme === 'AppleLight' ? 60 : 15}
-                    style={[styles.triggerCard, { borderColor: 'rgba(251, 146, 60, 0.2)' }]}
-                  >
-                    <View style={styles.triggerHeader}>
-                      <Feather name="activity" size={16} color="#FB923C" />
-                      <Text style={[styles.triggerTitle, { color: '#FB923C' }]}>Wyzwoliło stres</Text>
-                    </View>
-                    <View style={styles.emotionsRow}>
-                      {Array.isArray(pData.stressTriggers) ? (
-                        pData.stressTriggers.map((t: string, i: number) => <EmotionPill key={`stress-${i}`} id={t} />)
-                      ) : (
-                        <EmotionPill id={pData.stressTriggers} />
-                      )}
-                    </View>
-                  </GlassCard>,
-                )
-              : null}
-
-            {isValidData(pData.angerTriggers)
-              ? renderSelectableWrapper(
-                  'anger',
-                  <GlassCard
-                    intensity={theme === 'AppleLight' ? 60 : 15}
-                    style={[styles.triggerCard, { borderColor: 'rgba(248, 113, 113, 0.2)' }]}
-                  >
-                    <View style={styles.triggerHeader}>
-                      <Feather name="alert-triangle" size={16} color="#F87171" />
-                      <Text style={[styles.triggerTitle, { color: '#F87171' }]}>Wyzwoliło złość</Text>
-                    </View>
-                    <View style={styles.emotionsRow}>
-                      {Array.isArray(pData.angerTriggers) ? (
-                        pData.angerTriggers.map((t: string, i: number) => <EmotionPill key={`anger-${i}`} id={t} />)
-                      ) : (
-                        <EmotionPill id={pData.angerTriggers} />
-                      )}
-                    </View>
-                  </GlassCard>,
-                )
-              : null}
-          </View>
-
-          {/* GOAL ADVICE */}
-          {isValidData((pData as any).goalAdvice)
-            ? renderSelectableWrapper(
-                'advice',
-                <GlassCard
-                  intensity={theme === 'AppleLight' ? 60 : 15}
-                  style={[
-                    styles.triggerCard,
-                    {
-                      borderColor: 'rgba(167, 139, 250, 0.2)',
-                      marginBottom: 20,
-                    },
-                  ]}
-                >
-                  <View style={styles.triggerHeader}>
-                    <Feather name="compass" size={16} color="#A78BFA" />
-                    <Text style={[styles.triggerTitle, { color: '#A78BFA' }]}>Rada oparta na twoich celach</Text>
-                  </View>
-                  <Text style={[styles.triggerText, { color: colors.text }]}>{(pData as any).goalAdvice}</Text>
-                </GlassCard>,
-              )
-            : null}
-
-          {/* THE RAW DATA (BOTTOM) */}
+          {/* PODGLĄD .MD */}
           <View style={[styles.divider, { backgroundColor: colors.tileBorder }]} />
-
           <TouchableOpacity
             style={styles.transcriptAccordion}
             activeOpacity={0.7}
-            onPress={() => setIsTranscriptVisible(!isTranscriptVisible)}
+            onPress={() => setIsMdPreviewVisible(!isMdPreviewVisible)}
           >
             <View style={styles.transcriptAccordionHeader}>
               <Feather name="file-text" size={18} color={colors.textSecondary} />
-              <Text style={[styles.transcriptAccordionTitle, { color: colors.textSecondary }]}>Twój wpis</Text>
+              <Text style={[styles.transcriptAccordionTitle, { color: colors.textSecondary }]}>Podgląd pliku .md</Text>
             </View>
-            <Feather
-              name={isTranscriptVisible ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={colors.textSecondary}
-            />
+            <Feather name={isMdPreviewVisible ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} />
           </TouchableOpacity>
-
-          {isTranscriptVisible && (
+          {isMdPreviewVisible && (
             <View style={styles.transcriptContent}>
-              <Text style={[styles.fullText, { color: colors.textSecondary }]}>{entry.fullText}</Text>
+              <Text style={[styles.fullText, { color: colors.textSecondary }]}>{daily.bodyMd}</Text>
             </View>
           )}
         </View>
       </ScrollView>
 
-      {/* OFF-SCREEN COMPOSITE RENDER */}
+      {/* OFF-SCREEN COMPOSITE RENDER (podstawowa wersja; pełne udostępnianie kart: F3-05) */}
       <View ref={compositeRef} collapsable={false} style={styles.compositeContainer}>
         <View style={styles.compositeInner}>
-          {isSelected('dominantThought') && (
+          {isSelected('dominantThought') && hasContent(daily.dominantThought) && (
             <GradientText
-              text={`"${pData.dominantThought}"`}
+              text={`"${daily.dominantThought}"`}
               colors={['#A78BFA', '#F472B6', '#60A5FA']}
               style={[styles.dominantThoughtText, { textAlign: 'center', marginBottom: 24 }]}
             />
           )}
-
-          {isSelected('summary') && pData.summary && (
+          {isSelected('summary') && hasContent(daily.summary) && (
             <GlassCard intensity={20} style={[styles.summaryCard, { marginBottom: 24 }]}>
-              <Text style={styles.summaryText}>{pData.summary}</Text>
+              <Text style={styles.summaryText}>{daily.summary}</Text>
             </GlassCard>
           )}
-
-          {/* Simplified render for composite to avoid too much logic here, just matching styles */}
-
-          {/* Watermark */}
           {selectedCards.length > 0 && (
             <View style={styles.watermarkContainer}>
-              <Text style={styles.watermarkDate}>
-                {new Date(entry.date).toLocaleDateString('pl-PL', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </Text>
+              <Text style={styles.watermarkDate}>{d.full}</Text>
               <Text style={styles.watermarkText}>Wygenerowano w Mój Pamiętnik AI</Text>
             </View>
           )}
@@ -667,10 +584,41 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
     flex: 1,
   },
-  impactText: {
+  ideaItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  ideaTitle: {
     fontSize: 16,
-    lineHeight: 25,
-    color: 'rgba(255,255,255,0.85)',
+    fontWeight: '600',
+    lineHeight: 22,
+  },
+  ideaOneLiner: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 2,
+  },
+  noteTypeBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  noteTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  noteTypeBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  noteCategory: {
+    fontSize: 13,
   },
   quotesContainer: {
     marginTop: 8,
@@ -691,10 +639,6 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     color: 'rgba(255,255,255,0.9)',
     flex: 1,
-  },
-  triggersContainer: {
-    gap: 12,
-    marginTop: 8,
   },
   triggerCard: {
     padding: 16,
