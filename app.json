@@ -39,7 +39,8 @@
       "@react-native-google-signin/google-signin",
       "expo-apple-authentication",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "@bacons/apple-targets"
     ],
     "extra": {
       "eas": {

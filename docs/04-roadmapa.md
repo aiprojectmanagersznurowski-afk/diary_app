@@ -52,7 +52,7 @@ flowchart LR
 
 ## Faza 4: Apple Watch
 
-- [ ] Target watchOS przez `@bacons/apple-targets` (`targets/watch/`), budowany przez EAS
+- [x] Target watchOS przez `@bacons/apple-targets` (`targets/watch/`), budowany przez EAS
 - [ ] Nagrywanie na zegarku: `AVAudioRecorder`, lokalna kolejka, `WCSession.transferFile` z metadanymi
 - [ ] Moduł Expo `modules/watch-connectivity/`: odbiór plików na iPhonie, inbox, zdarzenie do JS
 - [ ] Nagrania z zegarka trafiają do tej samej kolejki (`source = 'watch'`)
