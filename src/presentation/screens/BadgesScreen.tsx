@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -13,12 +13,27 @@ export const BadgesScreen = () => {
   const insets = useSafeAreaInsets();
   const { theme } = useSettingsStore();
   const colors = THEMES[theme];
-  const { unlockedBadges, currentStreak } = useGamificationStore();
+  const { unlockedBadges, currentStreak, syncFromCloud } = useGamificationStore();
+
+  // Seria i odznaki są policzone po stronie serwera (profiles.current_streak/badges, F3-02);
+  // odświeżamy je tutaj zamiast polegać na ewentualnie nieaktualnej wartości z lokalnego stanu.
+  useEffect(() => {
+    syncFromCloud().catch(() => {});
+  }, [syncFromCloud]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { borderColor: colors.tileBorder, backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)' }]}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={[
+            styles.backButton,
+            {
+              borderColor: colors.tileBorder,
+              backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
+            },
+          ]}
+        >
           <Feather name="chevron-left" size={20} color={colors.text} />
         </TouchableOpacity>
         <GradientText text="Osiągnięcia" style={styles.title} colors={['#A78BFA', '#F472B6', '#60A5FA']} />
@@ -35,33 +50,37 @@ export const BadgesScreen = () => {
         </GlassCard>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Gablota Odznak</Text>
-        
+
         <View style={styles.badgesGrid}>
           {BADGES_DICTIONARY.map((badge) => {
             const isUnlocked = unlockedBadges.includes(badge.id);
             return (
-              <GlassCard 
-                key={badge.id} 
-                intensity={isUnlocked ? (theme === 'AppleLight' ? 60 : 15) : 5} 
+              <GlassCard
+                key={badge.id}
+                intensity={isUnlocked ? (theme === 'AppleLight' ? 60 : 15) : 5}
                 style={[styles.badgeContainer, !isUnlocked && { opacity: 0.6 }]}
               >
                 {isUnlocked ? (
-                  <LinearGradient
-                    colors={colors.gradientColors as any}
-                    style={styles.iconCircle}
-                  >
+                  <LinearGradient colors={colors.gradientColors as any} style={styles.iconCircle}>
                     <Feather name={badge.icon as any} size={28} color="#FFF" />
                   </LinearGradient>
                 ) : (
-                  <View style={[styles.iconCircle, { backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' }]}>
+                  <View
+                    style={[
+                      styles.iconCircle,
+                      { backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' },
+                    ]}
+                  >
                     <Feather name="lock" size={28} color={colors.textSecondary} />
                   </View>
                 )}
-                
+
                 <Text style={[styles.badgeTitle, { color: isUnlocked ? colors.text : colors.textSecondary }]}>
                   {badge.title}
                 </Text>
-                <Text style={[styles.badgeDesc, { color: isUnlocked ? colors.textSecondary : 'rgba(150,150,150,0.6)' }]}>
+                <Text
+                  style={[styles.badgeDesc, { color: isUnlocked ? colors.textSecondary : 'rgba(150,150,150,0.6)' }]}
+                >
                   {badge.description}
                 </Text>
               </GlassCard>
@@ -165,5 +184,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 18,
-  }
+  },
 });

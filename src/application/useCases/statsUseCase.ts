@@ -1,7 +1,16 @@
 import { DiaryEntry } from '../../domain/models/DiaryEntry';
+import { DailyDocument } from '../../domain/models/DailyDocument';
 
 const APPLE_PASTEL_PALETTE = [
-  '#FF9AA2', '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7', '#C7CEEA', '#A1C9F1', '#F4A261', '#2A9D8F',
+  '#FF9AA2',
+  '#FFB7B2',
+  '#FFDAC1',
+  '#E2F0CB',
+  '#B5EAD7',
+  '#C7CEEA',
+  '#A1C9F1',
+  '#F4A261',
+  '#2A9D8F',
 ];
 
 function stringToColor(str: string): string {
@@ -34,12 +43,106 @@ export interface AnalyticsData {
 
 const DAYS_PL = ['Nie', 'Pon', 'Wto', 'Śro', 'Czw', 'Pią', 'Sob'];
 
+const GOAL_IMPACT_SCORE: Record<DailyDocument['goalImpactType'], number> = {
+  positive: 100,
+  neutral: 50,
+  negative: 0,
+};
+
+/** Zwraca dzień (YYYY-MM-DD) przesunięty o `deltaDays` względem dzisiaj, bez mutacji obiektów Date. */
+export function dayStringOffsetFromToday(deltaDays: number): string {
+  const now = new Date();
+  const shifted = new Date(now.getFullYear(), now.getMonth(), now.getDate() + deltaDays);
+  const y = shifted.getFullYear();
+  const m = String(shifted.getMonth() + 1).padStart(2, '0');
+  const d = String(shifted.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Wylicza dane analityczne z wpisów dnia (kind='daily') policzonych po stronie serwera przez
+ * build-daily (docs/02-architektura.md §6.3). Dzień bez wpisu zostaje po prostu pusty (brak
+ * wpisu w mapie), zgodność z celami liczona jest wyłącznie z pola goalImpactType każdego wpisu —
+ * bez heurystyk klienta. Używane przez InsightsScreen; HomeScreen wciąż korzysta ze starszego
+ * getAnalyticsData poniżej (operuje na DiaryEntry ze starego, wciąż istniejącego modelu), poza
+ * zakresem tego zadania.
+ */
+export function getDailyAnalyticsData(dailyDocs: DailyDocument[], days: 7 | 30): AnalyticsData {
+  const byDay = new Map(dailyDocs.map((doc) => [doc.day, doc]));
+
+  const stress: LineChartPoint[] = [];
+  const calm: LineChartPoint[] = [];
+  const energy: LineChartPoint[] = [];
+  let goalAlignmentSum = 0;
+  let goalAlignmentCount = 0;
+
+  for (let i = 0; i < days; i++) {
+    const day = dayStringOffsetFromToday(i - (days - 1));
+    const [y, m, d] = day.split('-').map(Number);
+    const dayStr = day.slice(8, 10);
+    const weekday = new Date(y, m - 1, d).getDay();
+    const label = days === 7 ? DAYS_PL[weekday] : i % 5 === 0 ? dayStr : '';
+
+    const doc = byDay.get(day);
+    if (!doc) {
+      stress.push({ value: 0, label });
+      calm.push({ value: 0, label });
+      energy.push({ value: 0, label });
+      continue;
+    }
+
+    let stressValue = 0;
+    let calmValue = 0;
+    if (doc.stressVsCalm === 'stress') {
+      stressValue = 50;
+    } else if (doc.stressVsCalm === 'calm') {
+      calmValue = 50;
+    } else {
+      stressValue = 10;
+      calmValue = 10;
+    }
+
+    stress.push({
+      value: stressValue,
+      label,
+      dataPointText: days === 7 && stressValue > 0 ? stressValue.toString() : undefined,
+    });
+    calm.push({
+      value: calmValue,
+      label,
+      dataPointText: days === 7 && calmValue > 0 ? calmValue.toString() : undefined,
+    });
+
+    const fatigue = doc.fatigueLevel || 5;
+    energy.push({ value: Math.max(0, 100 - fatigue * 10), label });
+
+    goalAlignmentSum += GOAL_IMPACT_SCORE[doc.goalImpactType];
+    goalAlignmentCount++;
+  }
+
+  const goalAlignment = goalAlignmentCount > 0 ? Math.round(goalAlignmentSum / goalAlignmentCount) : 0;
+
+  // Wygładzenie wykresu energii, żeby dni bez wpisu nie spadały ostro do zera
+  for (let i = 1; i < days; i++) {
+    if (energy[i].value === 0 && energy[i - 1].value > 0) {
+      energy[i].value = energy[i - 1].value;
+    }
+  }
+
+  return { stress, calm, energy, goalAlignment };
+}
+
+/**
+ * Wersja historyczna, oparta na DiaryEntry (stary model, wciąż zasilający HomeScreen — poza
+ * zakresem tego zadania). Poprawiono tu oba znane błędy z docs/04-roadmapa.md: (1) nie mutuje już
+ * `entry.date` w stanie aplikacji (kopiuje datę przed setHours), (2) zgodność z celami liczy się
+ * z prawdziwego pola goalImpactType zamiast heurystyki z emocji/zadań.
+ */
 export function getAnalyticsData(entries: DiaryEntry[], days: 7 | 30): AnalyticsData {
   const now = new Date();
   const startDate = new Date(now.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
   startDate.setHours(0, 0, 0, 0);
 
-  // Initialize arrays with empty days
   const stress: LineChartPoint[] = [];
   const calm: LineChartPoint[] = [];
   const energy: LineChartPoint[] = [];
@@ -50,70 +153,49 @@ export function getAnalyticsData(entries: DiaryEntry[], days: 7 | 30): Analytics
     const currentDate = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
     const dayName = DAYS_PL[currentDate.getDay()];
     const dateNum = currentDate.getDate().toString().padStart(2, '0');
-    
-    // Label logic: for 7 days show day name, for 30 days show date number every 5 days
-    const label = days === 7 ? dayName : (i % 5 === 0 ? dateNum : '');
+    const label = days === 7 ? dayName : i % 5 === 0 ? dateNum : '';
 
     stress.push({ value: 0, label });
     calm.push({ value: 0, label });
     energy.push({ value: 0, label });
   }
 
-  // Populate data
   entries.forEach((entry) => {
-    const entryDate = entry.date instanceof Date ? entry.date : new Date(entry.date);
+    // Kopia daty przed setHours — entry.date (obiekt Date w stanie useDiaryStore) nigdy nie jest mutowany.
+    const entryDate = new Date(entry.date instanceof Date ? entry.date.getTime() : entry.date);
     entryDate.setHours(0, 0, 0, 0);
 
     const diffTime = entryDate.getTime() - startDate.getTime();
     const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays >= 0 && diffDays < days && entry.parsedData) {
-      // 1. Stress vs Calm
-      // Assuming 'stressVsCalm' is "stress", "calm", or "neutral"
       if (entry.parsedData.stressVsCalm === 'stress') {
-        stress[diffDays].value += 50; // Add points to stress
+        stress[diffDays].value = Math.min(100, stress[diffDays].value + 50);
       } else if (entry.parsedData.stressVsCalm === 'calm') {
-        calm[diffDays].value += 50; // Add points to calm
+        calm[diffDays].value = Math.min(100, calm[diffDays].value + 50);
       } else {
-        stress[diffDays].value += 10;
-        calm[diffDays].value += 10;
+        stress[diffDays].value = Math.min(100, stress[diffDays].value + 10);
+        calm[diffDays].value = Math.min(100, calm[diffDays].value + 10);
       }
 
-      // Cap at 100
-      stress[diffDays].value = Math.min(100, stress[diffDays].value);
-      calm[diffDays].value = Math.min(100, calm[diffDays].value);
-
-      // Data point text only for 7 days if value > 0 to not clutter
       if (days === 7) {
         stress[diffDays].dataPointText = stress[diffDays].value > 0 ? stress[diffDays].value.toString() : undefined;
         calm[diffDays].dataPointText = calm[diffDays].value > 0 ? calm[diffDays].value.toString() : undefined;
       }
 
-      // 2. Energy
-      // 'fatigueLevel' is 1-10. Energy is opposite of fatigue (100 - fatigue*10)
       const fatigue = entry.parsedData.fatigueLevel || 5;
-      const energyLevel = Math.max(0, 100 - (fatigue * 10));
-      energy[diffDays].value = energyLevel;
+      energy[diffDays].value = Math.max(0, 100 - fatigue * 10);
 
-      // 3. Goal Alignment (Synthesize from sentiment for now)
-      // Positive emotions or completed tasks increase alignment
-      let alignmentScore = 50; // base
-      if (entry.parsedData.emotions?.includes('Radość') || entry.parsedData.emotions?.includes('Spokój')) alignmentScore += 20;
-      if (entry.parsedData.completedTasks && entry.parsedData.completedTasks.length > 0) alignmentScore += (entry.parsedData.completedTasks.length * 10);
-      if (entry.parsedData.stressVsCalm === 'stress') alignmentScore -= 20;
-      
-      goalAlignmentSum += Math.min(100, Math.max(0, alignmentScore));
+      goalAlignmentSum += GOAL_IMPACT_SCORE[entry.parsedData.goalImpactType];
       goalAlignmentCount++;
     }
   });
 
-  // Calculate average goal alignment
   const goalAlignment = goalAlignmentCount > 0 ? Math.round(goalAlignmentSum / goalAlignmentCount) : 0;
 
-  // Smoothing for AreaChart (Energy) to avoid sharp drops to 0 on empty days
   for (let i = 1; i < days; i++) {
-    if (energy[i].value === 0 && energy[i-1].value > 0) {
-      energy[i].value = energy[i-1].value; // Carry over previous day's energy
+    if (energy[i].value === 0 && energy[i - 1].value > 0) {
+      energy[i].value = energy[i - 1].value;
     }
   }
 
@@ -158,7 +240,7 @@ export function getWeeklyCalmPercentage(entries: DiaryEntry[]): number {
   });
 
   if (recentEntries.length === 0) return 0;
-  
-  const calmCount = recentEntries.filter(e => e.parsedData?.stressVsCalm === 'calm').length;
+
+  const calmCount = recentEntries.filter((e) => e.parsedData?.stressVsCalm === 'calm').length;
   return Math.round((calmCount / recentEntries.length) * 100);
 }
