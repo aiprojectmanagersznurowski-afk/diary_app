@@ -1,0 +1,28 @@
+id: F4-02
+title: Nagrywanie na zegarku z lokalną kolejką i transferem do iPhone'a
+phase: 4
+role: native
+branch: feat/F4-02-watch-recording
+depends_on: [F4-01]
+roadmap: "Nagrywanie na zegarku: `AVAudioRecorder`, lokalna kolejka, `WCSession.transferFile` z metadanymi"
+read_first:
+  - docs/02-architektura.md#62-nagranie-z-apple-watch-mvp
+  - .agent-os/roles/native.md
+scope:
+  write:
+    - targets/watch/**
+context: |
+  Rozbudowa szkieletu z F4-01 o realną funkcję: przycisk start/stop nagrywania w SwiftUI,
+  AVAudioRecorder (AAC, mono, jakość mowy — parametry analogiczne do SPEECH_MONO z F2-08 po stronie
+  telefonu), zapis pliku lokalnie na zegarku z id = UUID wygenerowanym na zegarku (klucz idempotencji,
+  ten sam wzorzec co EnqueueRecordingUseCase po stronie telefonu). Prosta lokalna kolejka (lista
+  nagrań oczekujących na transfer, np. UserDefaults albo plik JSON — zegarek nie ma expo-sqlite).
+  Po zakończeniu nagrania: WCSession.transferFile(plik, metadata: {id, recordedAt, durationMs}).
+  System dostarcza plik, gdy iPhone jest osiągalny, także po restarcie aplikacji — nie trzeba
+  własnego retry na poziomie zegarka.
+acceptance:
+  - "nagranie na zegarku tworzy plik AAC mono z unikalnym id"
+  - "WCSession.transferFile wywołane z poprawnymi metadanymi {id, recordedAt, durationMs}"
+  - "zamknięcie i ponowne otwarcie aplikacji na zegarku nie gubi nagrania oczekującego na transfer"
+human_steps:
+  - "CP-DEVICE: nagranie 30s na zegarku, weryfikacja pliku i metadanych, test z iPhonem poza zasięgiem Bluetooth"

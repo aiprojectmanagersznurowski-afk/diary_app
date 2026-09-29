@@ -1,0 +1,36 @@
+id: F4-04
+title: Nagrania z zegarka trafiają do wspólnej kolejki
+phase: 4
+role: mobile
+branch: feat/F4-04-watch-inbox-to-queue
+depends_on: [F4-03]
+roadmap: "Nagrania z zegarka trafiają do tej samej kolejki (`source = 'watch'`)"
+read_first:
+  - docs/02-architektura.md#62-nagranie-z-apple-watch-mvp
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/domain/services/IWatchConnectivity.ts
+    - src/infrastructure/watch/**
+    - src/application/useCases/recording/ingestWatchInboxUseCase.ts
+    - src/composition/diary.ts
+context: |
+  JS strona konsumująca moduł z F4-03 (modules/watch-connectivity, poza zakresem tego zadania —
+  ten kontrakt tylko IMPORTUJE jego już zbudowane API JS, nie zmienia modules/**). Nowy interfejs
+  domenowy IWatchConnectivity (getInboxFiles/clearInboxFile/subscribe do zdarzenia nowych plików),
+  adapter infrastructure/watch/expoWatchConnectivity.ts implementujący go przez wywołania modułu.
+  Nowy use case IngestWatchInboxUseCase: przy starcie aplikacji, powrocie na pierwszy plan i po
+  zdarzeniu z modułu — odczytuje manifesty z inboksu i woła istniejący EnqueueRecordingUseCase
+  (już obsługuje `source` i przekazane `id` — docs/02-architektura.md §6.1/§9, ten sam UUID z
+  zegarka gwarantuje brak duplikatów) z `source: 'watch'`, potem usuwa plik z inboksu. Reszta
+  przepływu (upload do Storage, INSERT recordings) już działa bez zmian — F2 zbudowało kolejkę
+  źródłowo-agnostycznie. Uwaga na idempotencję: `id` w SqliteRecordingQueue to PRIMARY KEY —
+  ponowny `enqueue` z tym samym id rzuci błędem ograniczenia, a nie po cichu go zignoruje.
+  IngestWatchInboxUseCase musi to obsłużyć (np. `getById` przed `enqueue`, albo złapanie błędu
+  unikalności) i w takim wypadku po prostu usunąć plik z inboksu bez traktowania tego jako awarii.
+acceptance:
+  - "plik z inboksu zegarka trafia do SqliteRecordingQueue z source='watch' i tym samym id co na zegarku"
+  - "wywołanie IngestWatchInboxUseCase dla tego samego pliku dwa razy nie rzuca błędem i nie tworzy duplikatu w kolejce"
+  - "test jest dla IngestWatchInboxUseCase (atrapa IWatchConnectivity + IRecordingQueue)"
+human_steps:
+  - "CP-DEVICE: nagranie z zegarka pojawia się na liście nagrań w aplikacji po ponownym uruchomieniu"
