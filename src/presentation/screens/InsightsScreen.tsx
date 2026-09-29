@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,9 +8,15 @@ import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 're
 
 import { GlassCard, GradientText } from '../components/UIPrimitives';
 
-import { useDiaryStore } from '../../application/store/useDiaryStore';
-import { getAnalyticsData } from '../../application/useCases/statsUseCase';
+import {
+  getDailyAnalyticsData,
+  dayStringOffsetFromToday,
+  AnalyticsData,
+} from '../../application/useCases/statsUseCase';
+import { getDailyDocumentsInRangeUseCase } from '../../composition';
 import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
+
+const EMPTY_ANALYTICS: AnalyticsData = { stress: [], calm: [], energy: [], goalAlignment: 0 };
 
 const { width } = Dimensions.get('window');
 
@@ -68,13 +74,33 @@ export const InsightsScreen = () => {
   const insets = useSafeAreaInsets();
 
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('7d');
-  const { entries } = useDiaryStore();
   const { theme } = useSettingsStore();
   const colors = THEMES[theme];
 
-  const analyticsData = useMemo(() => {
-    return getAnalyticsData(entries, timeRange === '7d' ? 7 : 30);
-  }, [entries, timeRange]);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData>(EMPTY_ANALYTICS);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const days = timeRange === '7d' ? 7 : 30;
+    let cancelled = false;
+    setIsLoading(true);
+    const startDay = dayStringOffsetFromToday(-(days - 1));
+    const endDay = dayStringOffsetFromToday(0);
+    getDailyDocumentsInRangeUseCase
+      .execute(startDay, endDay)
+      .then((dailyDocs) => {
+        if (!cancelled) setAnalyticsData(getDailyAnalyticsData(dailyDocs, days));
+      })
+      .catch(() => {
+        if (!cancelled) setAnalyticsData(EMPTY_ANALYTICS);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [timeRange]);
 
   const dataLength = timeRange === '7d' ? 7 : 30;
   const chartWidth = width - 100; // Account for container padding
@@ -100,160 +126,166 @@ export const InsightsScreen = () => {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Time Segmented Control */}
-        <View style={styles.segmentContainer}>
-          <View
-            style={[
-              styles.segmentCard,
-              {
-                backgroundColor:
-                  theme === 'AppleLight' || theme === 'Sepia' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)',
-              },
-            ]}
-          >
-            <TouchableOpacity style={[styles.segmentButton]} onPress={() => setTimeRange('7d')} activeOpacity={0.8}>
-              {timeRange === '7d' && (
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.primary, borderRadius: 12 }]} />
-              )}
-              <Text
-                style={[
-                  styles.segmentText,
-                  {
-                    color: timeRange === '7d' ? (theme === 'Sepia' ? '#FFFFFF' : '#FFFFFF') : colors.textSecondary,
-                    fontWeight: timeRange === '7d' ? 'bold' : 'normal',
-                  },
-                ]}
-              >
-                7 Dni
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.segmentButton} onPress={() => setTimeRange('30d')} activeOpacity={0.8}>
-              {timeRange === '30d' && (
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.primary, borderRadius: 12 }]} />
-              )}
-              <Text
-                style={[
-                  styles.segmentText,
-                  {
-                    color: timeRange === '30d' ? (theme === 'Sepia' ? '#FFFFFF' : '#FFFFFF') : colors.textSecondary,
-                    fontWeight: timeRange === '30d' ? 'bold' : 'normal',
-                  },
-                ]}
-              >
-                30 Dni
-              </Text>
-            </TouchableOpacity>
-          </View>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator color={colors.text} />
         </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Time Segmented Control */}
+          <View style={styles.segmentContainer}>
+            <View
+              style={[
+                styles.segmentCard,
+                {
+                  backgroundColor:
+                    theme === 'AppleLight' || theme === 'Sepia' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)',
+                },
+              ]}
+            >
+              <TouchableOpacity style={[styles.segmentButton]} onPress={() => setTimeRange('7d')} activeOpacity={0.8}>
+                {timeRange === '7d' && (
+                  <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.primary, borderRadius: 12 }]} />
+                )}
+                <Text
+                  style={[
+                    styles.segmentText,
+                    {
+                      color: timeRange === '7d' ? (theme === 'Sepia' ? '#FFFFFF' : '#FFFFFF') : colors.textSecondary,
+                      fontWeight: timeRange === '7d' ? 'bold' : 'normal',
+                    },
+                  ]}
+                >
+                  7 Dni
+                </Text>
+              </TouchableOpacity>
 
-        {/* Chart 1: Stress vs Calm */}
-        <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={styles.chartCard}>
-          <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>Stres vs. Spokój</Text>
-          <View style={styles.chartWrapper}>
-            <LineChart
-              data={analyticsData.stress}
-              data2={analyticsData.calm}
-              height={180}
-              width={chartWidth}
-              spacing={dynamicSpacing}
-              initialSpacing={10}
-              disableScroll={true}
-              color1="#F87171" // Coral Red for Stress
-              color2="#38BDF8" // Blue for Calm
-              textColor1="#F87171"
-              dataPointsHeight={6}
-              dataPointsWidth={6}
-              dataPointsColor1="#F87171"
-              dataPointsColor2="#38BDF8"
-              thickness={3}
-              curved
-              hideDataPoints={timeRange === '30d'}
-              hideRules={false}
-              rulesColor="rgba(255,255,255,0.05)"
-              rulesType="solid"
-              yAxisColor="transparent"
-              xAxisColor={colors.tileBorder}
-              yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
-              xAxisLabelTextStyle={{
-                color: colors.textSecondary,
-                fontSize: 11,
-              }}
-              pointerConfig={{
-                pointerStripHeight: 160,
-                pointerStripColor: 'rgba(255,255,255,0.2)',
-                pointerStripWidth: 2,
-                pointerColor: 'rgba(255,255,255,0.8)',
-                radius: 6,
-                pointerLabelWidth: 100,
-                pointerLabelHeight: 90,
-                activatePointersOnLongPress: true,
-                autoAdjustPointerLabelPosition: true,
-              }}
-            />
-          </View>
-          <View style={styles.legendRow}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#F87171' }]} />
-              <Text style={[styles.legendText, { color: colors.textSecondary }]}>Stres</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#38BDF8' }]} />
-              <Text style={[styles.legendText, { color: colors.textSecondary }]}>Spokój</Text>
+              <TouchableOpacity style={styles.segmentButton} onPress={() => setTimeRange('30d')} activeOpacity={0.8}>
+                {timeRange === '30d' && (
+                  <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.primary, borderRadius: 12 }]} />
+                )}
+                <Text
+                  style={[
+                    styles.segmentText,
+                    {
+                      color: timeRange === '30d' ? (theme === 'Sepia' ? '#FFFFFF' : '#FFFFFF') : colors.textSecondary,
+                      fontWeight: timeRange === '30d' ? 'bold' : 'normal',
+                    },
+                  ]}
+                >
+                  30 Dni
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </GlassCard>
 
-        {/* Chart 2: Energy Area Chart */}
-        <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={styles.chartCard}>
-          <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>
-            Energia / zmęczenie w ciągu tygodnia
-          </Text>
-          <View style={styles.chartWrapper}>
-            <LineChart
-              areaChart
-              data={analyticsData.energy}
-              height={180}
-              width={chartWidth}
-              spacing={dynamicSpacing}
-              initialSpacing={10}
-              disableScroll={true}
-              color="#A78BFA"
-              thickness={3}
-              startFillColor="rgba(167, 139, 250, 0.4)"
-              endFillColor="rgba(167, 139, 250, 0.01)"
-              startOpacity={0.9}
-              endOpacity={0.2}
-              curved
-              hideDataPoints
-              hideRules
-              yAxisColor="transparent"
-              xAxisColor={colors.tileBorder}
-              yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
-              xAxisLabelTextStyle={{
-                color: colors.textSecondary,
-                fontSize: 11,
-              }}
-            />
-          </View>
-        </GlassCard>
+          {/* Chart 1: Stress vs Calm */}
+          <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={styles.chartCard}>
+            <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>Stres vs. Spokój</Text>
+            <View style={styles.chartWrapper}>
+              <LineChart
+                data={analyticsData.stress}
+                data2={analyticsData.calm}
+                height={180}
+                width={chartWidth}
+                spacing={dynamicSpacing}
+                initialSpacing={10}
+                disableScroll={true}
+                color1="#F87171" // Coral Red for Stress
+                color2="#38BDF8" // Blue for Calm
+                textColor1="#F87171"
+                dataPointsHeight={6}
+                dataPointsWidth={6}
+                dataPointsColor1="#F87171"
+                dataPointsColor2="#38BDF8"
+                thickness={3}
+                curved
+                hideDataPoints={timeRange === '30d'}
+                hideRules={false}
+                rulesColor="rgba(255,255,255,0.05)"
+                rulesType="solid"
+                yAxisColor="transparent"
+                xAxisColor={colors.tileBorder}
+                yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+                xAxisLabelTextStyle={{
+                  color: colors.textSecondary,
+                  fontSize: 11,
+                }}
+                pointerConfig={{
+                  pointerStripHeight: 160,
+                  pointerStripColor: 'rgba(255,255,255,0.2)',
+                  pointerStripWidth: 2,
+                  pointerColor: 'rgba(255,255,255,0.8)',
+                  radius: 6,
+                  pointerLabelWidth: 100,
+                  pointerLabelHeight: 90,
+                  activatePointersOnLongPress: true,
+                  autoAdjustPointerLabelPosition: true,
+                }}
+              />
+            </View>
+            <View style={styles.legendRow}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#F87171' }]} />
+                <Text style={[styles.legendText, { color: colors.textSecondary }]}>Stres</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#38BDF8' }]} />
+                <Text style={[styles.legendText, { color: colors.textSecondary }]}>Spokój</Text>
+              </View>
+            </View>
+          </GlassCard>
 
-        {/* Chart 3: Goal Alignment */}
-        <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={styles.chartCard}>
-          <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>Zgodność z celami życiowymi</Text>
-          <View style={styles.gaugeWrapper}>
-            <CircularGauge percentage={analyticsData.goalAlignment} colors={colors} />
-          </View>
-          <Text style={[styles.gaugeDescription, { color: colors.text }]}>
-            {analyticsData.goalAlignment > 70
-              ? 'Ostatnie dni świetnie przybliżyły Cię do celów'
-              : analyticsData.goalAlignment > 40
-                ? 'Trzymasz się całkiem nieźle, oby tak dalej'
-                : 'Bywało lepiej. Pamiętaj, że każdy ma słabsze dni'}
-          </Text>
-        </GlassCard>
-      </ScrollView>
+          {/* Chart 2: Energy Area Chart */}
+          <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={styles.chartCard}>
+            <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>
+              Energia / zmęczenie w ciągu tygodnia
+            </Text>
+            <View style={styles.chartWrapper}>
+              <LineChart
+                areaChart
+                data={analyticsData.energy}
+                height={180}
+                width={chartWidth}
+                spacing={dynamicSpacing}
+                initialSpacing={10}
+                disableScroll={true}
+                color="#A78BFA"
+                thickness={3}
+                startFillColor="rgba(167, 139, 250, 0.4)"
+                endFillColor="rgba(167, 139, 250, 0.01)"
+                startOpacity={0.9}
+                endOpacity={0.2}
+                curved
+                hideDataPoints
+                hideRules
+                yAxisColor="transparent"
+                xAxisColor={colors.tileBorder}
+                yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+                xAxisLabelTextStyle={{
+                  color: colors.textSecondary,
+                  fontSize: 11,
+                }}
+              />
+            </View>
+          </GlassCard>
+
+          {/* Chart 3: Goal Alignment */}
+          <GlassCard intensity={theme === 'AppleLight' ? 60 : 15} style={styles.chartCard}>
+            <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>Zgodność z celami życiowymi</Text>
+            <View style={styles.gaugeWrapper}>
+              <CircularGauge percentage={analyticsData.goalAlignment} colors={colors} />
+            </View>
+            <Text style={[styles.gaugeDescription, { color: colors.text }]}>
+              {analyticsData.goalAlignment > 70
+                ? 'Ostatnie dni świetnie przybliżyły Cię do celów'
+                : analyticsData.goalAlignment > 40
+                  ? 'Trzymasz się całkiem nieźle, oby tak dalej'
+                  : 'Bywało lepiej. Pamiętaj, że każdy ma słabsze dni'}
+            </Text>
+          </GlassCard>
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -262,6 +294,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
     flexDirection: 'row',

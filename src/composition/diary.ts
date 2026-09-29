@@ -23,6 +23,7 @@ import { SupabaseDocumentRepository } from '../infrastructure/supabase/supabaseD
 import { RetryRecordingUseCase } from '../application/useCases/recording/retryRecordingUseCase';
 import { GetNotesUseCase } from '../application/useCases/notes/getNotesUseCase';
 import { GetDocumentUseCase } from '../application/useCases/documents/getDocumentUseCase';
+import { GetDailyDocumentsInRangeUseCase } from '../application/useCases/documents/getDailyDocumentsInRangeUseCase';
 import { IDocumentRepository } from '../domain/repositories/IDocumentRepository';
 import { setNotesDependencies } from '../application/store/useNotesStore';
 
@@ -64,6 +65,7 @@ export const documentRepository: IDocumentRepository = new SupabaseDocumentRepos
 export const retryRecordingUseCase = new RetryRecordingUseCase(recordingRepository);
 export const getNotesUseCase = new GetNotesUseCase(noteRepository);
 export const getDocumentUseCase = new GetDocumentUseCase(documentRepository);
+export const getDailyDocumentsInRangeUseCase = new GetDailyDocumentsInRangeUseCase(documentRepository);
 
 // Inicjalizacja domyślnych zależności w store'ach
 setDiaryDependencies({

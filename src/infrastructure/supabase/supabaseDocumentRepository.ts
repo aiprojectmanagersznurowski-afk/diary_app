@@ -19,6 +19,22 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
 
     return data.kind === 'note' ? mapRowToNoteDocument(data) : mapRowToDailyDocument(data);
   }
+
+  async getDailyDocumentsInRange(startDay: string, endDay: string): Promise<DailyDocument[]> {
+    const { data, error } = await this.client
+      .from('documents')
+      .select(DOCUMENT_COLUMNS)
+      .eq('kind', 'daily')
+      .gte('day', startDay)
+      .lte('day', endDay)
+      .order('day', { ascending: true });
+
+    if (error) {
+      throw new Error(`Błąd pobierania wpisów dnia z zakresu ${startDay}..${endDay}: ${error.message}`);
+    }
+
+    return (data || []).map(mapRowToDailyDocument);
+  }
 }
 
 export function mapRowToDailyDocument(row: Record<string, any>): DailyDocument {

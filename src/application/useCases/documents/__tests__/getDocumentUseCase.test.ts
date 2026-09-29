@@ -31,6 +31,7 @@ describe('GetDocumentUseCase', () => {
 
     const mockRepo: IDocumentRepository = {
       getDocumentById: jest.fn().mockResolvedValue(dailyDoc),
+      getDailyDocumentsInRange: jest.fn().mockResolvedValue([]),
     };
 
     const useCase = new GetDocumentUseCase(mockRepo);
@@ -44,6 +45,7 @@ describe('GetDocumentUseCase', () => {
   it('returns null when repository finds no document', async () => {
     const mockRepo: IDocumentRepository = {
       getDocumentById: jest.fn().mockResolvedValue(null),
+      getDailyDocumentsInRange: jest.fn().mockResolvedValue([]),
     };
 
     const useCase = new GetDocumentUseCase(mockRepo);
