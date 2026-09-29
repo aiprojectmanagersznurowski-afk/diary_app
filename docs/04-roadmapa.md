@@ -42,7 +42,7 @@ flowchart LR
 
 ## Faza 3: Pamiętnik jako dokument
 
-- [ ] Migracja: harmonogram `pg_cron` (odczekanie po zmianach w `day_rebuild_queue`) i RPC do żądania natychmiastowej przebudowy wpisu dnia
+- [x] Migracja: harmonogram `pg_cron` (odczekanie po zmianach w `day_rebuild_queue`) i RPC do żądania natychmiastowej przebudowy wpisu dnia
 - [ ] Edge Function `build-daily`: analiza dnia, sekcja „Pomysły, na które wpadłem” (odnośniki do notatek typu `idea`), szablon `.md` wpisu dnia, zapis do Storage, chunki i embeddingi, aktualizacja serii/odznak i zgodności z celami (`goalImpactType`) w `profiles`
 - [ ] Ekran szczegółów dnia czyta `documents.data`; podgląd `.md`
 - [ ] Analizy i seria dni w aplikacji czytają dane policzone po stronie serwera (bez lokalnego przeliczania)
