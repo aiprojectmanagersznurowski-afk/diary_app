@@ -126,7 +126,7 @@ export const DetailScreen = () => {
     );
   };
 
-  const renderHeader = (title: string, subtitle: string) => (
+  const renderHeader = (title: string, subtitle: string, canShare: boolean = true) => (
     <View style={styles.header}>
       <TouchableOpacity
         onPress={() => (isShareMode ? setIsShareMode(false) : navigation.goBack())}
@@ -150,15 +150,19 @@ export const DetailScreen = () => {
           <Text style={[styles.dateTimeText, { color: colors.textSecondary }]}>{subtitle}</Text>
         </View>
       )}
-      <TouchableOpacity onPress={handleShare} style={styles.headerAction}>
-        {isShareMode ? (
-          <Text style={styles.shareConfirmText}>Gotowe</Text>
-        ) : (
-          <View style={[styles.backButton, { backgroundColor: 'transparent', borderWidth: 0 }]}>
-            <Ionicons name="share-outline" size={20} color={colors.text} />
-          </View>
-        )}
-      </TouchableOpacity>
+      {canShare ? (
+        <TouchableOpacity onPress={handleShare} style={styles.headerAction}>
+          {isShareMode ? (
+            <Text style={styles.shareConfirmText}>Gotowe</Text>
+          ) : (
+            <View style={[styles.backButton, { backgroundColor: 'transparent', borderWidth: 0 }]}>
+              <Ionicons name="share-outline" size={20} color={colors.text} />
+            </View>
+          )}
+        </TouchableOpacity>
+      ) : (
+        <View style={{ width: 40 }} />
+      )}
     </View>
   );
 
@@ -186,7 +190,7 @@ export const DetailScreen = () => {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {renderHeader(d.weekday, `${d.full} · ${formatTime(note.createdAt)}`)}
+          {renderHeader(d.weekday, `${d.full} · ${formatTime(note.createdAt)}`, false)}
           <View style={styles.dashboard}>
             <View style={styles.noteTypeBadgeRow}>
               <View style={[styles.noteTypeBadge, { backgroundColor: `${typeColor}22`, borderColor: typeColor }]}>
@@ -446,7 +450,9 @@ export const DetailScreen = () => {
         </View>
       </ScrollView>
 
-      {/* OFF-SCREEN COMPOSITE RENDER (podstawowa wersja; pełne udostępnianie kart: F3-05) */}
+      {/* OFF-SCREEN COMPOSITE RENDER: karta do udostępnienia, dokładnie z documents.data bieżącego
+          wpisu dnia — pokazuje dowolną kombinację sekcji, które użytkownik zaznaczył w trybie
+          udostępniania (te same id co renderSelectableWrapper w panelu powyżej). */}
       <View ref={compositeRef} collapsable={false} style={styles.compositeContainer}>
         <View style={styles.compositeInner}>
           {isSelected('dominantThought') && hasContent(daily.dominantThought) && (
@@ -456,11 +462,102 @@ export const DetailScreen = () => {
               style={[styles.dominantThoughtText, { textAlign: 'center', marginBottom: 24 }]}
             />
           )}
+
           {isSelected('summary') && hasContent(daily.summary) && (
             <GlassCard intensity={20} style={[styles.summaryCard, { marginBottom: 24 }]}>
               <Text style={styles.summaryText}>{daily.summary}</Text>
             </GlassCard>
           )}
+
+          {isSelected('emotions') && (daily.emotionTriggers.length > 0 || daily.emotions.length > 0) && (
+            <View style={[styles.sectionContainer, { marginBottom: 24 }]}>
+              <Text style={styles.compositeSectionTitle}>Emocje</Text>
+              <View style={styles.emotionsRow}>
+                {daily.emotionTriggers.length > 0
+                  ? daily.emotionTriggers.map((et, i) => <EmotionPill key={i} id={et.emotion} trigger={et.trigger} />)
+                  : daily.emotions.map((e, i) => <EmotionPill key={i} id={e} />)}
+              </View>
+            </View>
+          )}
+
+          {isSelected('ideas') && daily.ideas.length > 0 && (
+            <View style={[styles.sectionContainer, { marginBottom: 24 }]}>
+              <Text style={styles.compositeSectionTitle}>💡 Pomysły, na które wpadłem</Text>
+              {daily.ideas.map((idea) => (
+                <Text key={idea.documentId} style={styles.compositeBodyText}>
+                  • {idea.title} — {idea.oneLiner}
+                </Text>
+              ))}
+            </View>
+          )}
+
+          {isSelected('tasks') && daily.completedTasks.length > 0 && (
+            <View style={[styles.sectionContainer, { marginBottom: 24 }]}>
+              <Text style={styles.compositeSectionTitle}>Zrobione</Text>
+              {daily.completedTasks.map((task, index) => (
+                <Text key={`c-task-${index}`} style={styles.compositeBodyText}>
+                  • {task}
+                </Text>
+              ))}
+            </View>
+          )}
+
+          {isSelected('events') && daily.importantEvents.length > 0 && (
+            <View style={[styles.sectionContainer, { marginBottom: 24 }]}>
+              <Text style={styles.compositeSectionTitle}>Ważne wydarzenia</Text>
+              {daily.importantEvents.map((event, index) => (
+                <Text key={`c-event-${index}`} style={styles.compositeBodyText}>
+                  • {event}
+                </Text>
+              ))}
+            </View>
+          )}
+
+          {isSelected('gratitude') && hasContent(daily.gratefulFor) && (
+            <GlassCard
+              intensity={15}
+              style={[styles.triggerCard, { borderColor: 'rgba(251, 191, 36, 0.2)', marginBottom: 24 }]}
+            >
+              <View style={styles.triggerHeader}>
+                <Feather name="heart" size={16} color="#FBBF24" />
+                <Text style={[styles.triggerTitle, { color: '#FBBF24' }]}>Za to jestem wdzięczny</Text>
+              </View>
+              <Text style={styles.compositeBodyText}>{daily.gratefulFor}</Text>
+            </GlassCard>
+          )}
+
+          {isSelected('impact') && hasContent(daily.impactOnGoals) && (
+            <GlassCard intensity={15} style={[styles.triggerCard, { marginBottom: 24 }]}>
+              <View style={styles.triggerHeader}>
+                <Text style={[styles.triggerTitle, { color: colors.text }]}>Wpływ na cele</Text>
+              </View>
+              <Text style={styles.compositeBodyText}>{daily.impactOnGoals}</Text>
+            </GlassCard>
+          )}
+
+          {daily.quotes.map(
+            (quote, index) =>
+              isSelected(`quote-${index}`) && (
+                <View key={`c-quote-${index}`} style={[styles.blockquote, { marginBottom: 24 }]}>
+                  <View style={styles.blockquoteBar} />
+                  <Text style={[styles.blockquoteText, { color: '#fff' }]}>&quot;{quote}&quot;</Text>
+                </View>
+              ),
+          )}
+
+          {isSelected('advice') && hasContent(daily.goalAdvice) && (
+            <GlassCard
+              intensity={15}
+              style={[styles.triggerCard, { borderColor: 'rgba(167, 139, 250, 0.2)', marginBottom: 24 }]}
+            >
+              <View style={styles.triggerHeader}>
+                <Feather name="compass" size={16} color="#A78BFA" />
+                <Text style={[styles.triggerTitle, { color: '#A78BFA' }]}>Rada oparta na twoich celach</Text>
+              </View>
+              <Text style={styles.compositeBodyText}>{daily.goalAdvice}</Text>
+            </GlassCard>
+          )}
+
           {selectedCards.length > 0 && (
             <View style={styles.watermarkContainer}>
               <Text style={styles.watermarkDate}>{d.full}</Text>
@@ -704,6 +801,20 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: 24,
     gap: 24,
+  },
+  compositeSectionTitle: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  compositeBodyText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: 'rgba(255,255,255,0.85)',
+    marginBottom: 4,
   },
   watermarkContainer: {
     alignItems: 'center',

@@ -46,7 +46,7 @@ flowchart LR
 - [x] Edge Function `build-daily`: analiza dnia, sekcja „Pomysły, na które wpadłem” (odnośniki do notatek typu `idea`), szablon `.md` wpisu dnia, zapis do Storage, chunki i embeddingi, aktualizacja serii/odznak i zgodności z celami (`goalImpactType`) w `profiles`
 - [x] Ekran szczegółów dnia czyta `documents.data`; podgląd `.md`
 - [x] Analizy i seria dni w aplikacji czytają dane policzone po stronie serwera (bez lokalnego przeliczania)
-- [ ] Udostępnianie kart działa na nowym modelu (`documents` zamiast starego store'u)
+- [x] Udostępnianie kart działa na nowym modelu (`documents` zamiast starego store'u)
 
 **Gotowe, gdy:** kilka nagrań z jednego dnia daje jeden wpis dnia ze wszystkimi dotychczasowymi sekcjami i listą pomysłów, a plik `.md` otwiera się poprawnie w Obsidianie.
 
