@@ -17,6 +17,7 @@ scope:
     - src/domain/**
     - src/infrastructure/supabase/**
     - src/composition/diary.ts
+    - src/application/useCases/documents/**
 context: |
   statsUseCase.ts dziś liczy serię i „zgodność z celami” lokalnie na kliencie: setHours zmienia
   daty wpisów w stanie aplikacji, a zgodność z celami to heurystyka pomijająca goalImpactType.
