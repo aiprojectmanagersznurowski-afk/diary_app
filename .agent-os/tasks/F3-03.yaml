@@ -14,6 +14,7 @@ scope:
     - src/application/useCases/**
     - src/domain/**
     - src/infrastructure/supabase/**
+    - src/composition/diary.ts
 context: |
   DetailScreen.tsx dziś czyta stary model (wpis dnia jako doklejany, przepisywany tekst z
   useDiaryStore, ADR-005 to zastępuje). Ekran ma pobierać dokument kind='daily' dla danego dnia

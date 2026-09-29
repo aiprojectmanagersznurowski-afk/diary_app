@@ -19,8 +19,11 @@ import { IRecordingRepository } from '../domain/repositories/IRecordingRepositor
 import { INoteRepository } from '../domain/repositories/INoteRepository';
 import { SupabaseRecordingRepository } from '../infrastructure/supabase/supabaseRecordingRepository';
 import { SupabaseNoteRepository } from '../infrastructure/supabase/supabaseNoteRepository';
+import { SupabaseDocumentRepository } from '../infrastructure/supabase/supabaseDocumentRepository';
 import { RetryRecordingUseCase } from '../application/useCases/recording/retryRecordingUseCase';
 import { GetNotesUseCase } from '../application/useCases/notes/getNotesUseCase';
+import { GetDocumentUseCase } from '../application/useCases/documents/getDocumentUseCase';
+import { IDocumentRepository } from '../domain/repositories/IDocumentRepository';
 import { setNotesDependencies } from '../application/store/useNotesStore';
 
 export function createRecordAndProcessUseCase(
@@ -57,8 +60,10 @@ export const recordUseCase: RecordAndProcessEntryUseCase = createRecordAndProces
 
 export const recordingRepository: IRecordingRepository = new SupabaseRecordingRepository(supabase);
 export const noteRepository: INoteRepository = new SupabaseNoteRepository(supabase);
+export const documentRepository: IDocumentRepository = new SupabaseDocumentRepository(supabase);
 export const retryRecordingUseCase = new RetryRecordingUseCase(recordingRepository);
 export const getNotesUseCase = new GetNotesUseCase(noteRepository);
+export const getDocumentUseCase = new GetDocumentUseCase(documentRepository);
 
 // Inicjalizacja domyślnych zależności w store'ach
 setDiaryDependencies({
