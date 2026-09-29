@@ -1,0 +1,27 @@
+id: F4-06
+title: Aplikacja wysyła status nagrań z zegarka do modułu
+phase: 4
+role: mobile
+branch: feat/F4-06-watch-status-trigger
+depends_on: [F4-04, F4-05]
+roadmap: "Status nagrań: aplikacja wywołuje API modułu przy zmianie statusu nagrania z zegarka"
+read_first:
+  - docs/02-architektura.md#62-nagranie-z-apple-watch-mvp
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/domain/services/IWatchConnectivity.ts
+    - src/infrastructure/watch/**
+    - src/application/store/useNotesStore.ts
+context: |
+  useNotesStore.subscribeToRealtime już nasłuchuje zmian statusu nagrań przez Supabase Realtime
+  (updateRecordingRealtime, F2-07). Rozszerz IWatchConnectivity (z F4-04) o metodę
+  sendRecordingStatus(id, status) wywołującą API modułu z F4-05, i wywołaj ją z
+  updateRecordingRealtime wyłącznie dla nagrań z recording.source === 'watch' (nagrania z telefonu
+  nie mają po co trafiać z powrotem na zegarek).
+acceptance:
+  - "zmiana statusu nagrania źródła 'watch' w Supabase Realtime wywołuje IWatchConnectivity.sendRecordingStatus"
+  - "nagrania źródła 'phone'/'web' nie wywołują sendRecordingStatus"
+  - "test jest dla rozszerzonej logiki updateRecordingRealtime (atrapa IWatchConnectivity)"
+human_steps:
+  - "CP-DEVICE: pełny przepływ end-to-end — nagranie na zegarku, przetworzenie, status widoczny z powrotem na zegarku"

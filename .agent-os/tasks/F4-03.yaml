@@ -1,0 +1,31 @@
+id: F4-03
+title: Moduł Expo watch-connectivity (odbiór plików na iPhonie)
+phase: 4
+role: native
+branch: feat/F4-03-watch-connectivity-module
+depends_on: [F4-01]
+roadmap: "Moduł Expo `modules/watch-connectivity/`: odbiór plików na iPhonie, inbox, zdarzenie do JS"
+read_first:
+  - docs/02-architektura.md#62-nagranie-z-apple-watch-mvp
+  - .agent-os/roles/native.md
+scope:
+  write:
+    - modules/watch-connectivity/**
+    - app.json
+    - package.json
+context: |
+  Lokalny moduł Expo (Expo Modules API, Swift) po stronie iPhone'a, niezależny od tego, czy F4-02
+  jest już skończone (WCSessionDelegate działa niezależnie od zawartości aplikacji zegarka, wymaga
+  tylko istnienia sparowanego targetu watchOS z F4-01). WCSessionDelegate aktywowany przy starcie
+  aplikacji (didReceive file), zapisuje odebrane pliki do Documents/watch-inbox/ razem z manifestem
+  (metadane z F4-02: id, recordedAt, durationMs), emituje zdarzenie do JS (Expo Modules event
+  emitter) informujące o nowych plikach w inboksie. Moduł eksponuje też JS-owalną metodę do wysyłania
+  statusu na zegarek (przygotowanie pod F4-05/F4-06 — sama implementacja WCSession.updateApplicationContext
+  może poczekać na F4-05, ale sygnaturę metody warto zaplanować tutaj, żeby nie zmieniać API modułu
+  dwa razy).
+acceptance:
+  - "plik przesłany testowo z zegarka (albo symulowany WCSession) trafia do Documents/watch-inbox/ z poprawnym manifestem"
+  - "zdarzenie JS (NativeEventEmitter) emitowane jest po odebraniu pliku"
+  - "moduł eksponuje typowane API w index.ts (nie tylko surowe natywne wywołania)"
+human_steps:
+  - "CP-DEVICE: transfer pliku z prawdziwego zegarka do iPhone'a, weryfikacja inboksu i zdarzenia"

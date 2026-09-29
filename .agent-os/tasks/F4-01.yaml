@@ -1,0 +1,31 @@
+id: F4-01
+title: Target watchOS przez @bacons/apple-targets
+phase: 4
+role: native
+branch: feat/F4-01-watch-target-scaffold
+depends_on: [F1-08]
+roadmap: "Target watchOS przez `@bacons/apple-targets` (`targets/watch/`), budowany przez EAS"
+read_first:
+  - docs/02-architektura.md#62-nagranie-z-apple-watch-mvp
+  - docs/05-decyzje.md (ADR-007)
+  - .agent-os/roles/native.md
+scope:
+  write:
+    - targets/**
+    - app.json
+    - package.json
+context: |
+  Pierwszy krok fazy 4: sam szkielet, bez logiki nagrywania (to F4-02). Dodaj zależność
+  @bacons/apple-targets (npx expo install, CP-DEP), skonfiguruj wtyczkę w app.json (bundle id
+  zegarka pochodny od com.michal.sznurowski.diary-app, minimalna wersja watchOS 10 — Q5,
+  05-decyzje.md), stwórz targets/watch/ z minimalną aplikacją SwiftUI (ekran startowy, bez
+  nagrywania) — cel: potwierdzić, że `eas build` (albo lokalny prebuild + Xcode) generuje
+  poprawny projekt z targetem zegarka. ios/ i android/ nie trafiają do repo (CNG) — nie twórz ich
+  ręcznie, nie commituj wygenerowanych katalogów.
+acceptance:
+  - "npx expo prebuild (lub eas build) generuje projekt Xcode z osobnym targetem watchOS bez błędów"
+  - "aplikacja na zegarku (symulator lub urządzenie) uruchamia się i pokazuje pusty ekran startowy"
+  - "ios/, android/ nie są dodane do repozytorium"
+human_steps:
+  - "CP-DEP: npx expo install @bacons/apple-targets"
+  - "CP-DEVICE: build i uruchomienie na symulatorze/zegarku watchOS 10+"

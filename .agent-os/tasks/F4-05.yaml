@@ -1,0 +1,27 @@
+id: F4-05
+title: API modułu zegarka do wysyłania statusu nagrania
+phase: 4
+role: native
+branch: feat/F4-05-watch-status-api
+depends_on: [F4-02, F4-03]
+roadmap: "Status nagrań: API modułu zegarka (`WCSession.updateApplicationContext`, UI statusu na zegarku)"
+read_first:
+  - docs/02-architektura.md#62-nagranie-z-apple-watch-mvp
+  - .agent-os/roles/native.md
+scope:
+  write:
+    - modules/watch-connectivity/**
+    - targets/watch/**
+context: |
+  Dopełnienie API modułu z F4-03 (zaplanowana tam sygnatura) o realną implementację: metoda
+  JS-owalna np. sendRecordingStatus(id, status) na iPhonie wywołuje
+  WCSession.updateApplicationContext z mapą {id: status} (albo listą ostatnich N statusów — kontekst
+  aplikacji WCSession nadpisuje poprzedni, nie kolejkuje, więc przemyśl strukturę, żeby zegarek
+  widział status więcej niż jednego niedawnego nagrania). Po stronie zegarka (targets/watch/):
+  odbiór updateApplicationContext, prosty ekran/lista pokazująca status ostatnich nagrań
+  (oczekuje/przetworzone/błąd) zamiast tylko przycisku start/stop z F4-02.
+acceptance:
+  - "wywołanie sendRecordingStatus z iPhone'a aktualizuje UI statusu na zegarku bez ponownego uruchamiania aplikacji zegarka"
+  - "status kilku różnych nagrań jest widoczny jednocześnie, nie tylko ostatniego (uwaga na nadpisujący charakter updateApplicationContext)"
+human_steps:
+  - "CP-DEVICE: nagranie na zegarku, obserwacja zmiany statusu na ekranie zegarka po przetworzeniu przez serwer"
