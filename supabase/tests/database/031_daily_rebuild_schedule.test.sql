@@ -77,10 +77,12 @@ begin;
     'rebuild_due_daily_entries wybiera tylko wpis starszy niż próg odczekania'
   );
 
-  -- Test 6: rebuild_due_daily_entries wywołało pg_net dla utkniętego wpisu (drugi wpis w kolejce)
+  -- Test 6: rebuild_due_daily_entries wywołało pg_net dla utkniętego wpisu (trzeci wpis w kolejce:
+  -- Test 2 i Test 4 to dwa wywołania request_daily_rebuild, które za każdym razem wołają pg_net
+  -- bezwarunkowo — "na żądanie" ma działać przy każdym otwarciu dzisiejszego wpisu, nie tylko raz).
   select is(
     (select count(*)::int from net.http_request_queue where url = 'http://127.0.0.1:54321/functions/v1/build-daily'),
-    2,
+    3,
     'rebuild_due_daily_entries dodaje kolejny wpis do net.http_request_queue dla utkniętego dnia'
   );
 
