@@ -19,7 +19,7 @@ Pracują na zmianę dwaj agenci. Następna sesja może należeć do innego agent
 2. **Kontekst:** `docs/README.md` → `read_first` z kontraktu → `05-decyzje.md` → `06-zasady-pracy.md` → `.agent-os/roles/<rola>.md` → `.agent-os/handoff/<ID>.md`.
 3. **Praca:** tylko w `scope.write` kontraktu. Małe kroki, `node .agent-os/scripts/gate.mjs` po każdym, częste commity.
 4. **Koniec sesji:** `/os-handoff`: stan, następny krok, checkpointy w `.agent-os/handoff/<ID>.md`, zacommitowane.
-5. **Koniec zadania:** `/os-finish` (`gate.mjs --finish`), potem recenzja **drugiego** agenta: `/os-review <ID>`. PR otwiera i scala człowiek.
+5. **Koniec zadania:** `/os-finish` (`gate.mjs --finish`), potem recenzja **drugiego** agenta: `/os-review <ID>`.
 
 | Workflow | Kiedy |
 |---|---|
