@@ -18,4 +18,10 @@ export interface IWatchConnectivity {
   clearInboxFile(id: string): Promise<void>;
   /** Zwraca funkcję anulującą subskrypcję. */
   subscribeToInboxFiles(listener: (file: WatchInboxFile) => void): () => void;
+  /**
+   * Wysyła status nagrania na zegarek (F4-05: WCSession.updateApplicationContext po stronie
+   * natywnej). Wołane tylko dla nagrań źródła 'watch' — nagrania z telefonu nie mają po co
+   * trafiać z powrotem na zegarek.
+   */
+  sendRecordingStatus(id: string, status: string): Promise<void>;
 }

@@ -57,7 +57,7 @@ flowchart LR
 - [x] Moduł Expo `modules/watch-connectivity/`: odbiór plików na iPhonie, inbox, zdarzenie do JS
 - [x] Nagrania z zegarka trafiają do tej samej kolejki (`source = 'watch'`)
 - [x] Status nagrań: API modułu zegarka (`WCSession.updateApplicationContext`, UI statusu na zegarku)
-- [ ] Status nagrań: aplikacja wywołuje API modułu przy zmianie statusu nagrania z zegarka
+- [x] Status nagrań: aplikacja wywołuje API modułu przy zmianie statusu nagrania z zegarka
 - [ ] Po MVP: komplikacja, Action Button, wysyłanie bezpośrednio z zegarka
 
 **Gotowe, gdy:** nagranie z zegarka przy wyłączonym Bluetooth na iPhonie trafia do bazy po ponownym połączeniu, bez duplikatów, a zegarek pokazuje status „przetworzone”.
