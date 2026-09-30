@@ -40,7 +40,8 @@
       "expo-apple-authentication",
       "expo-asset",
       "expo-font",
-      "@bacons/apple-targets"
+      "@bacons/apple-targets",
+      "./plugins/withModularHeaders"
     ],
     "extra": {
       "eas": {
