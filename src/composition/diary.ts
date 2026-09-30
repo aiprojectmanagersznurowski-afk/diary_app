@@ -94,6 +94,11 @@ export const ingestWatchInboxUseCase = new IngestWatchInboxUseCase(
   enqueueRecordingUseCase,
 );
 
+// F4-06: useNotesStore.updateRecordingRealtime odsyła status nagrań źródła 'watch' z powrotem na
+// zegarek. Osobne wywołanie setNotesDependencies (obok tego wyżej) — scala tylko podane klucze,
+// nie nadpisuje recordingRepository/noteRepository ustawionych wcześniej.
+setNotesDependencies({ watchConnectivity });
+
 ingestWatchInboxUseCase.execute().catch((error) => {
   console.warn('Nie udało się wczytać nagrań z inboksu zegarka przy starcie', error);
 });

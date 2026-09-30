@@ -40,6 +40,7 @@ describe('IngestWatchInboxUseCase', () => {
       getInboxFiles: jest.fn().mockResolvedValue([]),
       clearInboxFile: jest.fn().mockResolvedValue(undefined),
       subscribeToInboxFiles: jest.fn().mockReturnValue(() => {}),
+      sendRecordingStatus: jest.fn().mockResolvedValue(undefined),
     };
 
     mockRecordingQueue = {

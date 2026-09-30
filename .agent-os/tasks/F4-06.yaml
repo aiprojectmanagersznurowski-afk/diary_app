@@ -13,6 +13,9 @@ scope:
     - src/domain/services/IWatchConnectivity.ts
     - src/infrastructure/watch/**
     - src/application/store/useNotesStore.ts
+    - src/application/store/__tests__/useNotesStore.test.ts
+    - src/application/useCases/recording/__tests__/ingestWatchInboxUseCase.test.ts
+    - src/composition/diary.ts
 context: |
   useNotesStore.subscribeToRealtime już nasłuchuje zmian statusu nagrań przez Supabase Realtime
   (updateRecordingRealtime, F2-07). Rozszerz IWatchConnectivity (z F4-04) o metodę

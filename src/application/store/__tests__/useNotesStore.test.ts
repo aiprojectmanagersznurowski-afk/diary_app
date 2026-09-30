@@ -1,12 +1,14 @@
 import { useNotesStore, setNotesDependencies } from '../useNotesStore';
 import { IRecordingRepository } from '../../../domain/repositories/IRecordingRepository';
 import { INoteRepository } from '../../../domain/repositories/INoteRepository';
+import { IWatchConnectivity } from '../../../domain/services/IWatchConnectivity';
 import { Recording } from '../../../domain/models/Recording';
 import { NoteDocument } from '../../../domain/models/NoteDocument';
 
 describe('useNotesStore', () => {
   let mockRecordingRepo: jest.Mocked<IRecordingRepository>;
   let mockNoteRepo: jest.Mocked<INoteRepository>;
+  let mockWatchConnectivity: jest.Mocked<IWatchConnectivity>;
 
   const sampleRecording: Recording = {
     id: 'rec-1',
@@ -45,9 +47,17 @@ describe('useNotesStore', () => {
       subscribeToNotes: jest.fn().mockReturnValue(jest.fn()),
     };
 
+    mockWatchConnectivity = {
+      getInboxFiles: jest.fn().mockResolvedValue([]),
+      clearInboxFile: jest.fn().mockResolvedValue(undefined),
+      subscribeToInboxFiles: jest.fn().mockReturnValue(() => {}),
+      sendRecordingStatus: jest.fn().mockResolvedValue(undefined),
+    };
+
     setNotesDependencies({
       recordingRepository: mockRecordingRepo,
       noteRepository: mockNoteRepo,
+      watchConnectivity: mockWatchConnectivity,
     });
   });
 
@@ -93,6 +103,37 @@ describe('useNotesStore', () => {
     const stored = useNotesStore.getState().recordings;
     expect(stored).toHaveLength(2);
     expect(stored[0].id).toBe('rec-2');
+  });
+
+  it('updateRecordingRealtime sends status to the watch for recordings sourced from it', () => {
+    const watchRecording: Recording = {
+      id: 'rec-watch-1',
+      userId: 'user-1',
+      source: 'watch',
+      recordedAt: '2026-09-30T09:00:00Z',
+      status: 'transcribed',
+      attempts: 0,
+    };
+
+    useNotesStore.getState().updateRecordingRealtime(watchRecording);
+
+    expect(mockWatchConnectivity.sendRecordingStatus).toHaveBeenCalledWith('rec-watch-1', 'transcribed');
+  });
+
+  it('updateRecordingRealtime does not call the watch for phone/web recordings', () => {
+    useNotesStore.getState().updateRecordingRealtime({ ...sampleRecording, status: 'done' });
+
+    const webRecording: Recording = {
+      id: 'rec-web-1',
+      userId: 'user-1',
+      source: 'web',
+      recordedAt: '2026-09-30T09:00:00Z',
+      status: 'done',
+      attempts: 0,
+    };
+    useNotesStore.getState().updateRecordingRealtime(webRecording);
+
+    expect(mockWatchConnectivity.sendRecordingStatus).not.toHaveBeenCalled();
   });
 
   it('retryRecording performs optimistic update and calls repository', async () => {

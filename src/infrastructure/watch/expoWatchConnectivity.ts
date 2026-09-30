@@ -3,6 +3,7 @@ import {
   getInboxFiles,
   clearInboxFile,
   addInboxFileListener,
+  sendRecordingStatus,
   InboxFileManifest,
 } from '../../../modules/watch-connectivity';
 
@@ -29,5 +30,9 @@ export class ExpoWatchConnectivity implements IWatchConnectivity {
   subscribeToInboxFiles(listener: (file: WatchInboxFile) => void): () => void {
     const subscription = addInboxFileListener((manifest) => listener(toWatchInboxFile(manifest)));
     return () => subscription.remove();
+  }
+
+  async sendRecordingStatus(id: string, status: string): Promise<void> {
+    await sendRecordingStatus(id, status);
   }
 }

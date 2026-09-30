@@ -3,19 +3,25 @@ import { Recording, RecordingStatus } from '../../domain/models/Recording';
 import { NoteDocument, NoteType } from '../../domain/models/NoteDocument';
 import { IRecordingRepository } from '../../domain/repositories/IRecordingRepository';
 import { INoteRepository } from '../../domain/repositories/INoteRepository';
+import { IWatchConnectivity } from '../../domain/services/IWatchConnectivity';
 
 let activeRecordingRepository: IRecordingRepository | null = null;
 let activeNoteRepository: INoteRepository | null = null;
+let activeWatchConnectivity: IWatchConnectivity | null = null;
 
 export const setNotesDependencies = (deps: {
   recordingRepository?: IRecordingRepository | null;
   noteRepository?: INoteRepository | null;
+  watchConnectivity?: IWatchConnectivity | null;
 }) => {
   if (deps.recordingRepository !== undefined) {
     activeRecordingRepository = deps.recordingRepository;
   }
   if (deps.noteRepository !== undefined) {
     activeNoteRepository = deps.noteRepository;
+  }
+  if (deps.watchConnectivity !== undefined) {
+    activeWatchConnectivity = deps.watchConnectivity;
   }
 };
 
@@ -113,6 +119,12 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       get()
         .fetchNotes()
         .catch(() => {});
+    }
+
+    // F4-06: nagrania z zegarka odsyłają status z powrotem na zegarek (F4-05). Nagrania z
+    // telefonu/weba nie mają po co tam trafiać.
+    if (recording.source === 'watch' && activeWatchConnectivity) {
+      activeWatchConnectivity.sendRecordingStatus(recording.id, recording.status).catch(() => {});
     }
   },
 
