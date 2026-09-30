@@ -9,6 +9,9 @@ final class RecordingManager: NSObject, ObservableObject {
     @Published private(set) var isRecording = false
     @Published private(set) var queue: [QueuedRecording] = []
     @Published private(set) var lastError: String?
+    /// Status ostatnich nagrań odesłany z iPhone'a (F4-05). Aktualizowany bez restartu aplikacji
+    /// zegarka — nowy applicationContext dociera do już działającej sesji WCSession.
+    @Published private(set) var recordingStatuses: [RecordingStatusEntry] = []
 
     private let store: RecordingQueueStore
     private var audioRecorder: AVAudioRecorder?
@@ -152,6 +155,19 @@ extension RecordingManager: WCSessionDelegate {
             DispatchQueue.main.async { [weak self] in
                 self?.resumePendingTransfers()
             }
+        }
+    }
+
+    func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+        guard let rawStatuses = applicationContext["recordingStatuses"] as? [[String: Any]] else { return }
+
+        let entries = rawStatuses.compactMap { dict -> RecordingStatusEntry? in
+            guard let id = dict["id"] as? String, let status = dict["status"] as? String else { return nil }
+            return RecordingStatusEntry(id: id, status: status)
+        }
+
+        DispatchQueue.main.async { [weak self] in
+            self?.recordingStatuses = entries
         }
     }
 
