@@ -1,5 +1,13 @@
 import Foundation
 
+/// Status nagrania odesłany z iPhone'a (F4-05) przez WCSession.updateApplicationContext.
+/// `status` to surowy string z pipeline'u serwerowego (np. "uploaded"/"transcribed"/"done"/
+/// "failed") — ContentView grupuje go w trzy kategorie: przetworzone/błąd/oczekuje.
+struct RecordingStatusEntry: Identifiable, Equatable {
+    let id: String
+    let status: String
+}
+
 /// A recording made on the watch that is waiting to be (or has been) handed off to
 /// `WCSession.transferFile`. Persisted to disk so the queue survives app relaunches
 /// (docs/02-architektura.md §6.2: "zamknięcie i ponowne otwarcie aplikacji na zegarku nie gubi

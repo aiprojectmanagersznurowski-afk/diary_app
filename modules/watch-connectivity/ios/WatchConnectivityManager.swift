@@ -22,8 +22,15 @@ struct InboxFileManifest: Codable {
 final class WatchConnectivityManager: NSObject {
     static let shared = WatchConnectivityManager()
 
+    /// Liczba ostatnich statusów przechowywanych w applicationContext. WCSession.updateApplicationContext
+    /// NADPISUJE poprzedni kontekst (nie kolejkuje), więc żeby zegarek widział status więcej niż
+    /// jednego niedawnego nagrania, cały context za każdym razem niesie pełną, ograniczoną listę
+    /// — nie tylko najnowszy wpis.
+    private static let maxRecentStatuses = 20
+
     private let inboxDirectory: URL
     private var onFileReceived: ((InboxFileManifest) -> Void)?
+    private var recentStatuses: [(id: String, status: String, updatedAt: Date)] = []
 
     private override init() {
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -61,10 +68,28 @@ final class WatchConnectivityManager: NSObject {
         try? FileManager.default.removeItem(at: manifestURL)
     }
 
-    /// Rezerwacja API pod F4-05 (WCSession.updateApplicationContext) — sygnatura ustalona teraz,
-    /// żeby moduł Expo nie zmieniał kształtu API dwa razy. Implementacja: F4-05.
+    /// Wysyła status nagrania na zegarek. `id` musi zgadzać się z tym nadanym na zegarku (F4-02),
+    /// żeby ContentView mogło dopasować status do właściwej pozycji w swojej kolejce.
     func sendRecordingStatus(id: String, status: String) {
-        // TODO(F4-05): WCSession.default.updateApplicationContext([...]) z mapą statusów.
+        recentStatuses.removeAll { $0.id == id }
+        recentStatuses.append((id: id, status: status, updatedAt: Date()))
+        if recentStatuses.count > Self.maxRecentStatuses {
+            recentStatuses.removeFirst(recentStatuses.count - Self.maxRecentStatuses)
+        }
+
+        guard WCSession.isSupported(), WCSession.default.activationState == .activated else { return }
+
+        let formatter = ISO8601DateFormatter()
+        let payload: [[String: Any]] = recentStatuses.map {
+            ["id": $0.id, "status": $0.status, "updatedAt": formatter.string(from: $0.updatedAt)]
+        }
+
+        do {
+            try WCSession.default.updateApplicationContext(["recordingStatuses": payload])
+        } catch {
+            // Niepowodzenie updateApplicationContext (np. sesja jeszcze nieaktywna) nie jest
+            // krytyczne — zegarek dostanie aktualny kontekst przy kolejnym wywołaniu tej metody.
+        }
     }
 
     private func saveReceivedFile(_ file: WCSessionFile) {
