@@ -55,7 +55,7 @@ flowchart LR
 - [x] Target watchOS przez `@bacons/apple-targets` (`targets/watch/`), budowany przez EAS
 - [x] Nagrywanie na zegarku: `AVAudioRecorder`, lokalna kolejka, `WCSession.transferFile` z metadanymi
 - [x] Moduł Expo `modules/watch-connectivity/`: odbiór plików na iPhonie, inbox, zdarzenie do JS
-- [ ] Nagrania z zegarka trafiają do tej samej kolejki (`source = 'watch'`)
+- [x] Nagrania z zegarka trafiają do tej samej kolejki (`source = 'watch'`)
 - [ ] Status nagrań: API modułu zegarka (`WCSession.updateApplicationContext`, UI statusu na zegarku)
 - [ ] Status nagrań: aplikacja wywołuje API modułu przy zmianie statusu nagrania z zegarka
 - [ ] Po MVP: komplikacja, Action Button, wysyłanie bezpośrednio z zegarka

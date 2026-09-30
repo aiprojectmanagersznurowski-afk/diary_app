@@ -1,4 +1,5 @@
 import * as Crypto from 'expo-crypto';
+import { AppState } from 'react-native';
 import { audioRecorder, aiService } from './onboarding';
 import { InMemoryDiaryRepository } from '../infrastructure/db/diaryRepository';
 import { RecordAndProcessEntryUseCase } from '../application/useCases/recordAndProcess';
@@ -26,6 +27,9 @@ import { GetDocumentUseCase } from '../application/useCases/documents/getDocumen
 import { GetDailyDocumentsInRangeUseCase } from '../application/useCases/documents/getDailyDocumentsInRangeUseCase';
 import { IDocumentRepository } from '../domain/repositories/IDocumentRepository';
 import { setNotesDependencies } from '../application/store/useNotesStore';
+import { IngestWatchInboxUseCase } from '../application/useCases/recording/ingestWatchInboxUseCase';
+import { ExpoWatchConnectivity } from '../infrastructure/watch/expoWatchConnectivity';
+import { IWatchConnectivity } from '../domain/services/IWatchConnectivity';
 
 export function createRecordAndProcessUseCase(
   recorder: IAudioRecorder,
@@ -76,4 +80,34 @@ setDiaryDependencies({
 setNotesDependencies({
   recordingRepository,
   noteRepository,
+});
+
+// F4-04: nagrania z zegarka (docs/02-architektura.md §6.2) trafiają do tej samej kolejki co
+// nagrania z telefonu. Uruchamiamy przy starcie appki, po powrocie na pierwszy plan i po każdym
+// zdarzeniu z modułu watch-connectivity (nowy plik w inboksie) — te trzy momenty są wymienione
+// wprost w kontrakcie F4-04, a jedynym miejscem poza App.tsx, gdzie można je podpiąć bez
+// wykraczania poza scope.write tego zadania, jest composition root.
+export const watchConnectivity: IWatchConnectivity = new ExpoWatchConnectivity();
+export const ingestWatchInboxUseCase = new IngestWatchInboxUseCase(
+  watchConnectivity,
+  recordingQueue,
+  enqueueRecordingUseCase,
+);
+
+ingestWatchInboxUseCase.execute().catch((error) => {
+  console.warn('Nie udało się wczytać nagrań z inboksu zegarka przy starcie', error);
+});
+
+AppState.addEventListener('change', (nextState) => {
+  if (nextState === 'active') {
+    ingestWatchInboxUseCase.execute().catch((error) => {
+      console.warn('Nie udało się wczytać nagrań z inboksu zegarka po powrocie na pierwszy plan', error);
+    });
+  }
+});
+
+watchConnectivity.subscribeToInboxFiles(() => {
+  ingestWatchInboxUseCase.execute().catch((error) => {
+    console.warn('Nie udało się wczytać nagrań z inboksu zegarka po zdarzeniu modułu', error);
+  });
 });
