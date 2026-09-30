@@ -13,6 +13,7 @@ scope:
     - src/domain/services/IWatchConnectivity.ts
     - src/infrastructure/watch/**
     - src/application/useCases/recording/ingestWatchInboxUseCase.ts
+    - src/application/useCases/recording/__tests__/ingestWatchInboxUseCase.test.ts
     - src/composition/diary.ts
 context: |
   JS strona konsumująca moduł z F4-03 (modules/watch-connectivity, poza zakresem tego zadania —
