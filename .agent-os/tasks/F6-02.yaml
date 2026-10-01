@@ -1,0 +1,41 @@
+id: F6-02
+title: "Edge Function chat: przepisanie zapytania, wyszukiwanie i odpowiedź SSE z cytatami"
+phase: 6
+role: edge
+branch: feat/F6-02-edge-chat
+depends_on: [F6-01]
+roadmap: "Edge Function `chat`: przepisanie zapytania na filtry dat, wyszukiwanie, odpowiedź strumieniowana z cytatami"
+read_first:
+  - docs/02-architektura.md#64-czat-rag
+  - docs/02-architektura.md#7-warstwa-ai
+  - docs/03-stos-technologiczny.md
+scope:
+  write:
+    - supabase/functions/chat/**
+    - supabase/functions/_shared/prompts/**
+    - supabase/functions/_shared/schemas/**
+    - supabase/functions/_shared/ai/**
+    - supabase/tests/**
+context: |
+  Implementacja Edge Function chat obsługującej pipeline RAG dla czatu z pamiętnikiem (docs/02-architektura.md §6.4, §7):
+  1. Przepisywanie zapytania (query rewrite):
+     - LLM analizuje pytanie użytkownika, aktualną datę oraz strefę czasową (np. 'Europe/Warsaw') i generuje ustrukturyzowane zapytanie: { search_query, date_from, date_to, kinds, categories }.
+     - Przykładowo zapytanie „Jakie miałem wczoraj pomysły?” zamienia się na date_from/date_to równe wczorajszej dacie, kinds = ['note'], oraz wyodrębnia zapytanie semantyczne.
+     - Schemat zod walidujący wynik przepisania oraz wersjonowany prompt w _shared/prompts/.
+  2. Wyszukiwanie hybrydowe:
+     - Wygenerowanie embeddingu dla search_query za pomocą skonfigurowanego EmbeddingProvider (Gemini).
+     - Wywołanie RPC search_chunks z filtrami i embeddingiem.
+  3. Generowanie odpowiedzi i cytowanie:
+     - LLM odpowiada wyłącznie na podstawie zwróconych fragmentów (zgodnie z promptem systemowym).
+     - Oznacza cytaty z dokumentów w formacie [doc:<id>].
+     - Jeśli brak informacji w kontekście, model uczciwie informuje o braku wpisów w danym temacie.
+  4. Strumieniowanie i zapis:
+     - Odpowiedź strumieniowana protokołem Server-Sent Events (SSE, text/event-stream) z tokenami tekstu i ostateczną listą cytatów (citations).
+     - Zapis wiadomości i cytatów w chat_messages oraz obsługa thread_id.
+acceptance:
+  - "Edge Function chat przepisuje relatywne określenia czasu (np. 'wczoraj') na bezwzględne daty (test Deno)"
+  - "zapytanie wykonuje search_chunks z właściwymi filtrami i embeddingiem (test Deno)"
+  - "odpowiedź LLM zawiera cytaty w formacie [doc:<id>] i listę citations (test Deno)"
+  - "odpowiedź jest poprawnie strumieniowana przez SSE (test Deno)"
+  - "deno test przechodzi czysto"
+human_steps: []

@@ -1,0 +1,51 @@
+id: F6-03
+title: Interfejs czatu i wątki w aplikacji mobilnej
+phase: 6
+role: mobile
+branch: feat/F6-03-chat-ui
+depends_on: [F6-02]
+roadmap: "Wątki czatu, cytaty jako odnośniki do dokumentów i grafu"
+read_first:
+  - docs/02-architektura.md#64-czat-rag
+  - docs/03-stos-technologiczny.md
+  - docs/06-zasady-pracy.md
+scope:
+  write:
+    - src/domain/models/Chat.ts
+    - src/domain/repositories/IChatRepository.ts
+    - src/infrastructure/supabase/supabaseChatRepository.ts
+    - src/application/useCases/chat/**
+    - src/application/store/useChatStore.ts
+    - src/presentation/components/chat/**
+    - src/presentation/screens/ChatScreen.tsx
+    - src/presentation/screens/HomeScreen.tsx
+    - src/navigation/**
+    - App.tsx
+    - src/composition/diary.ts
+    - src/composition/index.ts
+    - src/domain/models/__tests__/**
+    - src/application/store/__tests__/**
+    - src/application/useCases/chat/__tests__/**
+    - src/infrastructure/supabase/__tests__/**
+context: |
+  Implementacja interfejsu czatu z pamiętnikiem w aplikacji mobilnej (docs/02-architektura.md §6.4):
+  1. Domena i infrastruktura:
+     - Modele ChatMessage, ChatThread, Citation w src/domain/models/Chat.ts.
+     - IChatRepository i implementacja SupabaseChatRepository z obsługą pobierania historii oraz wysyłki wiadomości ze strumieniowaniem odpowiedzi z Edge Function chat.
+  2. Stan (useChatStore):
+     - Zarządzanie aktywnym wątkiem, listą wiadomości, stanem strumieniowania (isStreaming, streamingContent), obsługą błędów.
+  3. Prezentacja i cytaty:
+     - ChatScreen z listą wiadomości, dymkami użytkownika i asystenta, autoscrollem do dołu, polem wpisywania i przyciskami szybkich pytań (np. „Co robiłem wczoraj?”, „Podsumuj mój tydzień”).
+     - Komponent wiadomości parsujący cytaty [doc:<id>] i renderujący je jako klikalne odnośniki/pigułki.
+     - Kliknięcie w cytat otwiera DetailScreen dla wskazanego dokumentu (lub GraphScreen z zaznaczonym węzłem).
+  4. Nawigacja:
+     - Rejestracja ChatScreen w RootStackParamList i App.tsx.
+     - Dostęp z nagłówka HomeScreen (ikona wiadomości / czatu obok grafu i odznak).
+acceptance:
+  - "ChatScreen renderuje historię wiadomości i stan strumieniowania odpowiedzi"
+  - "cytaty [doc:<id>] są parsowane i renderowane jako klikalne odnośniki prowadzące do DetailScreen"
+  - "użytkownik może wysłać wiadomość i otrzymać strumieniowaną odpowiedź z Edge Function"
+  - "ekran czatu jest zarejestrowany w nawigacji i dostępny z HomeScreen"
+  - "npx tsc --noEmit i ESLint bez błędów"
+human_steps:
+  - "CP-DEVICE: weryfikacja interfejsu czatu i płynności strumieniowania na urządzeniu mobilnym"

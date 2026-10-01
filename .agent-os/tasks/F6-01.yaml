@@ -1,0 +1,35 @@
+id: F6-01
+title: RPC search_chunks (hybrydowe wyszukiwanie z filtrami)
+phase: 6
+role: db
+branch: feat/F6-01-search-chunks-rpc
+depends_on: [F3-02]
+roadmap: "RPC `search_chunks` (hybrydowe wyszukiwanie z filtrami)"
+read_first:
+  - docs/02-architektura.md#funkcje-rpc
+  - docs/02-architektura.md#64-czat-rag
+  - docs/02-architektura.md#8-bezpieczeństwo-i-prywatność
+scope:
+  write:
+    - supabase/migrations/**
+    - supabase/tests/**
+context: |
+  Migracja dodaje funkcję RPC search_chunks do hybrydowego wyszukiwania fragmentów dokumentów (docs/02-architektura.md §4, §6.4):
+  1. public.search_chunks(query_embedding vector, query_text text, date_from date default null, date_to date default null, kinds text[] default null, category_ids uuid[] default null, k int default 10):
+     - Wyszukiwanie hybrydowe łączące podobieństwo wektorowe (cosine distance na document_chunks.embedding) z pełnotekstowym wyszukiwaniem tekstowym (Full-Text Search na chunk_text / documents.title).
+     - Łączenie wyników metodą Reciprocal Rank Fusion (RRF) lub ważoną sumą znormalizowanych wag dla optymalnej trafności.
+     - Filtrowanie po user_id = auth.uid(), zakresie dat (day >= date_from, day <= date_to), kinds (kind = ANY(kinds)) oraz category_ids (category_id = ANY(category_ids)).
+     - Zwraca kolory/id/treść chunków, document_id, title, kind, note_type, day, similarity/rank.
+     - security invoker, ścisła izolacja RLS.
+  2. Testy pgTAP w supabase/tests/:
+     - Izolacja użytkowników: użytkownik A nie widzi fragmentów użytkownika B.
+     - Filtrowanie po zakresie dat, typach dokumentów i kategoriach.
+     - Trafność wyników: poprawne sortowanie i limit k.
+acceptance:
+  - "RPC search_chunks zwraca chunki i metadane dokumentów wyłącznie dla auth.uid() (test pgTAP)"
+  - "RPC search_chunks poprawnie filtruje po date_from, date_to, kinds i category_ids (test pgTAP)"
+  - "wyszukiwanie łączy dopasowanie wektorowe z tekstowym (test pgTAP)"
+  - "użytkownik A nie ma dostępu do chunków użytkownika B (test pgTAP)"
+  - "migracja stosuje się czysto w supabase db reset"
+human_steps:
+  - "CP-MIGRATION: przegląd migracji i supabase db push"
