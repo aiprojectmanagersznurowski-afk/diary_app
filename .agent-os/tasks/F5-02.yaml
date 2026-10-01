@@ -1,0 +1,57 @@
+id: F5-02
+title: Komponent grafu z react-force-graph-2d i integracja z Expo DOM Component
+phase: 5
+role: mobile
+branch: feat/F5-02-graph-component
+depends_on: [F5-01]
+roadmap: "Komponent grafu (`react-force-graph-2d`) na webie i przez komponent DOM Expo na natywnych platformach"
+read_first:
+  - docs/02-architektura.md#65-graf
+  - docs/03-stos-technologiczny.md
+  - docs/06-zasady-pracy.md
+scope:
+  write:
+    - package.json
+    - package-lock.json
+    - src/domain/models/Graph.ts
+    - src/domain/repositories/IGraphRepository.ts
+    - src/infrastructure/supabase/supabaseGraphRepository.ts
+    - src/application/useCases/graph/**
+    - src/application/store/useGraphStore.ts
+    - src/presentation/components/graph/**
+    - src/presentation/screens/GraphScreen.tsx
+    - src/presentation/screens/HomeScreen.tsx
+    - src/composition/diary.ts
+    - src/composition/index.ts
+    - src/navigation/**
+    - App.tsx
+    - src/domain/models/__tests__/**
+    - src/application/store/__tests__/**
+    - src/infrastructure/supabase/__tests__/**
+context: |
+  Pierwsza część interfejsu grafu wiedzy (docs/02-architektura.md §6.5, docs/03-stos-technologiczny.md):
+  1. Zależności:
+     - Dodanie react-force-graph-2d do package.json (oraz ewentualnych typów). Wymaga zgłoszenia CP-DEP.
+  2. Domena i infrastruktura:
+     - Modele w src/domain/models/Graph.ts: GraphNode (id, title, kind, noteType, day, categoryId, tags), GraphEdge (source, target, kind, score), GraphData.
+     - Interfejs IGraphRepository w domain oraz implementacja SupabaseGraphRepository w infrastructure wołająca supabase.rpc('get_graph', ...).
+     - Instancje tworzone w composition root (src/composition/diary.ts).
+  3. Stan i use cases:
+     - useGraphStore (zustand) do pobierania danych grafu, obsługi stanu ładowania/błędu oraz zaznaczonego węzła.
+  4. Komponent grafu:
+     - Na webie bezpośrednie renderowanie react-force-graph-2d.
+     - Na platformach natywnych (iOS, Android) komponent z dyrektywą 'use dom' (Expo DOM Component, SDK 54).
+     - Kliknięcie węzła emituje zdarzenie / otwiera DetailScreen dla danego dokumentu.
+  5. Nawigacja:
+     - Dodanie GraphScreen do RootStackParamList w src/navigation/types.ts i rejestracja w App.tsx.
+     - Przycisk przejścia do ekranu grafu w HomeScreen.
+acceptance:
+  - "IGraphRepository pobiera węzły i krawędzie z RPC get_graph (test jednostkowy z atrapą Supabase)"
+  - "useGraphStore zarządza danymi grafu i stanem ładowania (test jednostkowy)"
+  - "komponent grafu renderuje strukturę węzłów i krawędzi na webie oraz w Expo DOM Component na natywnych platformach"
+  - "kliknięcie węzła wywołuje nawigację do DetailScreen z parametrem entryId"
+  - "ekran grafu jest zarejestrowany w nawigacji i dostępny z HomeScreen"
+  - "npx tsc --noEmit i ESLint bez błędów"
+human_steps:
+  - "CP-DEP: instalacja react-force-graph-2d w package.json"
+  - "CP-DEVICE: weryfikacja wyświetlania i interakcji z grafem w Expo DOM Component na iOS/Android"

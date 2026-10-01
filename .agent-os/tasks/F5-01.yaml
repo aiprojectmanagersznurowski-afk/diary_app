@@ -1,0 +1,38 @@
+id: F5-01
+title: RPC get_graph i similar_documents z filtrami
+phase: 5
+role: db
+branch: feat/F5-01-rpc-get-graph
+depends_on: [F3-02]
+roadmap: "RPC `get_graph` z filtrami"
+read_first:
+  - docs/02-architektura.md#funkcje-rpc
+  - docs/02-architektura.md#65-graf
+  - docs/02-architektura.md#8-bezpieczeństwo-i-prywatność
+scope:
+  write:
+    - supabase/migrations/**
+    - supabase/tests/**
+context: |
+  Migracja dodaje funkcje RPC get_graph oraz similar_documents (docs/02-architektura.md §4, §6.5):
+  1. public.get_graph(date_from date default null, date_to date default null, category_ids uuid[] default null, note_types text[] default null, min_score real default null):
+     - Zwraca węzły (dokumenty: id, kind, note_type, day, title, slug, category_id, tags, created_at) oraz krawędzie (linki z tabeli links: source_id, target_id, kind, score, reason).
+     - security invoker, filtruje wyłącznie dokumenty i krawędzie należące do auth.uid() (user_id = auth.uid()).
+     - Opcjonalnie filtruje węzły po zakresie dat (day >= date_from, day <= date_to), category_ids (category_id = ANY(category_ids)) oraz note_types (note_type = ANY(note_types)). Wpisy dnia (kind = 'daily') są uwzględniane w zakresie dat.
+     - Zwraca krawędzie tylko pomiędzy węzłami spełniającymi kryteria (lub łączące zwrócone węzły) oraz z uwzględnieniem min_score dla linków z wartością score (score >= min_score lub score IS NULL dla linków strukturalnych 'day' / 'wikilink').
+  2. public.similar_documents(document_id uuid, k int default 5):
+     - Zwraca powiązane dokumenty dla podanego document_id (potrzebne dla sekcji „Powiązane myśli” w F5-04 oraz F2-04).
+     - Łączy relacje z tabeli links (source_id = document_id lub target_id = document_id) oraz cosine distance z wektorów chunków (document_chunks.embedding <=> doc_embedding).
+     - security invoker, wyłącznie dla auth.uid().
+  3. Testy pgTAP w supabase/tests/:
+     - RLS / izolacja: użytkownik A nie widzi węzłów ani krawędzi użytkownika B.
+     - Poprawne filtrowanie po datach, kategoriach, typach notatek i min_score.
+     - Format zwracanych danych zgodny z kontraktem grafu.
+acceptance:
+  - "RPC get_graph zwraca węzły (dokumenty) i krawędzie (linki) wyłącznie dla auth.uid() (test pgTAP)"
+  - "RPC get_graph poprawnie filtruje węzły i krawędzie po date_from, date_to, category_ids, note_types i min_score (test pgTAP)"
+  - "RPC similar_documents zwraca powiązane dokumenty wyłącznie dla auth.uid() (test pgTAP)"
+  - "użytkownik A nie widzi węzłów ani krawędzi użytkownika B w get_graph ani similar_documents (test pgTAP)"
+  - "migracja stosuje się czysto w supabase db reset"
+human_steps:
+  - "CP-MIGRATION: przegląd migracji i supabase db push"

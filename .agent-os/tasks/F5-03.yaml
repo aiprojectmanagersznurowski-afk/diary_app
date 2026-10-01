@@ -1,0 +1,41 @@
+id: F5-03
+title: Węzły centralne, kolory według kategorii i filtry grafu
+phase: 5
+role: mobile
+branch: feat/F5-03-graph-nodes-filters
+depends_on: [F5-02]
+roadmap: "Wpisy dnia jako węzły centralne, kolory według kategorii, filtry"
+read_first:
+  - docs/02-architektura.md#65-graf
+  - docs/04-roadmapa.md#faza-5-graf
+scope:
+  write:
+    - src/domain/models/Graph.ts
+    - src/presentation/components/graph/**
+    - src/presentation/screens/GraphScreen.tsx
+    - src/application/store/useGraphStore.ts
+    - src/application/useCases/graph/**
+    - src/application/store/__tests__/**
+    - src/application/useCases/graph/__tests__/**
+context: |
+  Rozszerzenie grafu o hierarchię wizualną i filtrowanie (docs/02-architektura.md §6.5):
+  1. Wizualizacja węzłów:
+     - Wpisy dnia (kind = 'daily') wyróżnione jako węzły centralne: większy promień węzła, wyraźny kształt/obrys, etykieta z datą (np. '2026-09-23').
+     - Notatki (kind = 'note') kolorowane według przypisanej kategorii (kolor z categories.color, a przy braku kategorii — kolor zgodny z getNoteTypeColor).
+     - Różne style lub kolory krawędzi w zależności od link.kind ('day' łączący dzień z notatkami, 'semantic' z grubością zależną od score, 'wikilink').
+  2. Panel filtrów grafu:
+     - Zakres dat (od/do).
+     - Multiselect kategorii (użytkownik może włączać/wyłączać wybrane kategorie).
+     - Typy notatek (idea, task, reflection, event).
+     - Suwak lub próg min_score dla powiązań semantycznych.
+  3. Wydajność i lokalne przełączanie:
+     - Zgodnie z §6.5: wstępne filtrowanie po stronie SQL (RPC get_graph), a przełączanie aktywnych filtrów na pobranym zbiorze lokalnie w useGraphStore bez opóźnień sieciowych.
+     - Płynne działanie przy dużej liczbie węzłów.
+acceptance:
+  - "węzły wpisów dnia renderują się jako węzły centralne (większy rozmiar i wyraźna identyfikacja)"
+  - "węzły notatek przyjmują kolory kategorii z bazy danych lub domyślne kolory typów notatek"
+  - "panel filtrów umożliwia filtrowanie po dacie, kategoriach i typach notatek"
+  - "zmiana filtrów na pobranych danych filtruje widok lokalnie bez ponownego zapytania sieciowego (test jednostkowy store/use case)"
+  - "npx tsc --noEmit i ESLint bez błędów"
+human_steps:
+  - "CP-DEVICE: test płynności i czytelności węzłów i filtrów na urządzeniu mobilnym"

@@ -1,0 +1,47 @@
+id: F5-04
+title: Powiązane myśli w szczegółach dokumentu
+phase: 5
+role: mobile
+branch: feat/F5-04-related-thoughts
+depends_on: [F5-01, F3-03]
+roadmap: "„Powiązane myśli” w szczegółach dokumentu (`similar_documents` + `links`)"
+read_first:
+  - docs/02-architektura.md#funkcje-rpc
+  - docs/02-architektura.md#5-dokumenty-markdown
+  - docs/04-roadmapa.md#faza-5-graf
+scope:
+  write:
+    - src/domain/models/RelatedThought.ts
+    - src/domain/repositories/IRelatedThoughtsRepository.ts
+    - src/domain/repositories/IDocumentRepository.ts
+    - src/infrastructure/supabase/supabaseRelatedThoughtsRepository.ts
+    - src/application/useCases/document/**
+    - src/application/store/useRelatedThoughtsStore.ts
+    - src/presentation/components/detail/**
+    - src/presentation/screens/DetailScreen.tsx
+    - src/composition/diary.ts
+    - src/composition/index.ts
+    - src/domain/models/__tests__/**
+    - src/application/store/__tests__/**
+    - src/application/useCases/document/__tests__/**
+    - src/infrastructure/supabase/__tests__/**
+context: |
+  Wzbogacenie ekranu szczegółów dokumentu (DetailScreen.tsx) o sekcję „Powiązane myśli” (docs/02-architektura.md §4, §5, docs/04-roadmapa.md):
+  1. Domena i repozytorium:
+     - Model RelatedThought (documentId, title, kind, noteType, day, relationType: 'semantic' | 'day' | 'wikilink' | 'llm' | 'manual', score, reason).
+     - Interfejs IRelatedThoughtsRepository oraz implementacja SupabaseRelatedThoughtsRepository łącząca wyniki RPC similar_documents z bezpośrednimi powiązaniami z tabeli links.
+     - Rejestracja w composition root (src/composition/diary.ts).
+  2. Logika aplikacji:
+     - Use case / useRelatedThoughtsStore ładujący powiązane myśli po załadowaniu dokumentu w DetailScreen.
+  3. Prezentacja w DetailScreen:
+     - Nowa sekcja „Powiązane myśli” (analogicznie do istniejących sekcji w DetailScreen).
+     - Karta każdej powiązanej myśli z tytułem, datą, typem relacji i ikoną typu notatki.
+     - Kliknięcie w powiązaną myśl przechodzi do szczegółów tej notatki (navigation.push / navigate Detail z nowym entryId).
+     - Obsługa stanu pustego (gdy brak powiązań).
+acceptance:
+  - "DetailScreen renderuje sekcję „Powiązane myśli” dla wybranego dokumentu"
+  - "powiązane myśli są pobierane z IRelatedThoughtsRepository (test jednostkowy repozytorium z atrapą Supabase)"
+  - "kliknięcie w powiązaną myśl nawiguje do jej szczegółów"
+  - "obsłużony stan pusty gdy dokument nie posiada jeszcze powiązań"
+  - "npx tsc --noEmit i ESLint bez błędów"
+human_steps: []
