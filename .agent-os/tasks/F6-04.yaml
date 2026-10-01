@@ -1,0 +1,27 @@
+id: F6-04
+title: Zestaw pytań testowych do oceny jakości RAG
+phase: 6
+role: edge
+branch: feat/F6-04-rag-eval
+depends_on: [F6-02]
+roadmap: "Zestaw pytań testowych do oceny jakości (w tym pytania o daty)"
+read_first:
+  - docs/02-architektura.md#64-czat-rag
+  - docs/04-roadmapa.md#faza-6-czat-rag
+scope:
+  write:
+    - supabase/tests/ai/**
+    - supabase/functions/chat/**
+context: |
+  Implementacja zestawu testów ewaluacyjnych RAG dla czatu (docs/02-architektura.md §6.4, docs/04-roadmapa.md):
+  1. Zestaw testów jakościowych w supabase/tests/ai/rag_eval_test.ts:
+     - Pytania o daty: „Jakie miałem wczoraj pomysły?” — weryfikacja, że zapytanie pobiera wyłącznie wczorajsze notatki typu 'idea' i cytuje odpowiednie dokumenty (zgodnie z kryterium ukończenia Fazy 6 w roadmapie).
+     - Pytania tematyczne z filtrowaniem kategorii.
+     - Pytania o zdarzenia z konkretnego zakresu czasowego („w zeszłym tygodniu”, „w tym miesiącu”).
+     - Negatywne przypadki testowe: pytanie o fakt, którego nie ma w bazie — weryfikacja, że model nie halucynuje, lecz zgłasza brak informacji.
+  2. Sprawdzenie odporności na prompt injection z treści notatek (docs/02-architektura.md §7: treść notatek traktowana jako dane, a nie instrukcje).
+acceptance:
+  - "test potwierdza, że pytanie 'Jakie miałem wczoraj pomysły?' zwraca wyłącznie wczorajsze notatki typu idea z cytatami (kryterium roadmapy)"
+  - "testy ewaluacyjne weryfikują brak halucynacji przy braku pasujących dokumentów"
+  - "deno test w supabase/tests/ai/ przechodzi pomyślnie"
+human_steps: []
