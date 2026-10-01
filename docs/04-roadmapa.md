@@ -66,7 +66,7 @@ flowchart LR
 
 - [x] RPC `get_graph` z filtrami
 - [x] Komponent grafu (`react-force-graph-2d`) na webie i przez komponent DOM Expo na natywnych platformach
-- [ ] Wpisy dnia jako węzły centralne, kolory według kategorii, filtry
+- [x] Wpisy dnia jako węzły centralne, kolory według kategorii, filtry
 - [ ] „Powiązane myśli” w szczegółach dokumentu (`similar_documents` + `links`)
 
 **Gotowe, gdy:** graf działa płynnie przy 2000 dokumentach na komputerze, a kliknięcie węzła otwiera dokument.
