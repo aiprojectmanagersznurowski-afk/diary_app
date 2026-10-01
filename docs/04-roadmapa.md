@@ -64,7 +64,7 @@ flowchart LR
 
 ## Faza 5: Graf
 
-- [ ] RPC `get_graph` z filtrami
+- [x] RPC `get_graph` z filtrami
 - [ ] Komponent grafu (`react-force-graph-2d`) na webie i przez komponent DOM Expo na natywnych platformach
 - [ ] Wpisy dnia jako węzły centralne, kolory według kategorii, filtry
 - [ ] „Powiązane myśli” w szczegółach dokumentu (`similar_documents` + `links`)
