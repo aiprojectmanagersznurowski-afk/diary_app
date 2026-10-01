@@ -30,6 +30,9 @@ import { setNotesDependencies } from '../application/store/useNotesStore';
 import { IngestWatchInboxUseCase } from '../application/useCases/recording/ingestWatchInboxUseCase';
 import { ExpoWatchConnectivity } from '../infrastructure/watch/expoWatchConnectivity';
 import { IWatchConnectivity } from '../domain/services/IWatchConnectivity';
+import { IGraphRepository } from '../domain/repositories/IGraphRepository';
+import { SupabaseGraphRepository } from '../infrastructure/supabase/supabaseGraphRepository';
+import { setGraphDependencies } from '../application/store/useGraphStore';
 
 export function createRecordAndProcessUseCase(
   recorder: IAudioRecorder,
@@ -66,6 +69,7 @@ export const recordUseCase: RecordAndProcessEntryUseCase = createRecordAndProces
 export const recordingRepository: IRecordingRepository = new SupabaseRecordingRepository(supabase);
 export const noteRepository: INoteRepository = new SupabaseNoteRepository(supabase);
 export const documentRepository: IDocumentRepository = new SupabaseDocumentRepository(supabase);
+export const graphRepository: IGraphRepository = new SupabaseGraphRepository(supabase);
 export const retryRecordingUseCase = new RetryRecordingUseCase(recordingRepository);
 export const getNotesUseCase = new GetNotesUseCase(noteRepository);
 export const getDocumentUseCase = new GetDocumentUseCase(documentRepository);
@@ -80,6 +84,10 @@ setDiaryDependencies({
 setNotesDependencies({
   recordingRepository,
   noteRepository,
+});
+
+setGraphDependencies({
+  graphRepository,
 });
 
 // F4-04: nagrania z zegarka (docs/02-architektura.md §6.2) trafiają do tej samej kolejki co

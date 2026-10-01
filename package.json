@@ -29,6 +29,7 @@
     "jest": "~29.7.0",
     "jest-expo": "~54.0.18",
     "react": "19.1.0",
+    "react-force-graph-2d": "^1.29.2",
     "react-native": "0.81.5",
     "react-native-confetti-cannon": "^1.5.2",
     "react-native-gifted-charts": "^1.4.77",
