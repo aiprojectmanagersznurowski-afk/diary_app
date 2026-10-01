@@ -73,7 +73,7 @@ flowchart LR
 
 ## Faza 6: Czat RAG
 
-- [ ] RPC `search_chunks` (hybrydowe wyszukiwanie z filtrami)
+- [x] RPC `search_chunks` (hybrydowe wyszukiwanie z filtrami)
 - [ ] Edge Function `chat`: przepisanie zapytania na filtry dat, wyszukiwanie, odpowiedź strumieniowana z cytatami
 - [ ] Wątki czatu, cytaty jako odnośniki do dokumentów i grafu
 - [ ] Zestaw pytań testowych do oceny jakości (w tym pytania o daty)
