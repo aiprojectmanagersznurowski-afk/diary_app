@@ -10,6 +10,8 @@ import { GlassCard, GradientText, EmotionPill } from '../components/UIPrimitives
 import { getDocumentUseCase } from '../../composition';
 import { AnyDocument } from '../../domain/repositories/IDocumentRepository';
 import { getNoteTypeLabel, getNoteTypeColor, getNoteTypeIcon } from '../../domain/models/NoteDocument';
+import { useRelatedThoughtsStore } from '../../application/store/useRelatedThoughtsStore';
+import { RelatedThoughtsSection } from '../components/detail';
 
 const { width } = Dimensions.get('window');
 
@@ -58,6 +60,13 @@ export const DetailScreen = () => {
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [isMdPreviewVisible, setIsMdPreviewVisible] = useState(false);
 
+  const {
+    items: relatedThoughts,
+    isLoading: isRelatedLoading,
+    error: relatedError,
+    loadRelatedThoughts,
+  } = useRelatedThoughtsStore();
+
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
@@ -73,10 +82,13 @@ export const DetailScreen = () => {
       .finally(() => {
         if (!cancelled) setIsLoading(false);
       });
+
+    loadRelatedThoughts(route.params.entryId);
+
     return () => {
       cancelled = true;
     };
-  }, [route.params.entryId]);
+  }, [route.params.entryId, loadRelatedThoughts]);
 
   const toggleSelection = (id: string) => {
     setSelectedCards((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
@@ -217,6 +229,14 @@ export const DetailScreen = () => {
                 ))}
               </View>
             )}
+
+            <RelatedThoughtsSection
+              thoughts={relatedThoughts}
+              isLoading={isRelatedLoading}
+              error={relatedError}
+              onThoughtPress={(entryId) => navigation.push('Detail', { entryId })}
+              disabled={isShareMode}
+            />
           </View>
         </ScrollView>
       </View>
@@ -428,6 +448,15 @@ export const DetailScreen = () => {
                 <Text style={[styles.triggerText, { color: colors.text }]}>{daily.goalAdvice}</Text>
               </GlassCard>,
             )}
+
+          {/* POWIĄZANE MYŚLI */}
+          <RelatedThoughtsSection
+            thoughts={relatedThoughts}
+            isLoading={isRelatedLoading}
+            error={relatedError}
+            onThoughtPress={(entryId) => navigation.push('Detail', { entryId })}
+            disabled={isShareMode}
+          />
 
           {/* PODGLĄD .MD */}
           <View style={[styles.divider, { backgroundColor: colors.tileBorder }]} />
