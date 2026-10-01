@@ -1,10 +1,10 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useGraphStore } from '../../application/store/useGraphStore';
 import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
-import { ForceGraphView } from '../components/graph';
+import { ForceGraphView, GraphFilterBar } from '../components/graph';
 import { GraphScreenNavigationProp } from '../../navigation/types';
 
 export const GraphScreen: React.FC = () => {
@@ -12,7 +12,20 @@ export const GraphScreen: React.FC = () => {
   const { theme } = useSettingsStore();
   const colors = THEMES[theme];
 
-  const { data, isLoading, error, fetchGraph } = useGraphStore();
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  const {
+    data,
+    rawGraphData,
+    filters,
+    availableCategories,
+    categoryColors,
+    isLoading,
+    error,
+    fetchGraph,
+    setFilters,
+    resetFilters,
+  } = useGraphStore();
 
   useEffect(() => {
     fetchGraph();
@@ -24,6 +37,15 @@ export const GraphScreen: React.FC = () => {
     },
     [navigation],
   );
+
+  const activeFiltersCount =
+    (filters.noteTypes ? filters.noteTypes.length : 0) +
+    (filters.categoryIds ? filters.categoryIds.length : 0) +
+    (filters.dateFrom ? 1 : 0) +
+    (filters.dateTo ? 1 : 0) +
+    (filters.minScore != null ? 1 : 0);
+
+  const isFiltered = activeFiltersCount > 0;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -43,22 +65,57 @@ export const GraphScreen: React.FC = () => {
         <View style={styles.headerTitleContainer}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Graf wiedzy</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            {data.nodes.length} węzłów · {data.links.length} powiązań
+            {isFiltered ? `${data.nodes.length} z ${rawGraphData.nodes.length} węzłów` : `${data.nodes.length} węzłów`}{' '}
+            · {data.links.length} powiązań
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.headerButton,
-            { backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)' },
-          ]}
-          onPress={() => fetchGraph()}
-          disabled={isLoading}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Feather name="rotate-cw" size={20} color={colors.text} />
-        </TouchableOpacity>
+        <View style={styles.headerRightActions}>
+          <TouchableOpacity
+            style={[
+              styles.headerButton,
+              {
+                backgroundColor: isFilterOpen || isFiltered ? `${colors.primary}22` : 'rgba(255,255,255,0.08)',
+                borderColor: isFiltered ? colors.primary : 'transparent',
+                borderWidth: isFiltered ? 1 : 0,
+              },
+            ]}
+            onPress={() => setIsFilterOpen((prev) => !prev)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Feather name="sliders" size={18} color={isFiltered ? colors.primary : colors.text} />
+            {activeFiltersCount > 0 && (
+              <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+                <Text style={styles.badgeText}>{activeFiltersCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.headerButton,
+              { backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)' },
+            ]}
+            onPress={() => fetchGraph()}
+            disabled={isLoading}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Feather name="rotate-cw" size={18} color={colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* Panel filtrów (rozsuwany lokalnie) */}
+      {isFilterOpen && (
+        <GraphFilterBar
+          filters={filters}
+          availableCategories={availableCategories}
+          categoryColors={categoryColors}
+          onFilterChange={setFilters}
+          onResetFilters={resetFilters}
+          onClose={() => setIsFilterOpen(false)}
+        />
+      )}
 
       {/* Main content */}
       <View style={styles.content}>
@@ -79,7 +136,7 @@ export const GraphScreen: React.FC = () => {
           </View>
         )}
 
-        {!isLoading && !error && data.nodes.length === 0 && (
+        {!isLoading && !error && rawGraphData.nodes.length === 0 && (
           <View style={styles.centerContainer}>
             <Feather name="share-2" size={48} color={colors.textSecondary} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>Twój graf jest pusty</Text>
@@ -89,7 +146,22 @@ export const GraphScreen: React.FC = () => {
           </View>
         )}
 
-        {!isLoading && !error && data.nodes.length > 0 && <ForceGraphView data={data} onNodeClick={handleNodeClick} />}
+        {!isLoading && !error && rawGraphData.nodes.length > 0 && data.nodes.length === 0 && (
+          <View style={styles.centerContainer}>
+            <Feather name="filter" size={40} color={colors.textSecondary} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Brak wyników dla filtrów</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+              Żaden węzeł nie pasuje do wybranych filtrów. Zmień lub zresetuj filtry, aby wyświetlić graf.
+            </Text>
+            <TouchableOpacity style={styles.retryButton} onPress={resetFilters}>
+              <Text style={styles.retryButtonText}>Zresetuj filtry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {!isLoading && !error && data.nodes.length > 0 && (
+          <ForceGraphView data={data} categoryColors={categoryColors} onNodeClick={handleNodeClick} />
+        )}
       </View>
     </View>
   );
@@ -109,11 +181,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   headerTitleContainer: {
     alignItems: 'center',
@@ -125,6 +198,27 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 12,
     marginTop: 2,
+  },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
   },
   content: {
     flex: 1,
