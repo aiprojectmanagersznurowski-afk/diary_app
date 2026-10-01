@@ -107,6 +107,18 @@ export const HomeScreen = () => {
         </View>
         <View style={styles.headerIcons}>
           <TouchableOpacity
+            onPress={() => navigation.navigate('Graph')}
+            style={[
+              styles.iconButton,
+              {
+                borderColor: colors.tileBorder,
+                backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
+              },
+            ]}
+          >
+            <Feather name="share-2" size={18} color="#38BDF8" />
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => navigation.navigate('Badges')}
             style={[
               styles.iconButton,

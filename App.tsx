@@ -18,6 +18,7 @@ import { useAuthStore } from './src/application/store/useAuthStore';
 
 import { InsightsScreen } from './src/presentation/screens/InsightsScreen';
 import { BadgesScreen } from './src/presentation/screens/BadgesScreen';
+import { GraphScreen } from './src/presentation/screens/GraphScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -85,6 +86,7 @@ export default function App() {
               <Stack.Screen name="Settings" component={SettingsScreen} />
               <Stack.Screen name="Insights" component={InsightsScreen} />
               <Stack.Screen name="Badges" component={BadgesScreen} />
+              <Stack.Screen name="Graph" component={GraphScreen} />
             </>
           )}
         </Stack.Navigator>

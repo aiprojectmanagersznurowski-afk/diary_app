@@ -9,6 +9,7 @@ export type RootStackParamList = {
   Settings: undefined;
   Insights: undefined;
   Badges: undefined;
+  Graph: undefined;
 };
 
 export type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
@@ -17,5 +18,6 @@ export type DetailScreenNavigationProp = NativeStackNavigationProp<RootStackPara
 export type OnboardingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
 export type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
 export type InsightsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Insights'>;
+export type GraphScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Graph'>;
 
 export type DetailScreenRouteProp = RouteProp<RootStackParamList, 'Detail'>;
