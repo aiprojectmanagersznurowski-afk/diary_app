@@ -1,0 +1,1 @@
+export { RelatedThoughtsSection } from './RelatedThoughtsSection';

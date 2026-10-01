@@ -33,6 +33,10 @@ import { IWatchConnectivity } from '../domain/services/IWatchConnectivity';
 import { IGraphRepository } from '../domain/repositories/IGraphRepository';
 import { SupabaseGraphRepository } from '../infrastructure/supabase/supabaseGraphRepository';
 import { setGraphDependencies } from '../application/store/useGraphStore';
+import { IRelatedThoughtsRepository } from '../domain/repositories/IRelatedThoughtsRepository';
+import { SupabaseRelatedThoughtsRepository } from '../infrastructure/supabase/supabaseRelatedThoughtsRepository';
+import { GetRelatedThoughtsUseCase } from '../application/useCases/document/getRelatedThoughtsUseCase';
+import { setRelatedThoughtsDependencies } from '../application/store/useRelatedThoughtsStore';
 
 export function createRecordAndProcessUseCase(
   recorder: IAudioRecorder,
@@ -70,10 +74,12 @@ export const recordingRepository: IRecordingRepository = new SupabaseRecordingRe
 export const noteRepository: INoteRepository = new SupabaseNoteRepository(supabase);
 export const documentRepository: IDocumentRepository = new SupabaseDocumentRepository(supabase);
 export const graphRepository: IGraphRepository = new SupabaseGraphRepository(supabase);
+export const relatedThoughtsRepository: IRelatedThoughtsRepository = new SupabaseRelatedThoughtsRepository(supabase);
 export const retryRecordingUseCase = new RetryRecordingUseCase(recordingRepository);
 export const getNotesUseCase = new GetNotesUseCase(noteRepository);
 export const getDocumentUseCase = new GetDocumentUseCase(documentRepository);
 export const getDailyDocumentsInRangeUseCase = new GetDailyDocumentsInRangeUseCase(documentRepository);
+export const getRelatedThoughtsUseCase = new GetRelatedThoughtsUseCase(relatedThoughtsRepository);
 
 // Inicjalizacja domyślnych zależności w store'ach
 setDiaryDependencies({
@@ -88,6 +94,10 @@ setNotesDependencies({
 
 setGraphDependencies({
   graphRepository,
+});
+
+setRelatedThoughtsDependencies({
+  relatedThoughtsRepository,
 });
 
 // F4-04: nagrania z zegarka (docs/02-architektura.md §6.2) trafiają do tej samej kolejki co
