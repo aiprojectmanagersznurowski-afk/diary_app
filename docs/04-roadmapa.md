@@ -75,7 +75,7 @@ flowchart LR
 
 - [x] RPC `search_chunks` (hybrydowe wyszukiwanie z filtrami)
 - [x] Edge Function `chat`: przepisanie zapytania na filtry dat, wyszukiwanie, odpowiedź strumieniowana z cytatami
-- [ ] Wątki czatu, cytaty jako odnośniki do dokumentów i grafu
+- [x] Wątki czatu, cytaty jako odnośniki do dokumentów i grafu
 - [ ] Zestaw pytań testowych do oceny jakości (w tym pytania o daty)
 
 **Gotowe, gdy:** pytanie „Jakie miałem wczoraj pomysły?” zwraca wyłącznie wczorajsze notatki typu `idea` z cytatami.

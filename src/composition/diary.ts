@@ -37,6 +37,12 @@ import { IRelatedThoughtsRepository } from '../domain/repositories/IRelatedThoug
 import { SupabaseRelatedThoughtsRepository } from '../infrastructure/supabase/supabaseRelatedThoughtsRepository';
 import { GetRelatedThoughtsUseCase } from '../application/useCases/document/getRelatedThoughtsUseCase';
 import { setRelatedThoughtsDependencies } from '../application/store/useRelatedThoughtsStore';
+import { IChatRepository } from '../domain/repositories/IChatRepository';
+import { SupabaseChatRepository } from '../infrastructure/supabase/supabaseChatRepository';
+import { GetChatThreadsUseCase } from '../application/useCases/chat/getChatThreadsUseCase';
+import { GetChatMessagesUseCase } from '../application/useCases/chat/getChatMessagesUseCase';
+import { SendChatMessageUseCase } from '../application/useCases/chat/sendChatMessageUseCase';
+import { setChatDependencies } from '../application/store/useChatStore';
 
 export function createRecordAndProcessUseCase(
   recorder: IAudioRecorder,
@@ -75,11 +81,15 @@ export const noteRepository: INoteRepository = new SupabaseNoteRepository(supaba
 export const documentRepository: IDocumentRepository = new SupabaseDocumentRepository(supabase);
 export const graphRepository: IGraphRepository = new SupabaseGraphRepository(supabase);
 export const relatedThoughtsRepository: IRelatedThoughtsRepository = new SupabaseRelatedThoughtsRepository(supabase);
+export const chatRepository: IChatRepository = new SupabaseChatRepository(supabase);
 export const retryRecordingUseCase = new RetryRecordingUseCase(recordingRepository);
 export const getNotesUseCase = new GetNotesUseCase(noteRepository);
 export const getDocumentUseCase = new GetDocumentUseCase(documentRepository);
 export const getDailyDocumentsInRangeUseCase = new GetDailyDocumentsInRangeUseCase(documentRepository);
 export const getRelatedThoughtsUseCase = new GetRelatedThoughtsUseCase(relatedThoughtsRepository);
+export const getChatThreadsUseCase = new GetChatThreadsUseCase(chatRepository);
+export const getChatMessagesUseCase = new GetChatMessagesUseCase(chatRepository);
+export const sendChatMessageUseCase = new SendChatMessageUseCase(chatRepository);
 
 // Inicjalizacja domyślnych zależności w store'ach
 setDiaryDependencies({
@@ -98,6 +108,10 @@ setGraphDependencies({
 
 setRelatedThoughtsDependencies({
   relatedThoughtsRepository,
+});
+
+setChatDependencies({
+  chatRepository,
 });
 
 // F4-04: nagrania z zegarka (docs/02-architektura.md §6.2) trafiają do tej samej kolejki co
