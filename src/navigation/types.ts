@@ -10,6 +10,7 @@ export type RootStackParamList = {
   Insights: undefined;
   Badges: undefined;
   Graph: undefined;
+  Chat: { threadId?: string } | undefined;
 };
 
 export type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
@@ -19,5 +20,7 @@ export type OnboardingScreenNavigationProp = NativeStackNavigationProp<RootStack
 export type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
 export type InsightsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Insights'>;
 export type GraphScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Graph'>;
+export type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Chat'>;
 
 export type DetailScreenRouteProp = RouteProp<RootStackParamList, 'Detail'>;
+export type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;

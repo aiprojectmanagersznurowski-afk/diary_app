@@ -115,8 +115,22 @@ export const HomeScreen = () => {
                 backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
               },
             ]}
+            accessibilityLabel="Graf powiązań"
           >
             <Feather name="share-2" size={18} color="#38BDF8" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Chat')}
+            style={[
+              styles.iconButton,
+              {
+                borderColor: colors.tileBorder,
+                backgroundColor: theme === 'AppleLight' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
+              },
+            ]}
+            accessibilityLabel="Czat z pamiętnikiem"
+          >
+            <Feather name="message-circle" size={18} color="#A855F7" />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('Badges')}
