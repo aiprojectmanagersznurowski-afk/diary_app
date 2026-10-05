@@ -1,0 +1,39 @@
+id: F3-06
+title: Lista wpisów dnia na ekranie głównym czyta documents
+phase: 3
+role: mobile
+branch: fix/F3-06-home-daily-documents
+depends_on: [F3-03, F3-04]
+roadmap: "Lista wpisów dnia na ekranie głównym czyta `documents` (`kind = daily`) zamiast starego store'u"
+read_first:
+  - docs/02-architektura.md#4-model-danych
+  - docs/04-roadmapa.md#faza-3-pamiętnik-jako-dokument
+scope:
+  write:
+    - src/presentation/screens/HomeScreen.tsx
+    - src/presentation/components/**
+    - src/application/store/useDiaryStore.ts
+    - src/application/store/__tests__/**
+    - src/application/useCases/documents/**
+    - src/application/useCases/statsUseCase.ts
+    - src/application/useCases/__tests__/**
+    - src/composition/diary.ts
+    - src/composition/index.ts
+    - src/composition/__tests__/**
+context: |
+  Błąd zgłoszony z urządzenia (2026-10-02): kliknięcie wpisu na ekranie głównym kończy się
+  „Błąd pobierania dokumentu entry-<timestamp>: invalid input syntax for type uuid”.
+  Przyczyna: zakładka „Wpisy” w HomeScreen bierze `entries` z useDiaryStore, a ten z
+  InMemoryDiaryRepository (ID `entry-${Date.now()}`, bo Hermes nie ma crypto.randomUUID).
+  DetailScreen od F3-03 czyta z Supabase `documents` po UUID, więc takiego wpisu nie znajdzie.
+  Naprawa: lista wpisów dnia (i kafelki spokoju/serii na ekranie głównym) czyta wpisy dnia z
+  `documents` (kind = daily) — tak jak InsightsScreen (GetDailyDocumentsInRangeUseCase /
+  getDailyAnalyticsData). Nawigacja do Detail przekazuje `documents.id`. Stary odczyt wpisów z
+  InMemoryDiaryRepository nie jest już źródłem listy.
+acceptance:
+  - "lista wpisów dnia na ekranie głównym pokazuje wpisy z documents (kind = daily) bieżącego użytkownika"
+  - "kliknięcie wpisu otwiera DetailScreen bez błędu UUID"
+  - "kafelki na ekranie głównym liczą się z danych wpisów dnia z documents, nie z InMemoryDiaryRepository"
+  - "testy jest dla nowej logiki listy/store'u"
+human_steps:
+  - "CP-DEVICE: na iPhonie lista wpisów pokazuje wpisy dnia z Supabase, a wejście w wpis działa"

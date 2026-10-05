@@ -12,6 +12,7 @@ Punkt wejścia dla ludzi i agentów AI pracujących nad projektem. Przeczytaj te
 | [04-roadmapa.md](04-roadmapa.md) | Fazy, zadania, kryteria ukończenia, znane błędy |
 | [05-decyzje.md](05-decyzje.md) | Podjęte decyzje architektoniczne (ADR) i otwarte kwestie |
 | [06-zasady-pracy.md](06-zasady-pracy.md) | Jak pracujemy: kod, dokumentacja, definicja ukończenia |
+| [07-instalacja-na-urzadzeniach.md](07-instalacja-na-urzadzeniach.md) | Instalacja aplikacji na iPhonie i Apple Watch (TestFlight, kabel) |
 
 ## Stan projektu (2026-09-23)
 
