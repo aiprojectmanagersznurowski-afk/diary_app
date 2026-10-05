@@ -14,8 +14,8 @@ Deno.test('Factory - domyślna konfiguracja tworzy właściwe adaptery i modele'
     throw new Error(`Nieprawidłowy dostawca/model STT: ${providers.stt.providerName}, ${providers.stt.model}`);
   }
 
-  // LLM: domyślnie Groq llama-3.3-70b-versatile
-  if (providers.structure.providerName !== 'groq' || providers.structure.model !== 'llama-3.3-70b-versatile') {
+  // LLM: domyślnie Groq openai/gpt-oss-120b
+  if (providers.structure.providerName !== 'groq' || providers.structure.model !== 'openai/gpt-oss-120b') {
     throw new Error(`Nieprawidłowy dostawca/model structure: ${providers.structure.providerName}`);
   }
 

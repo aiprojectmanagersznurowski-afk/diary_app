@@ -127,7 +127,7 @@ function createMockProviders(overrides?: {
 
   const structureAdapter: LlmProvider = {
     providerName: 'groq',
-    model: 'llama-3.3-70b-versatile',
+    model: 'openai/gpt-oss-120b',
     async generateText() {
       if (overrides?.structureCallCount) overrides.structureCallCount.count++;
       if (overrides?.structureFail) {
@@ -181,7 +181,7 @@ function createMockProviders(overrides?: {
 
   const linkAdapter: LlmProvider = {
     providerName: 'groq',
-    model: 'llama-3.3-70b-versatile',
+    model: 'openai/gpt-oss-120b',
     async generateText() {
       const links = overrides?.linkProposal || [];
       return JSON.stringify({ links });

@@ -64,7 +64,7 @@ function createDummyAiProviders(): AiProviders {
   };
   const llm: LlmProvider = {
     providerName: 'groq',
-    model: 'llama-3.3-70b-versatile',
+    model: 'openai/gpt-oss-120b',
     async generateText() {
       return JSON.stringify({
         notes: [

@@ -53,7 +53,7 @@ flowchart LR
 - [x] Webhook bazy + ponawianie przez `pg_cron`
 - [x] Aplikacja: lista notatek, status nagrań na żywo (Realtime), ponowienie po błędzie
 - [x] Ustawienia nagrywania pod mowę, poprawka nazwy zdarzenia w `expoAudioRecorder.ts`
-- [ ] Domyślny model Groq dla zadań LLM: `openai/gpt-oss-120b` zamiast `llama-3.3-70b-versatile`
+- [x] Domyślny model Groq dla zadań LLM: `openai/gpt-oss-120b` zamiast `llama-3.3-70b-versatile`
 - [x] Nagranie z telefonu trafia tylko do kolejki i na serwer: bez transkrypcji i analizy LLM w aplikacji (ADR-003)
 
 **Gotowe, gdy:** nagranie w trybie samolotowym zostaje wysłane po odzyskaniu sieci, a jedno nagranie z trzema myślami daje trzy notatki z typami, kategoriami i powiązaniami. Błąd AI nie usuwa nagrania.

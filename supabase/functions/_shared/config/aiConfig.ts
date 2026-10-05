@@ -30,17 +30,17 @@ export function getAiConfig(env: Record<string, string | undefined> = getDenoEnv
 
   const structureProvider = (env['LLM_STRUCTURE_PROVIDER'] || 'groq').toLowerCase() as AiProviderName;
   const structureModel =
-    env['LLM_STRUCTURE_MODEL'] || (structureProvider === 'groq' ? 'llama-3.3-70b-versatile' : 'gemini-2.0-flash');
+    env['LLM_STRUCTURE_MODEL'] || (structureProvider === 'groq' ? 'openai/gpt-oss-120b' : 'gemini-2.0-flash');
 
   const digestProvider = (env['LLM_DIGEST_PROVIDER'] || 'groq').toLowerCase() as AiProviderName;
   const digestModel =
-    env['LLM_DIGEST_MODEL'] || (digestProvider === 'groq' ? 'llama-3.3-70b-versatile' : 'gemini-2.0-flash');
+    env['LLM_DIGEST_MODEL'] || (digestProvider === 'groq' ? 'openai/gpt-oss-120b' : 'gemini-2.0-flash');
 
   const linkProvider = (env['LLM_LINK_PROVIDER'] || 'groq').toLowerCase() as AiProviderName;
-  const linkModel = env['LLM_LINK_MODEL'] || (linkProvider === 'groq' ? 'llama-3.3-70b-versatile' : 'gemini-2.0-flash');
+  const linkModel = env['LLM_LINK_MODEL'] || (linkProvider === 'groq' ? 'openai/gpt-oss-120b' : 'gemini-2.0-flash');
 
   const chatProvider = (env['LLM_CHAT_PROVIDER'] || 'groq').toLowerCase() as AiProviderName;
-  const chatModel = env['LLM_CHAT_MODEL'] || (chatProvider === 'groq' ? 'llama-3.3-70b-versatile' : 'gemini-2.0-flash');
+  const chatModel = env['LLM_CHAT_MODEL'] || (chatProvider === 'groq' ? 'openai/gpt-oss-120b' : 'gemini-2.0-flash');
 
   const embedProvider = (env['EMBED_PROVIDER'] || 'gemini').toLowerCase() as AiProviderName;
   const embedModel = env['EMBED_MODEL'] || 'gemini-embedding-001';
