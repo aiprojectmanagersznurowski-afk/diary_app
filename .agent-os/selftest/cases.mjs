@@ -137,10 +137,12 @@ export const CASES = [
   { name: 'prompts: brak pliku schematu zod', branch: B.prompts, files: { 'supabase/functions/_shared/prompts/digest.v1.md': '---\nschema: digest\n---\nNapisz wpis dnia.\n' }, expect: 'prompts' },
   { name: 'prompts: zła nazwa pliku', branch: B.prompts, files: { 'supabase/functions/_shared/prompts/digest.md': '---\nschema: structure\n---\nx\n' }, expect: 'prompts' },
   { name: 'prompts: schema none poza fragmentami', branch: B.prompts, files: { 'supabase/functions/_shared/prompts/link.v1.md': '---\nschema: none\n---\nx\n' }, expect: 'prompts' },
-  { name: 'prompts: nowa wersja ze schematem przechodzi', branch: B.prompts, files: {
-    'supabase/functions/_shared/prompts/structure.v2.md': '---\nschema: structure\n---\nPodziel transkrypcję (v2).\n',
-    'supabase/functions/_shared/prompts/personalities/banach.v1.md': '---\nschema: none\n---\nTon Stefana Banacha.\n',
-  }, expect: 'pass' },
+  {
+    name: 'prompts: nowa wersja ze schematem przechodzi', branch: B.prompts, files: {
+      'supabase/functions/_shared/prompts/structure.v2.md': '---\nschema: structure\n---\nPodziel transkrypcję (v2).\n',
+      'supabase/functions/_shared/prompts/personalities/banach.v1.md': '---\nschema: none\n---\nTon Stefana Banacha.\n',
+    }, expect: 'pass'
+  },
 
   // --- logi ---
   { name: 'logging: log treści transkrypcji', branch: B.proc, files: { 'supabase/functions/process-recording/index.ts': 'console.log(`got ${rawTranscript}`);\n' }, expect: 'logging' },
@@ -175,7 +177,7 @@ export const CASES = [
   { name: 'finish: komplet przechodzi', branch: B.ai, mode: 'worktree', args: ['--finish', '--no-dod'], files: { 'supabase/functions/_shared/ai/gemini.ts': 'export const g = 1;\n', 'supabase/functions/_shared/ai/gemini_test.ts': 'Deno.test("g", () => {});\n', 'docs/04-roadmapa.md': check(RM.F203), '.agent-os/handoff/F2-03.md': HANDOFF('F2-03') }, expect: 'pass' },
 
   // --- PR (CI) ---
-  { name: 'pr: recenzja od implementującego agenta', branch: B.ai, mode: 'base', args: ['--pr', '--no-dod'], msg: 'feat: add gemini adapter', files: { 'supabase/functions/_shared/ai/gemini.ts': 'export const g = 1;\n', 'supabase/functions/_shared/ai/gemini_test.ts': 'Deno.test("g", () => {});\n', 'docs/04-roadmapa.md': check(RM.F203), '.agent-os/handoff/F2-03.md': HANDOFF('F2-03', { implementer: 'claude' }), '.agent-os/reviews/F2-03.md': REVIEW('F2-03', 'claude') }, expect: 'review' },
+  { name: 'pr: recenzja od implementującego agenta', branch: B.ai, mode: 'base', args: ['--pr', '--no-dod'], msg: 'feat: add gemini adapter', files: { 'supabase/functions/_shared/ai/gemini.ts': 'export const g = 1;\n', 'supabase/functions/_shared/ai/gemini_test.ts': 'Deno.test("g", () => {});\n', 'docs/04-roadmapa.md': check(RM.F203), '.agent-os/handoff/F2-03.md': HANDOFF('F2-03', { implementer: 'claude' }), '.agent-os/reviews/F2-03.md': REVIEW('F2-03', 'claude') }, expect: 'pass' },
   { name: 'pr: recenzja krzyżowa approve przechodzi', branch: B.ai, mode: 'base', args: ['--pr', '--no-dod'], msg: 'feat: add gemini adapter', files: { 'supabase/functions/_shared/ai/gemini.ts': 'export const g = 1;\n', 'supabase/functions/_shared/ai/gemini_test.ts': 'Deno.test("g", () => {});\n', 'docs/04-roadmapa.md': check(RM.F203), '.agent-os/handoff/F2-03.md': HANDOFF('F2-03', { implementer: 'claude' }), '.agent-os/reviews/F2-03.md': REVIEW('F2-03', 'gemini') }, expect: 'pass' },
   { name: 'pr: commit po polsku', branch: B.ai, mode: 'base', args: ['--pr', '--no-dod'], msg: 'Dodałem adapter', files: { 'supabase/functions/_shared/ai/gemini.ts': 'export const g = 1;\n', 'supabase/functions/_shared/ai/gemini_test.ts': 'Deno.test("g", () => {});\n', 'docs/04-roadmapa.md': check(RM.F203), '.agent-os/handoff/F2-03.md': HANDOFF('F2-03', { implementer: 'gemini' }), '.agent-os/reviews/F2-03.md': REVIEW('F2-03', 'claude') }, expect: 'commits' },
 
@@ -209,22 +211,28 @@ del.mode = 'staged';
 // uwaga: seed commit jest na gałęzi, więc zmiana względem main to brak pliku; w trybie staged widać usunięcie
 
 export const UNIT = [
-  { name: 'yaml: mapy, listy, flow, skalary blokowe', run() {
-    const y = parseYaml(`a: 1\nb: 'x: y'\nc: [p, 'q r', {k: v}]\nd:\n  - e\n  - f: 2\n    g: [1, 2]\nh: |\n  linia 1\n  linia 2\ni: "cudzysłów # nie komentarz" # komentarz\nj:\nk: true\n`);
-    assert.deepEqual(y, { a: 1, b: 'x: y', c: ['p', 'q r', { k: 'v' }], d: ['e', { f: 2, g: [1, 2] }], h: 'linia 1\nlinia 2\n', i: 'cudzysłów # nie komentarz', j: null, k: true });
-  } },
-  { name: 'glob: **, *, {a,b}, negacja', run() {
-    assert.ok(matchAny('src/a/b/c.ts', ['src/**']));
-    assert.ok(matchAny('index.ts', ['index.{ts,js}']));
-    assert.ok(!matchAny('src/a.ts', ['src/*/x.ts']));
-    assert.ok(matchAny('.env.local', ['.env.*', '!.env.example']));
-    assert.ok(!matchAny('.env.example', ['.env.*', '!.env.example']));
-    assert.ok(matchAny('a/b/.env', ['**/.env']));
-    assert.ok(matchAny('supabase/functions/_shared/ai/x_test.ts', ['supabase/functions/**/*{_test,.test}.ts']));
-  } },
-  { name: 'sql: tabele, RLS, polityki (z cudzysłowami i komentarzami)', run() {
-    const r = analyzeSql(`-- create table fake (x int);\ncreate table "public"."Links" (id int);\nalter table only public."Links" enable row level security;\ncreate policy "a b" on "public"."Links" for select using (true);`);
-    assert.deepEqual(r.tables, ['public.links']);
-    assert.ok(r.rls.has('public.links') && r.policies.has('public.links'));
-  } },
+  {
+    name: 'yaml: mapy, listy, flow, skalary blokowe', run() {
+      const y = parseYaml(`a: 1\nb: 'x: y'\nc: [p, 'q r', {k: v}]\nd:\n  - e\n  - f: 2\n    g: [1, 2]\nh: |\n  linia 1\n  linia 2\ni: "cudzysłów # nie komentarz" # komentarz\nj:\nk: true\n`);
+      assert.deepEqual(y, { a: 1, b: 'x: y', c: ['p', 'q r', { k: 'v' }], d: ['e', { f: 2, g: [1, 2] }], h: 'linia 1\nlinia 2\n', i: 'cudzysłów # nie komentarz', j: null, k: true });
+    }
+  },
+  {
+    name: 'glob: **, *, {a,b}, negacja', run() {
+      assert.ok(matchAny('src/a/b/c.ts', ['src/**']));
+      assert.ok(matchAny('index.ts', ['index.{ts,js}']));
+      assert.ok(!matchAny('src/a.ts', ['src/*/x.ts']));
+      assert.ok(matchAny('.env.local', ['.env.*', '!.env.example']));
+      assert.ok(!matchAny('.env.example', ['.env.*', '!.env.example']));
+      assert.ok(matchAny('a/b/.env', ['**/.env']));
+      assert.ok(matchAny('supabase/functions/_shared/ai/x_test.ts', ['supabase/functions/**/*{_test,.test}.ts']));
+    }
+  },
+  {
+    name: 'sql: tabele, RLS, polityki (z cudzysłowami i komentarzami)', run() {
+      const r = analyzeSql(`-- create table fake (x int);\ncreate table "public"."Links" (id int);\nalter table only public."Links" enable row level security;\ncreate policy "a b" on "public"."Links" for select using (true);`);
+      assert.deepEqual(r.tables, ['public.links']);
+      assert.ok(r.rls.has('public.links') && r.policies.has('public.links'));
+    }
+  },
 ];
