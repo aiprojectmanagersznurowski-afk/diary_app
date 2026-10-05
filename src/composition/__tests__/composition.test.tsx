@@ -3,10 +3,15 @@ import renderer, { act } from 'react-test-renderer';
 import { IAudioRecorder } from '../../domain/services/IAudioRecorder';
 import { IAiService } from '../../domain/services/IAiService';
 import { IDiaryRepository } from '../../domain/repositories/IDiaryRepository';
-import { DiaryEntry } from '../../domain/models/DiaryEntry';
 import { DailyDocument } from '../../domain/models/DailyDocument';
 import { dayStringOffsetFromToday } from '../../application/useCases/statsUseCase';
-import { createRecordAndProcessUseCase } from '../diary';
+import {
+  createRecordAndProcessUseCase,
+  ingestWatchInboxAndUpload,
+  ingestWatchInboxUseCase,
+  processRecordingQueueUseCase,
+} from '../diary';
+import { setupQueueListener } from '../../infrastructure/queue/queueListener';
 import { useDiaryStore, setDiaryDependencies, DAILY_HISTORY_DAYS } from '../../application/store/useDiaryStore';
 import {
   DependenciesProvider,
@@ -18,6 +23,10 @@ import {
   useRecordingQueueServices,
   AppDependencies,
 } from '../context';
+
+jest.mock('../../infrastructure/queue/queueListener', () => ({
+  setupQueueListener: jest.fn(() => jest.fn()),
+}));
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
@@ -43,8 +52,24 @@ describe('Composition Root & Use Cases with Mocks', () => {
   let mockRecorder: jest.Mocked<IAudioRecorder>;
   let mockAi: jest.Mocked<IAiService>;
   let mockRepo: jest.Mocked<IDiaryRepository>;
+  let mockEnqueue: { execute: jest.Mock };
+  let mockProcessQueue: { processPending: jest.Mock };
+  const makeRecordUseCase = () =>
+    createRecordAndProcessUseCase(mockRecorder, mockEnqueue as any, mockProcessQueue as any);
 
   beforeEach(() => {
+    mockEnqueue = {
+      execute: jest.fn().mockResolvedValue({
+        id: 'queued-1',
+        path: 'file://documents/recordings/queued-1.m4a',
+        recordedAt: '2026-10-05T09:10:00.000Z',
+        durationMs: 42,
+        source: 'phone',
+      }),
+    };
+    mockProcessQueue = {
+      processPending: jest.fn().mockResolvedValue({ processed: 1, succeeded: 1, failed: 0, errors: [] }),
+    };
     mockRecorder = {
       startRecording: jest.fn().mockResolvedValue(undefined),
       stopRecording: jest.fn().mockResolvedValue('file://test-audio.m4a'),
@@ -100,7 +125,7 @@ describe('Composition Root & Use Cases with Mocks', () => {
 
   describe('createRecordAndProcessUseCase factory', () => {
     it('tworzy przypadek użycia ze wstrzykniętymi atrapami i poprawnie startuje nagrywanie', async () => {
-      const useCase = createRecordAndProcessUseCase(mockRecorder, mockAi, mockRepo);
+      const useCase = makeRecordUseCase();
 
       await useCase.startRecording();
       expect(mockRecorder.startRecording).toHaveBeenCalledTimes(1);
@@ -111,49 +136,36 @@ describe('Composition Root & Use Cases with Mocks', () => {
 
     it('rzuca błąd gdy zatrzymanie nagrywania nie zwróci URI pliku', async () => {
       mockRecorder.stopRecording.mockResolvedValueOnce(null);
-      const useCase = createRecordAndProcessUseCase(mockRecorder, mockAi, mockRepo);
+      const useCase = makeRecordUseCase();
 
       await expect(useCase.stopRecordingAndProcess()).rejects.toThrow('No audio recorded');
+      expect(mockEnqueue.execute).not.toHaveBeenCalled();
     });
 
-    it('rzuca błąd gdy transkrypcja AI zwróci pusty tekst', async () => {
-      mockAi.transcribe.mockResolvedValueOnce('');
-      const useCase = createRecordAndProcessUseCase(mockRecorder, mockAi, mockRepo);
+    it('zapisuje nagranie w kolejce i uruchamia wysyłkę, bez AI w aplikacji (ADR-003)', async () => {
+      const useCase = makeRecordUseCase();
 
-      await expect(useCase.stopRecordingAndProcess()).rejects.toThrow('Transcription resulted in empty text');
-    });
+      const queued = await useCase.stopRecordingAndProcess();
 
-    it('zapisuje nowy wpis w repozytorium gdy dzisiejszy wpis jeszcze nie istnieje', async () => {
-      mockRepo.findByDate.mockResolvedValueOnce(null);
-      const useCase = createRecordAndProcessUseCase(mockRecorder, mockAi, mockRepo);
-
-      const entry = await useCase.stopRecordingAndProcess(['Cel 1'], 'Buddha');
-
-      expect(mockRecorder.stopRecording).toHaveBeenCalled();
-      expect(mockAi.transcribe).toHaveBeenCalledWith('file://test-audio.m4a');
-      expect(mockAi.extractData).toHaveBeenCalledWith('To był wspaniały dzień pełen wrażeń.', ['Cel 1'], 'Buddha');
-      expect(mockRepo.save).toHaveBeenCalledTimes(1);
-      expect(entry).toBeDefined();
-      expect(entry?.fullText).toBe('To był wspaniały dzień pełen wrażeń.');
-    });
-
-    it('dopisuje treść i aktualizuje istniejący wpis dnia gdy dzisiejszy wpis już istnieje', async () => {
-      const existingEntry: DiaryEntry = {
-        id: 'existing-entry-id',
-        date: new Date(),
-        fullText: 'Poranny spacer.',
-        parsedData: null,
-        createdAt: new Date(),
-      };
-      mockRepo.findByDate.mockResolvedValueOnce(existingEntry);
-      const useCase = createRecordAndProcessUseCase(mockRecorder, mockAi, mockRepo);
-
-      const entry = await useCase.stopRecordingAndProcess(['Cel 1'], 'Buddha');
-
-      expect(mockRepo.update).toHaveBeenCalledTimes(1);
+      expect(mockEnqueue.execute).toHaveBeenCalledWith({
+        tempUri: 'file://test-audio.m4a',
+        durationMs: 42,
+        source: 'phone',
+      });
+      expect(mockProcessQueue.processPending).toHaveBeenCalledTimes(1);
+      expect(queued.id).toBe('queued-1');
+      expect(mockAi.transcribe).not.toHaveBeenCalled();
+      expect(mockAi.extractData).not.toHaveBeenCalled();
       expect(mockRepo.save).not.toHaveBeenCalled();
-      expect(entry).toBeDefined();
-      expect(entry?.id).toBe('existing-entry-id');
+      expect(mockRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('nie zgłasza błędu, gdy wysyłka kolejki się nie powiedzie (nagranie zostaje w kolejce)', async () => {
+      mockProcessQueue.processPending.mockRejectedValueOnce(new Error('Network request failed'));
+      const useCase = makeRecordUseCase();
+
+      await expect(useCase.stopRecordingAndProcess()).resolves.toMatchObject({ id: 'queued-1' });
+      expect(mockEnqueue.execute).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -171,7 +183,7 @@ describe('Composition Root & Use Cases with Mocks', () => {
 
       setDiaryDependencies({
         getDailyDocumentsUseCase: getDaily as any,
-        recordUseCase: createRecordAndProcessUseCase(mockRecorder, mockAi, mockRepo),
+        recordUseCase: makeRecordUseCase(),
       });
 
       await act(async () => {
@@ -200,7 +212,7 @@ describe('Composition Root & Use Cases with Mocks', () => {
     });
 
     it('wykonuje cykl nagrywania i przetwarzania z atrapami w store', async () => {
-      const useCase = createRecordAndProcessUseCase(mockRecorder, mockAi, mockRepo);
+      const useCase = makeRecordUseCase();
       setDiaryDependencies({
         getDailyDocumentsUseCase: { execute: jest.fn().mockResolvedValue([]) } as any,
         recordUseCase: useCase,
@@ -216,7 +228,8 @@ describe('Composition Root & Use Cases with Mocks', () => {
       });
       expect(useDiaryStore.getState().isProcessing).toBe(false);
       expect(mockRecorder.stopRecording).toHaveBeenCalled();
-      expect(mockAi.transcribe).toHaveBeenCalled();
+      expect(mockEnqueue.execute).toHaveBeenCalledTimes(1);
+      expect(mockAi.transcribe).not.toHaveBeenCalled();
     });
   });
 
@@ -277,6 +290,29 @@ describe('Composition Root & Use Cases with Mocks', () => {
       expect(capturedDiary.diaryRepository).toBe(mockRepo);
       expect(capturedQueue).toBeDefined();
       expect(capturedQueue.recordingQueue).toBeDefined();
+    });
+  });
+
+  describe('ponawianie wysyłki kolejki nagrań (F2-10)', () => {
+    it('rejestruje nasłuch kolejki z procesorem kolejki z composition root', () => {
+      expect(setupQueueListener).toHaveBeenCalledWith(processRecordingQueueUseCase);
+    });
+
+    it('po wczytaniu inboksu zegarka od razu uruchamia wysyłkę kolejki', async () => {
+      const calls: string[] = [];
+      const ingest = jest.spyOn(ingestWatchInboxUseCase, 'execute').mockImplementation(async () => {
+        calls.push('ingest');
+      });
+      const upload = jest.spyOn(processRecordingQueueUseCase, 'processPending').mockImplementation(async () => {
+        calls.push('upload');
+        return { processed: 0, succeeded: 0, failed: 0, errors: [] };
+      });
+
+      await ingestWatchInboxAndUpload();
+
+      expect(calls).toEqual(['ingest', 'upload']);
+      ingest.mockRestore();
+      upload.mockRestore();
     });
   });
 });

@@ -1,17 +1,17 @@
 import * as Crypto from 'expo-crypto';
 import { AppState } from 'react-native';
-import { audioRecorder, aiService } from './onboarding';
+import { audioRecorder } from './onboarding';
 import { InMemoryDiaryRepository } from '../infrastructure/db/diaryRepository';
 import { RecordAndProcessEntryUseCase } from '../application/useCases/recordAndProcess';
 import { EnqueueRecordingUseCase } from '../application/useCases/recording/enqueueRecordingUseCase';
 import { ProcessRecordingQueueUseCase } from '../application/useCases/recording/processRecordingQueueUseCase';
 import { SqliteRecordingQueue } from '../infrastructure/queue/sqliteRecordingQueue';
+import { setupQueueListener } from '../infrastructure/queue/queueListener';
 import { ExpoFileStorage } from '../infrastructure/audio/expoFileStorage';
 import { supabase } from '../infrastructure/supabase/supabaseClient';
 import { SupabaseRecordingUploader } from '../infrastructure/supabase/supabaseRecordingUploader';
 import { setDiaryDependencies } from '../application/store/useDiaryStore';
 import { IAudioRecorder } from '../domain/services/IAudioRecorder';
-import { IAiService } from '../domain/services/IAiService';
 import { IDiaryRepository } from '../domain/repositories/IDiaryRepository';
 import { IRecordingQueue } from '../domain/services/IRecordingQueue';
 import { IFileStorage } from '../domain/services/IFileStorage';
@@ -46,12 +46,10 @@ import { setChatDependencies } from '../application/store/useChatStore';
 
 export function createRecordAndProcessUseCase(
   recorder: IAudioRecorder,
-  ai: IAiService,
-  repo: IDiaryRepository,
-  enqueueUseCase?: EnqueueRecordingUseCase,
+  enqueueUseCase: EnqueueRecordingUseCase,
   processQueueUseCase?: ProcessRecordingQueueUseCase,
 ): RecordAndProcessEntryUseCase {
-  return new RecordAndProcessEntryUseCase(recorder, ai, repo, enqueueUseCase, processQueueUseCase);
+  return new RecordAndProcessEntryUseCase(recorder, enqueueUseCase, processQueueUseCase);
 }
 
 export const recordingQueue: IRecordingQueue = new SqliteRecordingQueue();
@@ -70,8 +68,6 @@ export const processRecordingQueueUseCase = new ProcessRecordingQueueUseCase(
 export const diaryRepository: IDiaryRepository = new InMemoryDiaryRepository();
 export const recordUseCase: RecordAndProcessEntryUseCase = createRecordAndProcessUseCase(
   audioRecorder,
-  aiService,
-  diaryRepository,
   enqueueRecordingUseCase,
   processRecordingQueueUseCase,
 );
@@ -131,20 +127,30 @@ export const ingestWatchInboxUseCase = new IngestWatchInboxUseCase(
 // nie nadpisuje recordingRepository/noteRepository ustawionych wcześniej.
 setNotesDependencies({ watchConnectivity });
 
-ingestWatchInboxUseCase.execute().catch((error) => {
+/** Wczytuje nagrania z inboksu zegarka do kolejki i od razu uruchamia ich wysyłkę na serwer. */
+export async function ingestWatchInboxAndUpload(): Promise<void> {
+  await ingestWatchInboxUseCase.execute();
+  await processRecordingQueueUseCase.processPending();
+}
+
+ingestWatchInboxAndUpload().catch((error) => {
   console.warn('Nie udało się wczytać nagrań z inboksu zegarka przy starcie', error);
 });
 
 AppState.addEventListener('change', (nextState) => {
   if (nextState === 'active') {
-    ingestWatchInboxUseCase.execute().catch((error) => {
+    ingestWatchInboxAndUpload().catch((error) => {
       console.warn('Nie udało się wczytać nagrań z inboksu zegarka po powrocie na pierwszy plan', error);
     });
   }
 });
 
 watchConnectivity.subscribeToInboxFiles(() => {
-  ingestWatchInboxUseCase.execute().catch((error) => {
+  ingestWatchInboxAndUpload().catch((error) => {
     console.warn('Nie udało się wczytać nagrań z inboksu zegarka po zdarzeniu modułu', error);
   });
 });
+
+// F2-10: ponawianie wysyłki kolejki nagrań (start appki, powrót na pierwszy plan, co 60 s), żeby
+// nagranie zrobione bez sieci albo z zegarka trafiło na serwer bez czekania na kolejne nagranie.
+export const stopQueueListener = setupQueueListener(processRecordingQueueUseCase);

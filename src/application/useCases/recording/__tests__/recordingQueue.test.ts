@@ -6,8 +6,6 @@ import { IFileStorage } from '../../../../domain/services/IFileStorage';
 import { IRecordingUploader } from '../../../../domain/services/IRecordingUploader';
 import { QueuedRecording, NewQueuedRecording } from '../../../../domain/models/QueuedRecording';
 import { IAudioRecorder } from '../../../../domain/services/IAudioRecorder';
-import { IAiService } from '../../../../domain/services/IAiService';
-import { IDiaryRepository } from '../../../../domain/repositories/IDiaryRepository';
 
 class InMemoryRecordingQueue implements IRecordingQueue {
   public recordings: Map<string, QueuedRecording> = new Map();
@@ -241,8 +239,8 @@ describe('Recording Queue & Offline Reliability', () => {
     });
   });
 
-  describe('Fix: useDiaryStore / RecordAndProcessEntryUseCase nie gubi nagrania przy błędzie AI', () => {
-    it('zabezpiecza nagranie w kolejce zanim rozpocznie transkrypcję AI i zachowuje je przy awarii', async () => {
+  describe('RecordAndProcessEntryUseCase: nagranie zostaje w kolejce przy błędzie wysyłki', () => {
+    it('zapisuje nagranie w kolejce bez AI w aplikacji i zachowuje je, gdy wysyłka się nie powiedzie', async () => {
       const mockRecorder: jest.Mocked<IAudioRecorder> = {
         startRecording: jest.fn().mockResolvedValue(undefined),
         stopRecording: jest.fn().mockResolvedValue('file:///cache/new-recording.m4a'),
@@ -250,33 +248,15 @@ describe('Recording Queue & Offline Reliability', () => {
         getRecordingDuration: jest.fn().mockReturnValue(12000),
       };
 
-      const mockAi: jest.Mocked<IAiService> = {
-        transcribe: jest.fn().mockRejectedValue(new Error('AI Service 503 Unavailable')),
-        extractData: jest.fn(),
-        extractLifeGoalsFromTranscript: jest.fn(),
-      };
-
-      const mockRepo: jest.Mocked<IDiaryRepository> = {
-        save: jest.fn(),
-        update: jest.fn(),
-        findByDate: jest.fn(),
-        getAll: jest.fn(),
-      };
-
-      const recordUseCase = new RecordAndProcessEntryUseCase(
-        mockRecorder,
-        mockAi,
-        mockRepo,
-        enqueueUseCase,
-        processQueueUseCase,
-      );
+      const recordUseCase = new RecordAndProcessEntryUseCase(mockRecorder, enqueueUseCase, processQueueUseCase);
 
       uploader.shouldFail = true;
 
-      // Wywołanie stopRecordingAndProcess rzuci błąd z AI
-      await expect(recordUseCase.stopRecordingAndProcess()).rejects.toThrow('AI Service 503 Unavailable');
+      const queued = await recordUseCase.stopRecordingAndProcess();
+      expect(queued.id).toBe('fixed-uuid-123');
 
-      // Mimo błędu przetwarzania AI, nagranie JEST BEZPIECZNIE ZAPISANE w lokalnej kolejce!
+      // Wysyłka w tle zawodzi, ale nagranie JEST BEZPIECZNIE ZAPISANE w lokalnej kolejce
+      await processQueueUseCase.processPending();
       const items = await queue.getAll();
       expect(items).toHaveLength(1);
       expect(items[0].id).toBe('fixed-uuid-123');

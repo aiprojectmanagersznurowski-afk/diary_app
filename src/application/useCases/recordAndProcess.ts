@@ -1,16 +1,17 @@
 import { IAudioRecorder } from '../../domain/services/IAudioRecorder';
-import { IAiService } from '../../domain/services/IAiService';
-import { IDiaryRepository } from '../../domain/repositories/IDiaryRepository';
-import { DiaryEntry } from '../../domain/models/DiaryEntry';
+import { QueuedRecording } from '../../domain/models/QueuedRecording';
 import { EnqueueRecordingUseCase } from './recording/enqueueRecordingUseCase';
 import { ProcessRecordingQueueUseCase } from './recording/processRecordingQueueUseCase';
 
+/**
+ * Nagranie z telefonu: zapis do lokalnej kolejki i wysyłka na serwer. Transkrypcję, notatki
+ * i wpis dnia robi serwer (process-recording, build-daily) — AI tylko w supabase/functions
+ * (ADR-003, docs/02-architektura.md §6).
+ */
 export class RecordAndProcessEntryUseCase {
   constructor(
     private audioRecorder: IAudioRecorder,
-    private aiService: IAiService,
-    private diaryRepository: IDiaryRepository,
-    private enqueueRecordingUseCase?: EnqueueRecordingUseCase,
+    private enqueueRecordingUseCase: EnqueueRecordingUseCase,
     private processQueueUseCase?: ProcessRecordingQueueUseCase,
   ) {}
 
@@ -26,59 +27,25 @@ export class RecordAndProcessEntryUseCase {
     return this.audioRecorder.getRecordingDuration();
   }
 
-  async stopRecordingAndProcess(
-    lifeGoals: string[] = [],
-    aiPersonality: string = 'Po prostu przyjaciel',
-  ): Promise<DiaryEntry | null> {
+  async stopRecordingAndProcess(): Promise<QueuedRecording> {
     const audioUri = await this.audioRecorder.stopRecording();
     if (!audioUri) {
       throw new Error('No audio recorded');
     }
     const durationMs = this.audioRecorder.getRecordingDuration();
 
-    let audioPathToProcess = audioUri;
+    // 1. Nagranie trafia do lokalnej kolejki SQLite zanim cokolwiek zostanie wysłane
+    const queued = await this.enqueueRecordingUseCase.execute({
+      tempUri: audioUri,
+      durationMs,
+      source: 'phone',
+    });
 
-    // 1. Zabezpieczenie: nagranie trafia do lokalnej kolejki SQLite zanim cokolwiek zostanie wysłane/przetworzone
-    if (this.enqueueRecordingUseCase) {
-      const queued = await this.enqueueRecordingUseCase.execute({
-        tempUri: audioUri,
-        durationMs,
-        source: 'phone',
-      });
-      audioPathToProcess = queued.path;
-    }
-
-    // 2. Uruchomienie wysyłki kolejki w tle (jeśli dostępny procesor kolejki)
+    // 2. Wysyłka kolejki w tle; błąd sieci zostawia nagranie w kolejce do ponowienia
     if (this.processQueueUseCase) {
       this.processQueueUseCase.processPending().catch(() => {});
     }
 
-    // 3. Transcribe audio
-    const newTranscript = await this.aiService.transcribe(audioPathToProcess);
-    if (!newTranscript) {
-      throw new Error('Transcription resulted in empty text');
-    }
-
-    // Nowy model (F2-07): nagranie analizowane jest atomowo, bez doklejania i ponownego przepisywania całego dnia przez LLM
-    const analysis = await this.aiService.extractData(newTranscript, lifeGoals, aiPersonality);
-
-    const today = new Date();
-    const existingEntry = await this.diaryRepository.findByDate(today);
-
-    if (existingEntry) {
-      const updatedEntry = await this.diaryRepository.update(existingEntry.id, {
-        date: existingEntry.date,
-        fullText: existingEntry.fullText + '\n\n' + newTranscript,
-        parsedData: analysis.parsedData,
-      });
-      return updatedEntry;
-    } else {
-      const savedEntry = await this.diaryRepository.save({
-        date: today,
-        fullText: analysis.full_text,
-        parsedData: analysis.parsedData,
-      });
-      return savedEntry;
-    }
+    return queued;
   }
 }
