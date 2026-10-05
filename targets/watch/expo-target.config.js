@@ -5,6 +5,8 @@ module.exports = {
   type: 'watch',
   name: 'VocalyWatch',
   displayName: 'Vocaly',
+  // F4-07: App Store wymaga ikony zegarka (ITMS-90391, ITMS-90713). PNG 1024×1024 bez alfy.
+  icon: './icon.png',
   // Q5 (05-decyzje.md): minimalna wersja watchOS 10.
   deploymentTarget: '10.0',
   frameworks: ['SwiftUI', 'AVFoundation', 'WatchConnectivity'],
