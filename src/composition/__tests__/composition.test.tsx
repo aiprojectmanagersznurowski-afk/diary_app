@@ -5,7 +5,13 @@ import { IAiService } from '../../domain/services/IAiService';
 import { IDiaryRepository } from '../../domain/repositories/IDiaryRepository';
 import { DailyDocument } from '../../domain/models/DailyDocument';
 import { dayStringOffsetFromToday } from '../../application/useCases/statsUseCase';
-import { createRecordAndProcessUseCase } from '../diary';
+import {
+  createRecordAndProcessUseCase,
+  ingestWatchInboxAndUpload,
+  ingestWatchInboxUseCase,
+  processRecordingQueueUseCase,
+} from '../diary';
+import { setupQueueListener } from '../../infrastructure/queue/queueListener';
 import { useDiaryStore, setDiaryDependencies, DAILY_HISTORY_DAYS } from '../../application/store/useDiaryStore';
 import {
   DependenciesProvider,
@@ -17,6 +23,10 @@ import {
   useRecordingQueueServices,
   AppDependencies,
 } from '../context';
+
+jest.mock('../../infrastructure/queue/queueListener', () => ({
+  setupQueueListener: jest.fn(() => jest.fn()),
+}));
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
@@ -280,6 +290,29 @@ describe('Composition Root & Use Cases with Mocks', () => {
       expect(capturedDiary.diaryRepository).toBe(mockRepo);
       expect(capturedQueue).toBeDefined();
       expect(capturedQueue.recordingQueue).toBeDefined();
+    });
+  });
+
+  describe('ponawianie wysyłki kolejki nagrań (F2-10)', () => {
+    it('rejestruje nasłuch kolejki z procesorem kolejki z composition root', () => {
+      expect(setupQueueListener).toHaveBeenCalledWith(processRecordingQueueUseCase);
+    });
+
+    it('po wczytaniu inboksu zegarka od razu uruchamia wysyłkę kolejki', async () => {
+      const calls: string[] = [];
+      const ingest = jest.spyOn(ingestWatchInboxUseCase, 'execute').mockImplementation(async () => {
+        calls.push('ingest');
+      });
+      const upload = jest.spyOn(processRecordingQueueUseCase, 'processPending').mockImplementation(async () => {
+        calls.push('upload');
+        return { processed: 0, succeeded: 0, failed: 0, errors: [] };
+      });
+
+      await ingestWatchInboxAndUpload();
+
+      expect(calls).toEqual(['ingest', 'upload']);
+      ingest.mockRestore();
+      upload.mockRestore();
     });
   });
 });

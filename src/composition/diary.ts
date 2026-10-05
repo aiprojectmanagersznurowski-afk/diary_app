@@ -6,6 +6,7 @@ import { RecordAndProcessEntryUseCase } from '../application/useCases/recordAndP
 import { EnqueueRecordingUseCase } from '../application/useCases/recording/enqueueRecordingUseCase';
 import { ProcessRecordingQueueUseCase } from '../application/useCases/recording/processRecordingQueueUseCase';
 import { SqliteRecordingQueue } from '../infrastructure/queue/sqliteRecordingQueue';
+import { setupQueueListener } from '../infrastructure/queue/queueListener';
 import { ExpoFileStorage } from '../infrastructure/audio/expoFileStorage';
 import { supabase } from '../infrastructure/supabase/supabaseClient';
 import { SupabaseRecordingUploader } from '../infrastructure/supabase/supabaseRecordingUploader';
@@ -126,20 +127,30 @@ export const ingestWatchInboxUseCase = new IngestWatchInboxUseCase(
 // nie nadpisuje recordingRepository/noteRepository ustawionych wcześniej.
 setNotesDependencies({ watchConnectivity });
 
-ingestWatchInboxUseCase.execute().catch((error) => {
+/** Wczytuje nagrania z inboksu zegarka do kolejki i od razu uruchamia ich wysyłkę na serwer. */
+export async function ingestWatchInboxAndUpload(): Promise<void> {
+  await ingestWatchInboxUseCase.execute();
+  await processRecordingQueueUseCase.processPending();
+}
+
+ingestWatchInboxAndUpload().catch((error) => {
   console.warn('Nie udało się wczytać nagrań z inboksu zegarka przy starcie', error);
 });
 
 AppState.addEventListener('change', (nextState) => {
   if (nextState === 'active') {
-    ingestWatchInboxUseCase.execute().catch((error) => {
+    ingestWatchInboxAndUpload().catch((error) => {
       console.warn('Nie udało się wczytać nagrań z inboksu zegarka po powrocie na pierwszy plan', error);
     });
   }
 });
 
 watchConnectivity.subscribeToInboxFiles(() => {
-  ingestWatchInboxUseCase.execute().catch((error) => {
+  ingestWatchInboxAndUpload().catch((error) => {
     console.warn('Nie udało się wczytać nagrań z inboksu zegarka po zdarzeniu modułu', error);
   });
 });
+
+// F2-10: ponawianie wysyłki kolejki nagrań (start appki, powrót na pierwszy plan, co 60 s), żeby
+// nagranie zrobione bez sieci albo z zegarka trafiło na serwer bez czekania na kolejne nagranie.
+export const stopQueueListener = setupQueueListener(processRecordingQueueUseCase);

@@ -101,11 +101,12 @@ Pochodzą z audytu z 2026-09-23. Błędy związane z Firestore znikną razem z n
 |---|---|---|
 | `src/infrastructure/ai/groqService.ts` | klucz Groq w pakiecie aplikacji (`EXPO_PUBLIC_`) | 1 |
 | `src/application/store/useDiaryStore.ts` | błąd przetwarzania gubi nagranie (brak kolejki i ponawiania) | 2 |
-| `src/application/useCases/recordAndProcess.ts` | tekst dnia doklejany i za każdym razem przepisywany przez LLM; surowa transkrypcja nie jest przechowywana | 2–3 |
 | `src/presentation/screens/SettingsScreen.tsx`, `useSettingsStore.ts` | wylogowanie zostawia cele i motyw poprzedniego użytkownika | 1 |
 | `src/infrastructure/ai/groqService.ts` | odpowiedź LLM tylko rzutowana na typ, bez walidacji | 2 |
 | `src/presentation/screens/OnboardingScreen.tsx` | `join('\\n\\n')` łączy odpowiedzi dosłownym tekstem „\n\n” | 1 |
 
 Naprawione w F1-08: `DetailScreen.tsx` (brak `emotionTriggers` w `pData`), `expoAudioRecorder.ts` (zła nazwa zdarzenia, zdublowany `return null`), `App.tsx` (podwójny nasłuch logowania), `package.json` (ESLint), `tsconfig.json` (`design_exports/`, 13 błędów typów).
+
+Naprawione w F2-10: `recordAndProcess.ts` (nagranie trafia tylko do kolejki i na serwer; aplikacja nie transkrybuje i nie analizuje go LLM, wynik nie trafia już do magazynu w pamięci; dochodzi ponawianie wysyłki kolejki).
 
 Naprawione w F3-04: `statsUseCase.ts` (`setHours` już nie mutuje `entry.date` w stanie aplikacji; zgodność z celami liczy się z `goalImpactType` zamiast heurystyki z emocji/zadań — dotyczy zarówno starszego `getAnalyticsData(entries)`, jak i nowego `getDailyAnalyticsData(dailyDocs)` używanego przez `InsightsScreen`).
