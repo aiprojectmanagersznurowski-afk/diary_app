@@ -59,7 +59,7 @@ flowchart LR
 - [x] Nagrania z zegarka trafiają do tej samej kolejki (`source = 'watch'`)
 - [x] Status nagrań: API modułu zegarka (`WCSession.updateApplicationContext`, UI statusu na zegarku)
 - [x] Status nagrań: aplikacja wywołuje API modułu przy zmianie statusu nagrania z zegarka
-- [ ] Ikona aplikacji zegarka (`AppIcon`, `CFBundleIconName`) wymagana przez App Store Connect
+- [x] Ikona aplikacji zegarka (`AppIcon`, `CFBundleIconName`) wymagana przez App Store Connect
 - [ ] Po MVP: komplikacja, Action Button, wysyłanie bezpośrednio z zegarka
 
 **Gotowe, gdy:** nagranie z zegarka przy wyłączonym Bluetooth na iPhonie trafia do bazy po ponownym połączeniu, bez duplikatów, a zegarek pokazuje status „przetworzone”.
