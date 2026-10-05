@@ -3,7 +3,7 @@ title: Model Groq w kodzie klienckim (onboarding i stara ścieżka nagrania)
 phase: 2
 role: mobile
 branch: fix/F2-10-client-groq-model
-depends_on: [F2-09]
+depends_on: []
 roadmap: "Kod kliencki Groq (`groqService.ts`) używa `openai/gpt-oss-120b`, bo `llama-3.3-70b-versatile` nie jest już dostępny"
 read_first:
   - docs/03-stos-technologiczny.md
