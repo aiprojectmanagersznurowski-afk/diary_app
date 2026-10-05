@@ -1,4 +1,9 @@
-import { getAnalyticsData, getDailyAnalyticsData, dayStringOffsetFromToday } from '../statsUseCase';
+import {
+  getAnalyticsData,
+  getDailyAnalyticsData,
+  getDailyCalmPercentage,
+  dayStringOffsetFromToday,
+} from '../statsUseCase';
 import { DiaryEntry } from '../../../domain/models/DiaryEntry';
 import { DailyDocument } from '../../../domain/models/DailyDocument';
 
@@ -121,5 +126,22 @@ describe('getDailyAnalyticsData (DailyDocument, server-computed model used by In
     const { goalAlignment } = getDailyAnalyticsData(docs, 7);
 
     expect(goalAlignment).toBe(75); // (100 + 50) / 2
+  });
+});
+
+describe('getDailyCalmPercentage (DailyDocument, HomeScreen)', () => {
+  it('zwraca 0 bez wpisów dnia', () => {
+    expect(getDailyCalmPercentage([])).toBe(0);
+  });
+
+  it('liczy odsetek spokojnych dni tylko z ostatnich 7 dni', () => {
+    const docs = [
+      makeDailyDoc(dayStringOffsetFromToday(0), { stressVsCalm: 'calm' }),
+      makeDailyDoc(dayStringOffsetFromToday(-1), { stressVsCalm: 'stress' }),
+      makeDailyDoc(dayStringOffsetFromToday(-2), { stressVsCalm: 'calm' }),
+      makeDailyDoc(dayStringOffsetFromToday(-3), { stressVsCalm: 'neutral' }),
+      makeDailyDoc(dayStringOffsetFromToday(-30), { stressVsCalm: 'stress' }),
+    ];
+    expect(getDailyCalmPercentage(docs)).toBe(50);
   });
 });

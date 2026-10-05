@@ -49,7 +49,7 @@ flowchart LR
 - [x] Ekran szczegółów dnia czyta `documents.data`; podgląd `.md`
 - [x] Analizy i seria dni w aplikacji czytają dane policzone po stronie serwera (bez lokalnego przeliczania)
 - [x] Udostępnianie kart działa na nowym modelu (`documents` zamiast starego store'u)
-- [ ] Lista wpisów dnia na ekranie głównym czyta `documents` (`kind = daily`) zamiast starego store'u
+- [x] Lista wpisów dnia na ekranie głównym czyta `documents` (`kind = daily`) zamiast starego store'u
 
 **Gotowe, gdy:** kilka nagrań z jednego dnia daje jeden wpis dnia ze wszystkimi dotychczasowymi sekcjami i listą pomysłów, a plik `.md` otwiera się poprawnie w Obsidianie.
 

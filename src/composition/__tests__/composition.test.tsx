@@ -4,8 +4,10 @@ import { IAudioRecorder } from '../../domain/services/IAudioRecorder';
 import { IAiService } from '../../domain/services/IAiService';
 import { IDiaryRepository } from '../../domain/repositories/IDiaryRepository';
 import { DiaryEntry } from '../../domain/models/DiaryEntry';
+import { DailyDocument } from '../../domain/models/DailyDocument';
+import { dayStringOffsetFromToday } from '../../application/useCases/statsUseCase';
 import { createRecordAndProcessUseCase } from '../diary';
-import { useDiaryStore, setDiaryDependencies } from '../../application/store/useDiaryStore';
+import { useDiaryStore, setDiaryDependencies, DAILY_HISTORY_DAYS } from '../../application/store/useDiaryStore';
 import {
   DependenciesProvider,
   useDependencies,
@@ -162,35 +164,45 @@ describe('Composition Root & Use Cases with Mocks', () => {
       });
     });
 
-    it('pobiera wpisy przy użyciu wstrzykniętego atrapami IDiaryRepository', async () => {
-      const dummyEntries: DiaryEntry[] = [
-        {
-          id: 'test-1',
-          date: new Date(),
-          fullText: 'Wpis 1',
-          parsedData: null,
-          createdAt: new Date(),
-        },
-      ];
-      mockRepo.getAll.mockResolvedValueOnce(dummyEntries);
+    it('pobiera wpisy dnia z documents przez wstrzyknięty use case i sortuje od najnowszego', async () => {
+      const older = { id: '11111111-1111-4111-8111-111111111111', day: '2026-10-01' } as DailyDocument;
+      const newer = { id: '22222222-2222-4222-8222-222222222222', day: '2026-10-03' } as DailyDocument;
+      const getDaily = { execute: jest.fn().mockResolvedValueOnce([older, newer]) };
 
       setDiaryDependencies({
-        diaryRepository: mockRepo,
+        getDailyDocumentsUseCase: getDaily as any,
         recordUseCase: createRecordAndProcessUseCase(mockRecorder, mockAi, mockRepo),
       });
 
       await act(async () => {
-        await useDiaryStore.getState().fetchEntries();
+        await useDiaryStore.getState().fetchDailyDocuments();
       });
 
-      expect(mockRepo.getAll).toHaveBeenCalledTimes(1);
-      expect(useDiaryStore.getState().entries).toEqual(dummyEntries);
+      expect(getDaily.execute).toHaveBeenCalledTimes(1);
+      const [startDay, endDay] = getDaily.execute.mock.calls[0];
+      expect(startDay).toBe(dayStringOffsetFromToday(-(DAILY_HISTORY_DAYS - 1)));
+      expect(endDay).toBe(dayStringOffsetFromToday(0));
+      expect(useDiaryStore.getState().dailyDocuments.map((d) => d.id)).toEqual([newer.id, older.id]);
+      expect(mockRepo.getAll).not.toHaveBeenCalled();
+    });
+
+    it('zapisuje błąd i kończy ładowanie, gdy pobranie wpisów dnia się nie powiedzie', async () => {
+      const getDaily = { execute: jest.fn().mockRejectedValueOnce(new Error('sieć')) };
+      setDiaryDependencies({ getDailyDocumentsUseCase: getDaily as any });
+
+      await act(async () => {
+        await useDiaryStore.getState().fetchDailyDocuments();
+      });
+
+      expect(useDiaryStore.getState().isLoading).toBe(false);
+      expect(useDiaryStore.getState().error).toContain('sieć');
+      expect(useDiaryStore.getState().dailyDocuments).toEqual([]);
     });
 
     it('wykonuje cykl nagrywania i przetwarzania z atrapami w store', async () => {
       const useCase = createRecordAndProcessUseCase(mockRecorder, mockAi, mockRepo);
       setDiaryDependencies({
-        diaryRepository: mockRepo,
+        getDailyDocumentsUseCase: { execute: jest.fn().mockResolvedValue([]) } as any,
         recordUseCase: useCase,
       });
 

@@ -244,3 +244,12 @@ export function getWeeklyCalmPercentage(entries: DiaryEntry[]): number {
   const calmCount = recentEntries.filter((e) => e.parsedData?.stressVsCalm === 'calm').length;
   return Math.round((calmCount / recentEntries.length) * 100);
 }
+
+/** Odsetek spokojnych dni (stressVsCalm = 'calm') wśród wpisów dnia z ostatnich 7 dni, liczony z documents. */
+export function getDailyCalmPercentage(dailyDocs: DailyDocument[]): number {
+  const startDay = dayStringOffsetFromToday(-6);
+  const recent = dailyDocs.filter((doc) => doc.day >= startDay);
+  if (recent.length === 0) return 0;
+  const calmCount = recent.filter((doc) => doc.stressVsCalm === 'calm').length;
+  return Math.round((calmCount / recent.length) * 100);
+}
