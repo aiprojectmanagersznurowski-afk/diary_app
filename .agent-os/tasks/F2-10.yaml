@@ -1,26 +1,37 @@
 id: F2-10
-title: Model Groq w kodzie klienckim (onboarding i stara ścieżka nagrania)
+title: Nagranie z telefonu tylko przez kolejkę i serwer (bez AI w kliencie)
 phase: 2
 role: mobile
-branch: fix/F2-10-client-groq-model
+branch: fix/F2-10-record-without-client-ai
 depends_on: []
-roadmap: "Kod kliencki Groq (`groqService.ts`) używa `openai/gpt-oss-120b`, bo `llama-3.3-70b-versatile` nie jest już dostępny"
+roadmap: "Nagranie z telefonu trafia tylko do kolejki i na serwer: bez transkrypcji i analizy LLM w aplikacji (ADR-003)"
 read_first:
-  - docs/03-stos-technologiczny.md
+  - docs/02-architektura.md#6-przeplywy
+  - docs/05-decyzje.md (ADR-003)
   - .agent-os/roles/mobile.md
 scope:
   write:
-    - src/infrastructure/ai/groqService.ts
-    - src/infrastructure/ai/__tests__/**
+    - src/application/useCases/recordAndProcess.ts
+    - src/application/useCases/__tests__/**
+    - src/application/store/useDiaryStore.ts
+    - src/composition/diary.ts
+    - src/composition/context.tsx
+    - src/composition/__tests__/**
 context: |
-  Groq zwraca 404 model_not_found dla `llama-3.3-70b-versatile` (zgłoszone z urządzenia
-  2026-10-05: „Data extraction failed: 404 … The model llama-3.3-70b-versatile does not exist”).
-  Kod kliencki GroqAiService (extractData — stara ścieżka nagrania, extractLifeGoalsFromTranscript
-  — onboarding) ma model zaszyty na sztywno. Zmień oba wywołania na `openai/gpt-oss-120b`
-  (ten sam model co F2-09 po stronie serwera). Usunięcie AI z klienta (ADR-003) to osobne zadanie.
+  Zgłoszone z urządzenia 2026-10-05: po nagraniu ekran pokazuje „Data extraction failed: 404 …
+  The model llama-3.3-70b-versatile does not exist”. Źródło: RecordAndProcessEntryUseCase po
+  zapisaniu nagrania do kolejki dodatkowo transkrybuje je i analizuje LLM w aplikacji
+  (GroqAiService, api.groq.com z klienta) i zapisuje wynik do InMemoryDiaryRepository, którego
+  od F3-06 nic nie wyświetla. To łamie ADR-003 (AI tylko w supabase/functions) i jest znanym
+  błędem z tabeli w roadmapie. Naprawa: stopRecordingAndProcess zapisuje nagranie w kolejce
+  (EnqueueRecordingUseCase) i uruchamia wysyłkę (ProcessRecordingQueueUseCase); transkrypcję,
+  notatki i wpis dnia robi serwer (process-recording, build-daily). Bez wywołań IAiService i
+  bez zapisu do IDiaryRepository w tej ścieżce. Onboarding (cele z GroqAiService) poza zakresem.
 acceptance:
-  - "groqService.ts nie zawiera llama-3.3-70b-versatile; oba wywołania chat/completions używają openai/gpt-oss-120b"
-  - "test jest sprawdza model w treści żądania dla extractData i extractLifeGoalsFromTranscript"
-  - "tsc, lint i jest przechodzą"
+  - "stopRecordingAndProcess nie wywołuje IAiService ani IDiaryRepository; zapisuje nagranie w kolejce i uruchamia jej przetwarzanie"
+  - "błąd wysyłki kolejki nie gubi nagrania (zostaje w kolejce) i nie jest pokazywany jako błąd AI"
+  - "testy jest dla nowej ścieżki nagrania; tsc, lint i jest przechodzą"
+fixes_known_bugs:
+  - "recordAndProcess.ts: analiza LLM w aplikacji po nagraniu (ADR-003); wynik trafiał do nieużywanego magazynu w pamięci"
 human_steps:
-  - "CP-DEVICE: nagranie na iPhonie nie pokazuje błędu 404 model_not_found; onboarding wyodrębnia cele"
+  - "CP-DEVICE: nagranie na iPhonie nie pokazuje błędu 404, trafia na listę „Status nagrań” i (po wdrożeniu serwera) do notatek"
