@@ -24,6 +24,7 @@ flowchart LR
 - [x] Unieważnienie obecnego klucza Groq; klucze przeniesione do sekretów Supabase
 - [x] ESLint zainstalowany, `design_exports/` wykluczony z `tsconfig.json`, `tsc --noEmit` bez błędów
 - [x] Composition root: ekrany nie tworzą serwisów z `infrastructure`
+- [ ] Logowanie Apple: nonce hashowany SHA-256 i `appleTeamId` w `app.json`
 
 **Gotowe, gdy:** można się zalogować (Google, Apple), przejść onboarding, a profil zapisuje się w Supabase. W kodzie nie ma Firebase, a `tsc` i lint przechodzą.
 
@@ -37,6 +38,7 @@ flowchart LR
 - [x] Webhook bazy + ponawianie przez `pg_cron`
 - [x] Aplikacja: lista notatek, status nagrań na żywo (Realtime), ponowienie po błędzie
 - [x] Ustawienia nagrywania pod mowę, poprawka nazwy zdarzenia w `expoAudioRecorder.ts`
+- [ ] Domyślny model Groq dla zadań LLM: `openai/gpt-oss-120b` zamiast `llama-3.3-70b-versatile`
 
 **Gotowe, gdy:** nagranie w trybie samolotowym zostaje wysłane po odzyskaniu sieci, a jedno nagranie z trzema myślami daje trzy notatki z typami, kategoriami i powiązaniami. Błąd AI nie usuwa nagrania.
 
@@ -84,6 +86,8 @@ flowchart LR
 
 ## Faza 7: Web i eksport
 
+- [ ] Zależności webowe Expo: `react-native-web`, `react-dom`, `@expo/metro-runtime`
+- [ ] Web: bundle bez `expo-sqlite` (kolejka nagrań w wariancie platformowym `*.web.ts`)
 - [ ] Układ dla komputera: graf i czat obok siebie, lista dokumentów
 - [ ] Eksport `.zip` z plikami `.md` (sejf Obsidiana)
 - [ ] Edge Function `delete-account` + opcja w ustawieniach
