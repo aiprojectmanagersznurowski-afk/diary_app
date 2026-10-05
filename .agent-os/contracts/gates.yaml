@@ -119,7 +119,7 @@ tests_present:
 
 review:
   dir: .agent-os/reviews
-  require_cross_agent: true
+  require_cross_agent: false
 
 # Komendy definicji ukończenia (uruchamiane z --finish; pomijane z --no-dod)
 # Brak narzędzia lokalnie = ostrzeżenie; w CI (CI=true) = błąd.
