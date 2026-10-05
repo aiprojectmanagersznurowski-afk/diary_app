@@ -39,6 +39,7 @@ flowchart LR
 - [x] Aplikacja: lista notatek, status nagrań na żywo (Realtime), ponowienie po błędzie
 - [x] Ustawienia nagrywania pod mowę, poprawka nazwy zdarzenia w `expoAudioRecorder.ts`
 - [ ] Domyślny model Groq dla zadań LLM: `openai/gpt-oss-120b` zamiast `llama-3.3-70b-versatile`
+- [ ] Kod kliencki Groq (`groqService.ts`) używa `openai/gpt-oss-120b`, bo `llama-3.3-70b-versatile` nie jest już dostępny
 
 **Gotowe, gdy:** nagranie w trybie samolotowym zostaje wysłane po odzyskaniu sieci, a jedno nagranie z trzema myślami daje trzy notatki z typami, kategoriami i powiązaniami. Błąd AI nie usuwa nagrania.
 

@@ -1,0 +1,26 @@
+id: F2-10
+title: Model Groq w kodzie klienckim (onboarding i stara ścieżka nagrania)
+phase: 2
+role: mobile
+branch: fix/F2-10-client-groq-model
+depends_on: [F2-09]
+roadmap: "Kod kliencki Groq (`groqService.ts`) używa `openai/gpt-oss-120b`, bo `llama-3.3-70b-versatile` nie jest już dostępny"
+read_first:
+  - docs/03-stos-technologiczny.md
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/infrastructure/ai/groqService.ts
+    - src/infrastructure/ai/__tests__/**
+context: |
+  Groq zwraca 404 model_not_found dla `llama-3.3-70b-versatile` (zgłoszone z urządzenia
+  2026-10-05: „Data extraction failed: 404 … The model llama-3.3-70b-versatile does not exist”).
+  Kod kliencki GroqAiService (extractData — stara ścieżka nagrania, extractLifeGoalsFromTranscript
+  — onboarding) ma model zaszyty na sztywno. Zmień oba wywołania na `openai/gpt-oss-120b`
+  (ten sam model co F2-09 po stronie serwera). Usunięcie AI z klienta (ADR-003) to osobne zadanie.
+acceptance:
+  - "groqService.ts nie zawiera llama-3.3-70b-versatile; oba wywołania chat/completions używają openai/gpt-oss-120b"
+  - "test jest sprawdza model w treści żądania dla extractData i extractLifeGoalsFromTranscript"
+  - "tsc, lint i jest przechodzą"
+human_steps:
+  - "CP-DEVICE: nagranie na iPhonie nie pokazuje błędu 404 model_not_found; onboarding wyodrębnia cele"
