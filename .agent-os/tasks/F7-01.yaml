@@ -1,0 +1,24 @@
+id: F7-01
+title: Zależności webowe Expo (react-native-web)
+phase: 7
+role: mobile
+branch: build/F7-01-web-dependencies
+depends_on: []
+roadmap: "Zależności webowe Expo: `react-native-web`, `react-dom`, `@expo/metro-runtime`"
+read_first:
+  - docs/03-stos-technologiczny.md
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - package.json
+    - package-lock.json
+context: |
+  Warunek wstępny fazy 7 (desktop przez Expo web, ADR-001): dodaj react-native-web,
+  react-dom i @expo/metro-runtime w wersjach zgodnych z Expo SDK 54 (npx expo install,
+  CP-DEP). Zakres to tylko zależności — układ desktopowy to osobne zadanie fazy 7.
+acceptance:
+  - "npx expo install --check nie zgłasza niezgodnych wersji"
+  - "npx expo start --web uruchamia się bez błędów braku modułów"
+  - "tsc, lint i jest przechodzą"
+human_steps:
+  - "CP-DEP: npx expo install react-native-web react-dom @expo/metro-runtime"

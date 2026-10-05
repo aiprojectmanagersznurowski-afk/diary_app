@@ -1,0 +1,27 @@
+id: F1-10
+title: Logowanie Apple z hashowanym nonce i appleTeamId
+phase: 1
+role: mobile
+branch: fix/F1-10-apple-signin-nonce
+depends_on: [F1-03]
+roadmap: "Logowanie Apple: nonce hashowany SHA-256 i `appleTeamId` w `app.json`"
+read_first:
+  - docs/02-architektura.md#8-bezpieczenstwo
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/presentation/screens/LoginScreen.tsx
+    - app.json
+context: |
+  Sign in with Apple wymaga, żeby do Apple trafił SHA-256 nonce, a do Supabase
+  (`signInWithIdToken`) surowy nonce. Dziś LoginScreen przekazuje do Apple surowy nonce, więc
+  Supabase odrzuca token (niezgodność nonce). Naprawa: policz `hashedNonce` przez
+  `Crypto.digestStringAsync(SHA256, rawNonce)` i podaj go do `AppleAuthentication.signInAsync`;
+  surowy nonce zostaje dla Supabase. Dodatkowo `ios.appleTeamId` w app.json, bo
+  @bacons/apple-targets ostrzega o jego braku przy prebuildzie.
+acceptance:
+  - "do AppleAuthentication.signInAsync trafia SHA-256 surowego nonce, do signInWithApple surowy nonce"
+  - "npx expo prebuild nie zgłasza braku ios.appleTeamId"
+  - "tsc i lint przechodzą"
+human_steps:
+  - "CP-DEVICE: logowanie przez Apple na iPhonie kończy się sukcesem"
