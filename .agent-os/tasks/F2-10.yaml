@@ -13,6 +13,7 @@ scope:
   write:
     - src/application/useCases/recordAndProcess.ts
     - src/application/useCases/__tests__/**
+    - src/application/useCases/recording/__tests__/**
     - src/application/store/useDiaryStore.ts
     - src/composition/diary.ts
     - src/composition/context.tsx
