@@ -17,6 +17,7 @@ scope:
     - src/application/useCases/documents/**
     - src/application/useCases/statsUseCase.ts
     - src/application/useCases/__tests__/**
+    - src/application/useCases/auth/__tests__/**
     - src/composition/diary.ts
     - src/composition/index.ts
     - src/composition/__tests__/**

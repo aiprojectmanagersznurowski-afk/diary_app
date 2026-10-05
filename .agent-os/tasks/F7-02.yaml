@@ -1,0 +1,32 @@
+id: F7-02
+title: Bundle webowy bez expo-sqlite
+phase: 7
+role: mobile
+branch: feat/F7-02-web-recording-queue
+depends_on: [F7-01]
+roadmap: "Web: bundle bez `expo-sqlite` (kolejka nagrań w wariancie platformowym `*.web.ts`)"
+read_first:
+  - docs/02-architektura.md#6-przeplywy
+  - docs/05-decyzje.md (ADR-002)
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/infrastructure/queue/**
+    - src/composition/diary.ts
+    - src/composition/index.ts
+    - src/composition/__tests__/**
+    - src/domain/services/IRecordingQueue.ts
+context: |
+  `npx expo export --platform web` kończy się błędem `Unable to resolve module
+  ./wa-sqlite/wa-sqlite.wasm` (expo-sqlite/web/worker.ts), bo import idzie przez
+  src/composition/diary.ts -> sqliteRecordingQueue.ts, a Metro nie ma `wasm` w assetExts.
+  Web według docs/02 nie nagrywa, więc zamiast konfiguracji Metro z wasm (i nagłówkami
+  COOP/COEP, które mogą psuć logowanie OAuth w popupie) dodaj wariant platformowy kolejki
+  (`*.web.ts`) bez expo-sqlite, implementujący IRecordingQueue (np. pusta/pamięciowa), tak
+  aby bundler webowy nie dotykał expo-sqlite. Native (iOS/Android) bez zmian zachowania.
+acceptance:
+  - "npx expo export --platform web kończy się bez błędów rozwiązywania modułów (w tym expo-sqlite)"
+  - "iOS i Android nadal używają SqliteRecordingQueue; testy kolejki przechodzą bez zmian"
+  - "tsc, lint i jest przechodzą"
+human_steps:
+  - "CP-DEVICE: sprawdzić, że kolejka nagrań na iPhonie działa po zmianie"
