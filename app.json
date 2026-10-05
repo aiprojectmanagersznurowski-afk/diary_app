@@ -37,7 +37,12 @@
         }
       ],
       "expo-sqlite",
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.742826207719-3vgqhqmjgprtsr35hoov0gluoupoe2il"
+        }
+      ],
       "expo-apple-authentication",
       "expo-asset",
       "expo-font",
