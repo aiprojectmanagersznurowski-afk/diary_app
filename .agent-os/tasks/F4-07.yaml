@@ -1,0 +1,28 @@
+id: F4-07
+title: Ikona aplikacji zegarka wymagana przez App Store
+phase: 4
+role: native
+branch: fix/F4-07-watch-app-icon
+depends_on: [F4-01]
+roadmap: "Ikona aplikacji zegarka (`AppIcon`, `CFBundleIconName`) wymagana przez App Store Connect"
+read_first:
+  - docs/02-architektura.md#62-nagranie-z-apple-watch-mvp
+  - .agent-os/roles/native.md
+scope:
+  write:
+    - targets/watch/**
+context: |
+  App Store Connect odrzucił build 1.0.0 (2) (2026-10-05):
+  ITMS-90391 (brak ikon w diaryapp.app/Watch/VocalyWatch.app) i ITMS-90713 (brak
+  CFBundleIconName w com.michal.sznurowski.diary-app.watch). targets/watch/expo-target.config.js
+  nie ustawia `icon`, więc @bacons/apple-targets nie tworzy AppIcon ani
+  ASSETCATALOG_COMPILER_APPICON_NAME dla targetu zegarka. Naprawa: ikona 1024×1024 PNG bez
+  kanału alfa w targets/watch/ i pole `icon` w konfiguracji targetu. assets/icon.png to w
+  rzeczywistości JPEG z rozszerzeniem .png — do zegarka trafia prawdziwy PNG.
+acceptance:
+  - "npx expo prebuild --platform ios generuje dla targetu zegarka AppIcon.appiconset i ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon"
+  - "Info.plist aplikacji zegarka w zbudowanym .ipa zawiera CFBundleIconName, a bundle zawiera Assets.car"
+  - "App Store Connect przyjmuje nowy build bez ITMS-90391 i ITMS-90713"
+human_steps:
+  - "CP-DEVICE: eas build -p ios --profile production --auto-submit i potwierdzenie, że Apple nie zgłasza ITMS-90391/90713"
+  - "CP-DEVICE: ikona widoczna na zegarku"

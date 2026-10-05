@@ -47,6 +47,7 @@ flowchart LR
 - [x] Ekran szczegółów dnia czyta `documents.data`; podgląd `.md`
 - [x] Analizy i seria dni w aplikacji czytają dane policzone po stronie serwera (bez lokalnego przeliczania)
 - [x] Udostępnianie kart działa na nowym modelu (`documents` zamiast starego store'u)
+- [ ] Lista wpisów dnia na ekranie głównym czyta `documents` (`kind = daily`) zamiast starego store'u
 
 **Gotowe, gdy:** kilka nagrań z jednego dnia daje jeden wpis dnia ze wszystkimi dotychczasowymi sekcjami i listą pomysłów, a plik `.md` otwiera się poprawnie w Obsidianie.
 
@@ -58,6 +59,7 @@ flowchart LR
 - [x] Nagrania z zegarka trafiają do tej samej kolejki (`source = 'watch'`)
 - [x] Status nagrań: API modułu zegarka (`WCSession.updateApplicationContext`, UI statusu na zegarku)
 - [x] Status nagrań: aplikacja wywołuje API modułu przy zmianie statusu nagrania z zegarka
+- [ ] Ikona aplikacji zegarka (`AppIcon`, `CFBundleIconName`) wymagana przez App Store Connect
 - [ ] Po MVP: komplikacja, Action Button, wysyłanie bezpośrednio z zegarka
 
 **Gotowe, gdy:** nagranie z zegarka przy wyłączonym Bluetooth na iPhonie trafia do bazy po ponownym połączeniu, bez duplikatów, a zegarek pokazuje status „przetworzone”.
