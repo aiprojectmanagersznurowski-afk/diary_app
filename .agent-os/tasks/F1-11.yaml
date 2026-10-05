@@ -1,0 +1,26 @@
+id: F1-11
+title: Logowanie Google na iOS: iosUrlScheme w app.json
+phase: 1
+role: mobile
+branch: fix/F1-11-google-ios-url-scheme
+depends_on: [F1-03]
+roadmap: "Logowanie Google na iOS: `iosUrlScheme` w konfiguracji wtyczki Google Sign-In w `app.json`"
+read_first:
+  - docs/02-architektura.md#8-bezpieczenstwo
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - app.json
+context: |
+  Wtyczka @react-native-google-signin/google-signin dla iOS wymaga `iosUrlScheme` (odwrócony iOS
+  client ID: com.googleusercontent.apps.<ID>), inaczej w buildzie natywnym brakuje schematu URL
+  i logowanie Google nie wraca do aplikacji. Dziś app.json ma wtyczkę bez konfiguracji.
+  Zamień wpis wtyczki na [nazwa, { iosUrlScheme }]. Wartość to publiczny identyfikator klienta
+  OAuth (nie sekret), odpowiada EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID; agent jej nie czyta z `.env`,
+  wartość podaje człowiek w opisie PR/handoffie albo wynika z istniejącego clientId w Google Cloud.
+acceptance:
+  - "app.json zawiera wtyczkę @react-native-google-signin/google-signin z iosUrlScheme w formacie com.googleusercontent.apps.<ID>"
+  - "npx expo prebuild --platform ios dodaje ten schemat do CFBundleURLTypes w Info.plist"
+  - "tsc, lint i jest przechodzą"
+human_steps:
+  - "CP-DEVICE: logowanie Google na iPhonie kończy się sukcesem i wraca do aplikacji"
