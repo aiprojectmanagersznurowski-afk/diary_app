@@ -1,6 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import { AppState } from 'react-native';
-import { audioRecorder, aiService } from './onboarding';
+import { audioRecorder } from './onboarding';
 import { InMemoryDiaryRepository } from '../infrastructure/db/diaryRepository';
 import { RecordAndProcessEntryUseCase } from '../application/useCases/recordAndProcess';
 import { EnqueueRecordingUseCase } from '../application/useCases/recording/enqueueRecordingUseCase';
@@ -11,7 +11,6 @@ import { supabase } from '../infrastructure/supabase/supabaseClient';
 import { SupabaseRecordingUploader } from '../infrastructure/supabase/supabaseRecordingUploader';
 import { setDiaryDependencies } from '../application/store/useDiaryStore';
 import { IAudioRecorder } from '../domain/services/IAudioRecorder';
-import { IAiService } from '../domain/services/IAiService';
 import { IDiaryRepository } from '../domain/repositories/IDiaryRepository';
 import { IRecordingQueue } from '../domain/services/IRecordingQueue';
 import { IFileStorage } from '../domain/services/IFileStorage';
@@ -46,12 +45,10 @@ import { setChatDependencies } from '../application/store/useChatStore';
 
 export function createRecordAndProcessUseCase(
   recorder: IAudioRecorder,
-  ai: IAiService,
-  repo: IDiaryRepository,
-  enqueueUseCase?: EnqueueRecordingUseCase,
+  enqueueUseCase: EnqueueRecordingUseCase,
   processQueueUseCase?: ProcessRecordingQueueUseCase,
 ): RecordAndProcessEntryUseCase {
-  return new RecordAndProcessEntryUseCase(recorder, ai, repo, enqueueUseCase, processQueueUseCase);
+  return new RecordAndProcessEntryUseCase(recorder, enqueueUseCase, processQueueUseCase);
 }
 
 export const recordingQueue: IRecordingQueue = new SqliteRecordingQueue();
@@ -70,8 +67,6 @@ export const processRecordingQueueUseCase = new ProcessRecordingQueueUseCase(
 export const diaryRepository: IDiaryRepository = new InMemoryDiaryRepository();
 export const recordUseCase: RecordAndProcessEntryUseCase = createRecordAndProcessUseCase(
   audioRecorder,
-  aiService,
-  diaryRepository,
   enqueueRecordingUseCase,
   processRecordingQueueUseCase,
 );

@@ -1,6 +1,4 @@
 import { create } from 'zustand';
-import { useSettingsStore } from './useSettingsStore';
-import { useGamificationStore } from './useGamificationStore';
 import { DailyDocument } from '../../domain/models/DailyDocument';
 import { RecordAndProcessEntryUseCase } from '../useCases/recordAndProcess';
 import { GetDailyDocumentsInRangeUseCase } from '../useCases/documents/getDailyDocumentsInRangeUseCase';
@@ -86,15 +84,9 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     set({ isRecording: false, isProcessing: true });
     try {
       if (!activeRecordUseCase) throw new Error('RecordUseCase is not initialized');
-      const { lifeGoals, aiPersonality } = useSettingsStore.getState();
-      const newEntry = await activeRecordUseCase.stopRecordingAndProcess(lifeGoals, aiPersonality);
-      if (newEntry) {
-        useGamificationStore.getState().processNewEntry(newEntry.createdAt.toISOString());
-        await get().fetchDailyDocuments();
-        set({ isProcessing: false });
-      } else {
-        set({ isProcessing: false });
-      }
+      // Nagranie trafia do kolejki i na serwer; notatki i wpis dnia buduje serwer (ADR-003)
+      await activeRecordUseCase.stopRecordingAndProcess();
+      set({ isProcessing: false });
     } catch (error) {
       set({ error: String(error), isProcessing: false });
     }
