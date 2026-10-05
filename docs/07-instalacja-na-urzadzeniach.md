@@ -8,6 +8,21 @@ W projekcie nie ma `expo-updates`, więc **każda zmiana w kodzie wymaga nowego 
 
 Agenci nie uruchamiają `eas build` w profilu produkcyjnym ani `eas submit` (AGENTS.md). Te komendy uruchamia człowiek.
 
+## Co uruchomić kiedy
+
+Większość kroków robisz tylko raz. Przy zwykłej zmianie w aplikacji wystarczy jeden build.
+
+| Zmiana w repo | Co uruchomić |
+|---|---|
+| kod aplikacji (`src/`, ekrany, logika) | tylko build na telefon (Sposób A albo B) |
+| `app.json`, wtyczki, zależności w `package.json`, `targets/watch/` (zegarek), ikona | `npx expo prebuild --platform ios --clean`, a potem build na telefon |
+| nowa migracja w `supabase/migrations/` | `supabase db push` |
+| zmiana w `supabase/functions/` | `supabase functions deploy <nazwa>` |
+| zmiana wartości sekretu serwera (klucze, modele) | `supabase secrets set ...` |
+| nowa zmienna `EXPO_PUBLIC_*` | `.env` (kabel) i `eas env:create` (TestFlight) |
+
+Dla zmian w aplikacji serwera nie dotykasz, a dla zmian na serwerze nie trzeba budować aplikacji od nowa.
+
 ## Sposób A: TestFlight (bez kabla)
 
 Ten sposób daje wersję taką jak w App Store i pozwala dać aplikację innym testerom. Trwa około 30–90 minut.
@@ -63,6 +78,10 @@ Ten sposób najlepiej sprawdza się przy codziennym testowaniu zmian.
 
 Build podpisany płatnym kontem Apple Developer działa do roku. Kolejna instalacja kablem zastępuje poprzednią.
 
+Przy zwykłej zmianie kodu wystarczy ta jedna komenda. `prebuild --clean` i `pod install` są potrzebne tylko w przypadkach z tabeli „Co uruchomić kiedy”. Przed buildem zrób `git switch main && git pull`.
+
+Wygenerowany folder `targets/watch/Assets.xcassets/` pojawia się po każdym prebuildzie. Nie commituj go.
+
 ## Zmienne środowiskowe
 
 | Sposób | Skąd biorą się `EXPO_PUBLIC_*` |
@@ -74,6 +93,35 @@ Nową zmienną `EXPO_PUBLIC_*` dodaj w obu miejscach.
 
 Jeśli zmiennych brakuje, aplikacja łączy się z `placeholder.supabase.co`, a logowanie kończy się błędem „Network request failed”.
 
+## Serwer Supabase (jednorazowo)
+
+Bez tego nagranie wysyła się z telefonu, ale notatki i wpis dnia się nie pojawiają, a nagrania wiszą na statusie „Wysłane”. Dotyczy projektu, do którego łączy się aplikacja. Agenci tych komend nie uruchamiają (AGENTS.md).
+
+1. W katalogu repo:
+   ```bash
+   supabase db push
+   supabase secrets set LLM_STRUCTURE_MODEL=openai/gpt-oss-120b LLM_DIGEST_MODEL=openai/gpt-oss-120b LLM_LINK_MODEL=openai/gpt-oss-120b LLM_CHAT_MODEL=openai/gpt-oss-120b
+   supabase functions deploy process-recording build-daily chat
+   ```
+2. Skopiuj klucz `service_role`: Supabase Dashboard → Project Settings → API Keys → Legacy API Keys → `service_role` → Reveal. Klucz daje pełny dostęp do bazy, więc nie wklejaj go do czatu ani do repo.
+3. W Dashboard → SQL Editor → New query wklej poniższy SQL i uruchom (Run). Zamień `<PROJECT_REF>` na identyfikator projektu (widać go w adresie Dashboardu i w `supabase/.temp/project-ref`), a `<SERVICE_ROLE_KEY>` na skopiowany klucz:
+   ```sql
+   select vault.create_secret('https://<PROJECT_REF>.supabase.co/functions/v1/process-recording', 'process_recording_url');
+   select vault.create_secret('<SERVICE_ROLE_KEY>', 'process_recording_auth');
+   select vault.create_secret('https://<PROJECT_REF>.supabase.co/functions/v1/build-daily', 'build_daily_url');
+   select vault.create_secret('<SERVICE_ROLE_KEY>', 'build_daily_auth');
+   ```
+4. Sprawdź, że wpisy istnieją (zapytanie pokazuje tylko nazwy):
+   ```sql
+   select name from vault.secrets order by name;
+   ```
+   Powinny być 4 nazwy: `build_daily_auth`, `build_daily_url`, `process_recording_auth`, `process_recording_url`.
+5. Zawieszone nagrania cron ponawia co 5 minut, a wpis dnia buduje się w następnym cyklu. Notatki powinny pojawić się w ciągu kilku minut.
+
+Wpisy w Vault dodaj po `supabase functions deploy`, bo adresy wskazują na wdrożone funkcje.
+
+Błąd `duplicate key ... secrets_name_idx` oznacza, że wpis już istnieje. Zaktualizuj go: `select vault.update_secret(id, '<SERVICE_ROLE_KEY>') from vault.secrets where name = 'process_recording_auth';` (analogicznie dla `build_daily_auth`).
+
 ## Typowe problemy
 
 | Objaw | Przyczyna | Co zrobić |
@@ -83,3 +131,6 @@ Jeśli zmiennych brakuje, aplikacja łączy się z `placeholder.supabase.co`, a 
 | Błąd podpisywania przy `expo run:ios` | brak Teamu w Xcode | ustaw Team dla aplikacji i zegarka (Signing & Capabilities) |
 | Aplikacja nie uruchamia się po instalacji kablem | brak zaufania do dewelopera | Ustawienia → Ogólne → VPN i zarządzanie urządzeniem → Ufaj |
 | Brak Vocaly na zegarku | wyłączona automatyczna instalacja | aplikacja Watch → Vocaly → Zainstaluj |
+| Nagrania wiszą na „Wysłane”, brak notatek | serwer niewdrożony albo brak wpisów w Vault | wykonaj sekcję „Serwer Supabase (jednorazowo)” |
+| `pod install` kończy się błędem `Unicode Normalization not appropriate for ASCII-8BIT` | terminal bez kodowania UTF-8 | dodaj `export LANG=en_US.UTF-8` do `~/.zprofile` i otwórz nowe okno terminala |
+| `git push` odrzucony przez hook: „praca bezpośrednio na 'main'” | push wykonany ze stojąc na `main` | przełącz się na gałąź zadania (`git switch <gałąź>`) przed `git push` |
