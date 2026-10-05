@@ -1,32 +1,37 @@
 import { create } from 'zustand';
 import { useSettingsStore } from './useSettingsStore';
 import { useGamificationStore } from './useGamificationStore';
-import { DiaryEntry } from '../../domain/models/DiaryEntry';
-import { IDiaryRepository } from '../../domain/repositories/IDiaryRepository';
+import { DailyDocument } from '../../domain/models/DailyDocument';
 import { RecordAndProcessEntryUseCase } from '../useCases/recordAndProcess';
+import { GetDailyDocumentsInRangeUseCase } from '../useCases/documents/getDailyDocumentsInRangeUseCase';
+import { dayStringOffsetFromToday } from '../useCases/statsUseCase';
+
+/** Ile dni wstecz (włącznie z dzisiejszym) ładuje lista wpisów dnia na ekranie głównym. */
+export const DAILY_HISTORY_DAYS = 90;
 
 let activeRecordUseCase: RecordAndProcessEntryUseCase | null = null;
-let activeDiaryRepository: IDiaryRepository | null = null;
+let activeGetDailyDocuments: GetDailyDocumentsInRangeUseCase | null = null;
 
 export const setDiaryDependencies = (deps: {
   recordUseCase?: RecordAndProcessEntryUseCase | null;
-  diaryRepository?: IDiaryRepository | null;
+  getDailyDocumentsUseCase?: GetDailyDocumentsInRangeUseCase | null;
 }) => {
   if (deps.recordUseCase !== undefined) {
     activeRecordUseCase = deps.recordUseCase;
   }
-  if (deps.diaryRepository !== undefined) {
-    activeDiaryRepository = deps.diaryRepository;
+  if (deps.getDailyDocumentsUseCase !== undefined) {
+    activeGetDailyDocuments = deps.getDailyDocumentsUseCase;
   }
 };
 
 interface DiaryState {
-  entries: DiaryEntry[];
+  /** Wpisy dnia (documents, kind = daily), od najnowszego. */
+  dailyDocuments: DailyDocument[];
   isLoading: boolean;
   isRecording: boolean;
   isProcessing: boolean;
   error: string | null;
-  fetchEntries: () => Promise<void>;
+  fetchDailyDocuments: () => Promise<void>;
   startRecording: () => Promise<void>;
   stopRecordingAndProcess: () => Promise<void>;
   getCurrentMetering: () => number;
@@ -35,7 +40,7 @@ interface DiaryState {
 }
 
 export const useDiaryStore = create<DiaryState>((set, get) => ({
-  entries: [],
+  dailyDocuments: [],
   isLoading: false,
   isRecording: false,
   isProcessing: false,
@@ -43,7 +48,7 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
 
   clearEntries: () => {
     set({
-      entries: [],
+      dailyDocuments: [],
       isLoading: false,
       isRecording: false,
       isProcessing: false,
@@ -51,15 +56,17 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     });
   },
 
-  fetchEntries: async () => {
+  fetchDailyDocuments: async () => {
     set({ isLoading: true, error: null });
     try {
-      if (!activeDiaryRepository) {
-        set({ entries: [], isLoading: false });
+      if (!activeGetDailyDocuments) {
+        set({ dailyDocuments: [], isLoading: false });
         return;
       }
-      const entries = await activeDiaryRepository.getAll();
-      set({ entries, isLoading: false });
+      const startDay = dayStringOffsetFromToday(-(DAILY_HISTORY_DAYS - 1));
+      const endDay = dayStringOffsetFromToday(0);
+      const docs = await activeGetDailyDocuments.execute(startDay, endDay);
+      set({ dailyDocuments: [...docs].sort((a, b) => b.day.localeCompare(a.day)), isLoading: false });
     } catch (error) {
       set({ error: String(error), isLoading: false });
     }
@@ -83,7 +90,7 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
       const newEntry = await activeRecordUseCase.stopRecordingAndProcess(lifeGoals, aiPersonality);
       if (newEntry) {
         useGamificationStore.getState().processNewEntry(newEntry.createdAt.toISOString());
-        await get().fetchEntries();
+        await get().fetchDailyDocuments();
         set({ isProcessing: false });
       } else {
         set({ isProcessing: false });

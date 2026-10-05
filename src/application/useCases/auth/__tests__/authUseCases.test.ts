@@ -1,4 +1,5 @@
 import { IAuthRepository } from '../../../../domain/repositories/IAuthRepository';
+import { DailyDocument } from '../../../../domain/models/DailyDocument';
 import { User } from '../../../../domain/models/User';
 import { signInWithGoogleUseCase } from '../signInWithGoogleUseCase';
 import { signInWithAppleUseCase } from '../signInWithAppleUseCase';
@@ -127,15 +128,7 @@ describe('Auth Use Cases', () => {
       useSettingsStore.getState().setAIPersonality('Buddha');
       useGamificationStore.getState().processNewEntry('2026-09-25T12:00:00Z');
       useDiaryStore.setState({
-        entries: [
-          {
-            id: 'entry-1',
-            date: new Date(),
-            fullText: 'Tekst wpisu',
-            parsedData: null,
-            createdAt: new Date(),
-          },
-        ],
+        dailyDocuments: [{ id: 'daily-1', day: '2026-09-25' } as DailyDocument],
       });
 
       // Weryfikacja że dane są w store'ach przed wylogowaniem
@@ -144,7 +137,7 @@ describe('Auth Use Cases', () => {
       expect(useSettingsStore.getState().theme).toBe('Sepia');
       expect(useSettingsStore.getState().aiPersonality).toBe('Buddha');
       expect(useGamificationStore.getState().currentStreak).toBeGreaterThan(0);
-      expect(useDiaryStore.getState().entries.length).toBe(1);
+      expect(useDiaryStore.getState().dailyDocuments.length).toBe(1);
 
       // Wywołanie signOutUseCase
       await signOutUseCase(mockAuthRepository);
@@ -157,7 +150,7 @@ describe('Auth Use Cases', () => {
       expect(useGamificationStore.getState().currentStreak).toBe(0);
       expect(useGamificationStore.getState().lastEntryDate).toBeNull();
       expect(useGamificationStore.getState().unlockedBadges).toEqual([]);
-      expect(useDiaryStore.getState().entries).toEqual([]);
+      expect(useDiaryStore.getState().dailyDocuments).toEqual([]);
     });
 
     it('wywołuje punkt rozszerzenia czyszczenia lokalnej kolejki nagrań', async () => {

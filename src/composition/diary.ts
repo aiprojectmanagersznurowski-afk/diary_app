@@ -94,7 +94,7 @@ export const sendChatMessageUseCase = new SendChatMessageUseCase(chatRepository)
 // Inicjalizacja domyślnych zależności w store'ach
 setDiaryDependencies({
   recordUseCase,
-  diaryRepository,
+  getDailyDocumentsUseCase: getDailyDocumentsInRangeUseCase,
 });
 
 setNotesDependencies({

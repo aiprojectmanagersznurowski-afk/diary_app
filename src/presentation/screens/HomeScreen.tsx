@@ -5,7 +5,7 @@ import { useDiaryStore } from '../../application/store/useDiaryStore';
 import { useNotesStore } from '../../application/store/useNotesStore';
 import { useAuthStore } from '../../application/store/useAuthStore';
 import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
-import { getAnalyticsData, getWeeklyCalmPercentage } from '../../application/useCases/statsUseCase';
+import { getDailyAnalyticsData, getDailyCalmPercentage } from '../../application/useCases/statsUseCase';
 import { Feather } from '@expo/vector-icons';
 import { GlassCard, GradientText, EmotionPill } from '../components/UIPrimitives';
 import { BadgeAlertModal } from '../components/BadgeAlertModal';
@@ -40,12 +40,12 @@ const formatDate = (iso: string | Date | number) => {
 
 export const HomeScreen = () => {
   const {
-    entries,
+    dailyDocuments,
     isLoading: isDiaryLoading,
     isRecording,
     isProcessing,
     error: diaryError,
-    fetchEntries,
+    fetchDailyDocuments,
     startRecording,
     stopRecordingAndProcess,
   } = useDiaryStore();
@@ -70,11 +70,11 @@ export const HomeScreen = () => {
 
   const [activeTab, setActiveTab] = useState<'entries' | 'notes'>('entries');
 
-  const calmPercentage = getWeeklyCalmPercentage(entries);
-  const { calm: calmData } = getAnalyticsData(entries, 7);
+  const calmPercentage = getDailyCalmPercentage(dailyDocuments);
+  const { calm: calmData } = getDailyAnalyticsData(dailyDocuments, 7);
 
   useEffect(() => {
-    fetchEntries();
+    fetchDailyDocuments();
     fetchRecordings();
     fetchNotes();
 
@@ -84,7 +84,7 @@ export const HomeScreen = () => {
         unsubscribe();
       };
     }
-  }, [user?.id, fetchEntries, fetchRecordings, fetchNotes, subscribeToRealtime]);
+  }, [user?.id, fetchDailyDocuments, fetchRecordings, fetchNotes, subscribeToRealtime]);
 
   const handleRecordPress = () => {
     if (isRecording) {
@@ -264,9 +264,9 @@ export const HomeScreen = () => {
         <ActivityIndicator size="large" color="#F472B6" style={styles.loader} />
       ) : (
         <FlatList
-          data={entries}
+          data={dailyDocuments}
           ListHeaderComponent={renderHeader}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
@@ -278,17 +278,15 @@ export const HomeScreen = () => {
             </GlassCard>
           }
           renderItem={({ item }) => {
-            const d = formatDate(item.createdAt || item.date);
-            const parsed = (item.parsedData as any) || {};
-            const emotions = parsed.emotions || [];
-            const summary = parsed.summary || item.fullText.slice(0, 100) + '...';
+            const d = formatDate(`${item.day}T12:00:00`);
+            const emotions = item.emotions;
+            const summary = item.summary || item.dominantThought;
 
             return (
               <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('Detail', { entryId: item.id })}>
                 <GlassCard intensity={20} style={styles.entryCard}>
                   <View style={styles.entryCardHeader}>
                     <Text style={[styles.entryCardDate, { color: colors.text }]}>{d.full}</Text>
-                    <Text style={[styles.entryCardTime, { color: colors.textSecondary }]}>{d.time}</Text>
                   </View>
                   <Text style={[styles.entryCardSummary, { color: colors.textSecondary }]} numberOfLines={3}>
                     {summary}
