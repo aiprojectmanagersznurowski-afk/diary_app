@@ -9,6 +9,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.michal.sznurowski.diary-app",
+      "appleTeamId": "SB2HT4N2JQ",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

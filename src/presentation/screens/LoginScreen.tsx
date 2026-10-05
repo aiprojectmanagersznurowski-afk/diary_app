@@ -25,13 +25,14 @@ export const LoginScreen = () => {
       setErrorMessage(null);
 
       const rawNonce = Crypto.randomUUID();
+      const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
 
       const appleAuthRequestResponse = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
-        nonce: rawNonce,
+        nonce: hashedNonce,
       });
 
       const { identityToken } = appleAuthRequestResponse;
