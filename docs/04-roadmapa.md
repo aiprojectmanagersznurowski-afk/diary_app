@@ -24,7 +24,7 @@ flowchart LR
 - [x] Unieważnienie obecnego klucza Groq; klucze przeniesione do sekretów Supabase
 - [x] ESLint zainstalowany, `design_exports/` wykluczony z `tsconfig.json`, `tsc --noEmit` bez błędów
 - [x] Composition root: ekrany nie tworzą serwisów z `infrastructure`
-- [ ] Logowanie Google na iOS: `iosUrlScheme` w konfiguracji wtyczki Google Sign-In w `app.json`
+- [x] Logowanie Google na iOS: `iosUrlScheme` w konfiguracji wtyczki Google Sign-In w `app.json`
 - [x] Logowanie Apple: nonce hashowany SHA-256 i `appleTeamId` w `app.json`
 
 **Gotowe, gdy:** można się zalogować (Google, Apple), przejść onboarding, a profil zapisuje się w Supabase. W kodzie nie ma Firebase, a `tsc` i lint przechodzą.
