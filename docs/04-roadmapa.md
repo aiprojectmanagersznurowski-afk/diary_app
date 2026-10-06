@@ -102,7 +102,7 @@ flowchart LR
 
 Źródło: [08-design-ui.md](08-design-ui.md) (brief + decyzje wdrożeniowe), prototyp w [design/Main.dc.html](design/Main.dc.html). Zadania 2–6 zależą tylko od pierwszego i mogą iść równolegle.
 
-- [ ] Tokeny motywów, prymitywy UI, teksty PL i przejścia ekranów; Logowanie i Onboarding w nowym wyglądzie
+- [x] Tokeny motywów, prymitywy UI, teksty PL i przejścia ekranów; Logowanie i Onboarding w nowym wyglądzie
 - [ ] Ekran główny w nowym wyglądzie i nowy ekran „Twoje nagrania”
 - [ ] Szczegóły wpisu dnia i notatki w nowym wyglądzie: tryb udostępniania i podgląd pliku `.md`
 - [ ] Analizy, Osiągnięcia i Ustawienia w nowym wyglądzie

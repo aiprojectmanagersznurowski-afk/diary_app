@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, ActivityIndicator } from 'react-native';
-import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
+import { View, Text, StyleSheet, Pressable, Image, Platform, ActivityIndicator } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as Crypto from 'expo-crypto';
-import { useAuthService } from '../../composition';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuthService } from '../../composition';
+import { ScreenContainer, GradientText, useTheme, ACCENTS, WHITE_BUTTON, SHADOW } from '../components/ui';
+import { pl } from '../i18n/pl';
 
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -14,8 +15,7 @@ GoogleSignin.configure({
 
 export const LoginScreen = () => {
   const authService = useAuthService();
-  const { theme } = useSettingsStore();
-  const colors = THEMES[theme];
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -38,7 +38,7 @@ export const LoginScreen = () => {
       const { identityToken } = appleAuthRequestResponse;
 
       if (!identityToken) {
-        throw new Error('Nie otrzymano tokenu tożsamości z usługi Apple.');
+        throw new Error(pl.login.appleNoToken);
       }
 
       await authService.signInWithApple(identityToken, rawNonce);
@@ -46,7 +46,7 @@ export const LoginScreen = () => {
       if (error?.code === 'ERR_REQUEST_CANCELED') {
         // Użytkownik anulował logowanie
       } else {
-        setErrorMessage(error?.message || 'Błąd podczas logowania przez Apple.');
+        setErrorMessage(error?.message || pl.login.appleError);
       }
     } finally {
       setLoading(false);
@@ -66,11 +66,11 @@ export const LoginScreen = () => {
       } else if (response.type === 'cancelled') {
         // Użytkownik anulował logowanie
       } else {
-        throw new Error('Brak tokenu ID Google. Upewnij się, że Client ID jest poprawnie skonfigurowany.');
+        throw new Error(pl.login.googleNoToken);
       }
     } catch (error: any) {
       if (error?.code !== 'SIGN_IN_CANCELLED') {
-        setErrorMessage(error?.message || 'Błąd podczas logowania przez Google.');
+        setErrorMessage(error?.message || pl.login.googleError);
       }
     } finally {
       setLoading(false);
@@ -78,107 +78,84 @@ export const LoginScreen = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.content}>
-        <Image source={require('../../../assets/icon.png')} style={styles.logo} />
-        <Text style={[styles.title, { color: colors.text }]}>Vocaly</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Twój pamiętnik głosowy</Text>
+    <ScreenContainer paddingHorizontal={28} style={styles.screen}>
+      <View style={styles.middle}>
+        <View style={[styles.iconWrap, { shadowColor: colors.primary }]}>
+          <Image source={require('../../../assets/icon.png')} style={styles.icon} />
+        </View>
+        <GradientText text={pl.login.title} style={styles.title} />
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{pl.login.subtitle}</Text>
+      </View>
 
+      <View style={styles.bottom}>
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+        {loading ? <ActivityIndicator size="small" color={colors.primary} style={styles.spinner} /> : null}
 
-        {loading ? (
-          <ActivityIndicator size="large" color={colors.primary || '#ffffff'} style={{ marginVertical: 20 }} />
+        {Platform.OS === 'ios' ? (
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+            buttonStyle={
+              colors.isLight
+                ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE
+                : AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+            }
+            cornerRadius={16}
+            style={styles.appleButton}
+            onPress={onAppleButtonPress}
+          />
         ) : null}
 
-        <View style={styles.buttonContainer}>
-          {Platform.OS === 'ios' ? (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={
-                theme === 'AppleDark'
-                  ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-                  : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-              }
-              cornerRadius={16}
-              style={styles.appleButton}
-              onPress={onAppleButtonPress}
-            />
-          ) : null}
-
-          <TouchableOpacity
-            style={[styles.googleButton, { backgroundColor: theme === 'AppleDark' ? '#FFFFFF' : '#000000' }]}
-            onPress={onGoogleButtonPress}
-            disabled={loading}
-          >
-            <Ionicons
-              name="logo-google"
-              size={20}
-              color={theme === 'AppleDark' ? '#000000' : '#FFFFFF'}
-              style={{ marginRight: 10 }}
-            />
-            <Text style={[styles.googleButtonText, { color: theme === 'AppleDark' ? '#000000' : '#FFFFFF' }]}>
-              Zaloguj z Google
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <Pressable
+          style={({ pressed }) => [styles.googleButton, pressed && styles.pressed, loading && styles.disabled]}
+          onPress={onGoogleButtonPress}
+          disabled={loading}
+          accessibilityRole="button"
+        >
+          <Ionicons name="logo-google" size={20} color={WHITE_BUTTON.text} style={styles.googleIcon} />
+          <Text style={styles.googleButtonText}>{pl.login.google}</Text>
+        </Pressable>
       </View>
-    </View>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  screen: { justifyContent: 'space-between', paddingTop: 60, paddingBottom: 40 },
+  middle: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  iconWrap: {
+    width: 112,
+    height: 112,
+    borderRadius: 28,
+    marginBottom: 8,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.45,
+    shadowRadius: 25,
+    elevation: 12,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 30,
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
-    borderRadius: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 40,
-    lineHeight: 24,
-  },
-  errorText: {
-    color: '#ff4d4f',
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 10,
-  },
-  buttonContainer: {
-    width: '100%',
-    gap: 15,
-  },
-  appleButton: {
-    width: '100%',
-    height: 54,
-  },
+  icon: { width: 112, height: 112, borderRadius: 28 },
+  title: { fontSize: 44, fontWeight: '800', letterSpacing: -0.5, textAlign: 'center' },
+  subtitle: { fontSize: 17, fontWeight: '500', textAlign: 'center' },
+  bottom: { gap: 12 },
+  errorText: { color: ACCENTS.error, fontSize: 14, textAlign: 'center', paddingHorizontal: 10 },
+  spinner: { marginVertical: 4 },
+  appleButton: { width: '100%', height: 54 },
   googleButton: {
-    width: '100%',
     height: 54,
     borderRadius: 16,
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: WHITE_BUTTON.background,
+    borderWidth: 1,
+    borderColor: WHITE_BUTTON.border,
+    shadowColor: SHADOW,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  googleButtonText: {
-    fontSize: 19,
-    fontWeight: '500',
-  },
+  googleIcon: { marginRight: 10 },
+  googleButtonText: { fontSize: 17, fontWeight: '600', color: WHITE_BUTTON.text },
+  pressed: { transform: [{ scale: 0.985 }] },
+  disabled: { opacity: 0.6 },
 });
