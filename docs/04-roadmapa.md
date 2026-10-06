@@ -29,6 +29,7 @@ flowchart LR
 - [x] ESLint zainstalowany, `design_exports/` wykluczony z `tsconfig.json`, `tsc --noEmit` bez błędów
 - [x] Composition root: ekrany nie tworzą serwisów z `infrastructure`
 - [x] Logowanie Google na iOS: `iosUrlScheme` w konfiguracji wtyczki Google Sign-In w `app.json`
+- [ ] Nazwa wyświetlana „Vocaly” i właściwa ikona aplikacji iOS (bez kanału alfa)
 - [x] Logowanie Apple: nonce hashowany SHA-256 i `appleTeamId` w `app.json`
 
 **Gotowe, gdy:** można się zalogować (Google, Apple), przejść onboarding, a profil zapisuje się w Supabase. W kodzie nie ma Firebase, a `tsc` i lint przechodzą.

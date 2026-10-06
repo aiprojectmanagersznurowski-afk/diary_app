@@ -1,0 +1,30 @@
+id: F1-12
+title: Nazwa wyświetlana „Vocaly” i właściwa ikona aplikacji iOS
+phase: 1
+role: mobile
+branch: fix/F1-12-app-name-and-icon
+depends_on: [F1-03]
+roadmap: "Nazwa wyświetlana „Vocaly” i właściwa ikona aplikacji iOS (bez kanału alfa)"
+read_first:
+  - docs/07-instalacja-na-urzadzeniach.md
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - app.json
+    - assets/icon.png
+context: |
+  Przed buildem TestFlight sprawdzono konfigurację: (1) `app.json` ma `icon: ./assets/splash-icon.png`
+  — to szablonowa grafika Expo (koncentryczne okręgi na siatce) z kanałem alfa, więc na iPhonie
+  pojawiłaby się zła ikona, a Apple odrzuca ikony z przezroczystością; właściwa ikona (neonowe serce
+  z mikrofonem) to `assets/icon.png`. (2) `assets/icon.png` jest w rzeczywistości JPEG-iem z
+  rozszerzeniem .png — zapisz go jako prawdziwy PNG 1024×1024 bez alfy. (3) Nazwa wyświetlana na ekranie
+  głównym to „diary-app” (CFBundleDisplayName z `name`) — ma być „Vocaly”. Bezpieczny wariant:
+  `ios.infoPlist.CFBundleDisplayName = "Vocaly"` bez zmiany `name` i `slug` (zmiana `name` przemianowałaby
+  projekt natywny, skrypty i dokumentację; slug jest związany z projektem EAS).
+acceptance:
+  - "app.json: `icon` wskazuje assets/icon.png, a assets/icon.png to PNG 1024×1024 bez kanału alfa"
+  - "prebuild (na czystej kopii) generuje AppIcon 1024×1024 bez alfy i Info.plist z CFBundleDisplayName = Vocaly"
+  - "tsc, lint i jest przechodzą"
+human_steps:
+  - "CP-DEVICE: po buildzie na ekranie głównym iPhone'a widać ikonę z neonowym sercem i podpis „Vocaly”"
+  - "App Store Connect: zmień nazwę aplikacji z „diary-app” na „Vocaly” (App Information → Name), bo nazwa w TestFlight pochodzi stamtąd"
