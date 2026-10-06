@@ -18,20 +18,23 @@ const RINGS_DELAYS_MS = [0, 600, 1200];
 const Ring: React.FC<{ delayMs: number; size: number }> = ({ delayMs, size }) => {
   const progress = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.delay(delayMs),
-        Animated.timing(progress, {
-          toValue: 1,
-          duration: 1800,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(progress, { toValue: 0, duration: 0, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
+    // Przesunięcie (0 / 0,6 / 1,2 s) tylko na starcie; okres każdego pierścienia to stałe 1,8 s.
+    const animation = Animated.sequence([
+      Animated.delay(delayMs),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(progress, {
+            toValue: 1,
+            duration: 1800,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(progress, { toValue: 0, duration: 0, useNativeDriver: true }),
+        ]),
+      ),
+    ]);
+    animation.start();
+    return () => animation.stop();
   }, [progress, delayMs]);
   return (
     <Animated.View

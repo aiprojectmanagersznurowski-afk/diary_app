@@ -89,31 +89,40 @@ export const LoginScreen = () => {
 
       <View style={styles.bottom}>
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-        {loading ? <ActivityIndicator size="small" color={colors.primary} style={styles.spinner} /> : null}
 
-        {Platform.OS === 'ios' ? (
-          <AppleAuthentication.AppleAuthenticationButton
-            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-            buttonStyle={
-              colors.isLight
-                ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE
-                : AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-            }
-            cornerRadius={16}
-            style={styles.appleButton}
-            onPress={onAppleButtonPress}
-          />
-        ) : null}
+        {loading ? (
+          <View style={styles.loggingIn}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={[styles.loggingInText, { color: colors.textSecondary }]}>{pl.login.loggingIn}</Text>
+          </View>
+        ) : (
+          <>
+            {Platform.OS === 'ios' ? (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={
+                  colors.isLight
+                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE
+                    : AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                }
+                cornerRadius={16}
+                style={styles.appleButton}
+                onPress={onAppleButtonPress}
+              />
+            ) : null}
 
-        <Pressable
-          style={({ pressed }) => [styles.googleButton, pressed && styles.pressed, loading && styles.disabled]}
-          onPress={onGoogleButtonPress}
-          disabled={loading}
-          accessibilityRole="button"
-        >
-          <Ionicons name="logo-google" size={20} color={WHITE_BUTTON.text} style={styles.googleIcon} />
-          <Text style={styles.googleButtonText}>{pl.login.google}</Text>
-        </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.googleButton, pressed && styles.pressed]}
+              onPress={onGoogleButtonPress}
+              accessibilityRole="button"
+            >
+              <Ionicons name="logo-google" size={20} color={WHITE_BUTTON.text} style={styles.googleIcon} />
+              <Text style={styles.googleButtonText}>{pl.login.google}</Text>
+            </Pressable>
+          </>
+        )}
+
+        <Text style={[styles.legal, { color: colors.textSecondary }]}>{pl.login.legal}</Text>
       </View>
     </ScreenContainer>
   );
@@ -137,7 +146,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 17, fontWeight: '500', textAlign: 'center' },
   bottom: { gap: 12 },
   errorText: { color: ACCENTS.error, fontSize: 14, textAlign: 'center', paddingHorizontal: 10 },
-  spinner: { marginVertical: 4 },
+  loggingIn: { height: 120, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  loggingInText: { fontSize: 13 },
+  legal: { fontSize: 12, textAlign: 'center', marginTop: 8, marginHorizontal: 10, lineHeight: 17 },
   appleButton: { width: '100%', height: 54 },
   googleButton: {
     height: 54,
@@ -157,5 +168,4 @@ const styles = StyleSheet.create({
   googleIcon: { marginRight: 10 },
   googleButtonText: { fontSize: 17, fontWeight: '600', color: WHITE_BUTTON.text },
   pressed: { transform: [{ scale: 0.985 }] },
-  disabled: { opacity: 0.6 },
 });

@@ -25,11 +25,13 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   accessibilityLabel,
 }) => {
   const { colors } = useTheme();
+  // Cień jest na zewnętrznym widoku (bez przycinania), a rozmycie i treść przycina widok wewnętrzny —
+  // inaczej na iOS `overflow: hidden` wyłącza cień (docs/08-design-ui.md §1.3).
   const body = (
-    <>
+    <View style={styles.clip}>
       <BlurView intensity={intensity} style={StyleSheet.absoluteFill} tint={colors.isLight ? 'light' : 'dark'} />
       <View style={{ padding }}>{children}</View>
-    </>
+    </View>
   );
   const wrapperStyle = [styles.wrapper, { borderColor: colors.border, backgroundColor: colors.card }, style];
 
@@ -51,7 +53,6 @@ export const GlassCard: React.FC<GlassCardProps> = ({
 const styles = StyleSheet.create({
   wrapper: {
     borderRadius: 22,
-    overflow: 'hidden',
     borderWidth: 1,
     shadowColor: SHADOW,
     shadowOffset: { width: 0, height: 8 },
@@ -59,5 +60,6 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 5,
   },
+  clip: { borderRadius: 21, overflow: 'hidden' },
   pressed: { transform: [{ scale: 0.985 }] },
 });

@@ -2,7 +2,16 @@ import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { StyleSheet } from 'react-native';
 import { useSettingsStore, THEMES } from '../../../../application/store/useSettingsStore';
-import { Chip, EmotionPill, NoteTypeChip, PrimaryButton, SegmentedControl, StatusChip, GlassCard } from '..';
+import {
+  Chip,
+  EmotionPill,
+  NoteTypeChip,
+  PrimaryButton,
+  RecordButton,
+  SegmentedControl,
+  StatusChip,
+  GlassCard,
+} from '..';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
@@ -20,13 +29,24 @@ function flatStyle(node: any) {
   return StyleSheet.flatten(node.props.style) ?? {};
 }
 
+const mounted: any[] = [];
+
 function render(element: React.ReactElement) {
   let tree: any;
   act(() => {
     tree = renderer.create(element);
   });
+  mounted.push(tree);
   return tree;
 }
+
+afterEach(() => {
+  // Odmontowanie zatrzymuje animacje (pulsowanie, pierścienie), żeby proces Jest mógł się zakończyć.
+  while (mounted.length) {
+    const tree = mounted.pop();
+    act(() => tree.unmount());
+  }
+});
 
 function textOf(tree: any): string[] {
   return tree.root.findAllByType('Text' as never).map((t: any) => ([] as unknown[]).concat(t.props.children).join(''));
@@ -141,5 +161,38 @@ describe('prymitywy UI czytają kolory z motywu', () => {
     });
     expect(flatStyle(wrapper()).backgroundColor).toBe(THEMES.AppleLight.card);
     expect(flatStyle(wrapper()).borderColor).toBe(THEMES.AppleLight.border);
+  });
+});
+
+describe('RecordButton', () => {
+  it('w stanie spoczynku pokazuje mikrofon bez pierścieni i zgłasza naciśnięcie', () => {
+    const onPress = jest.fn();
+    const tree = render(<RecordButton isRecording={false} onPress={onPress} />);
+    const button = tree.root.find(
+      (n: any) => n.props.accessibilityLabel === 'Nagraj' && typeof n.props.onPress === 'function',
+    );
+    expect(tree.root.findAllByType('Feather' as never)).toHaveLength(1);
+    act(() => {
+      button.props.onPress();
+    });
+    expect(onPress).toHaveBeenCalledTimes(1);
+    expect(tree.root.findAll((n: any) => flatStyle(n).borderColor === 'rgba(239,68,68,0.65)')).toHaveLength(0);
+  });
+
+  it('w trakcie nagrywania ma etykietę „Zatrzymaj nagrywanie” i trzy pierścienie', () => {
+    const tree = render(<RecordButton isRecording onPress={() => {}} size={96} />);
+    expect(tree.root.findAll((n: any) => n.props.accessibilityLabel === 'Zatrzymaj nagrywanie').length).toBeGreaterThan(
+      0,
+    );
+    const rings = tree.root.findAll(
+      (n: any) => typeof n.type === 'string' && flatStyle(n).borderColor === 'rgba(239,68,68,0.65)',
+    );
+    expect(rings).toHaveLength(3);
+  });
+
+  it('nieaktywny przycisk nie zgłasza naciśnięcia (disabled)', () => {
+    const tree = render(<RecordButton isRecording={false} onPress={() => {}} disabled />);
+    const pressable = tree.root.find((n: any) => n.props.accessibilityLabel === 'Nagraj' && 'disabled' in n.props);
+    expect(pressable.props.disabled).toBe(true);
   });
 });

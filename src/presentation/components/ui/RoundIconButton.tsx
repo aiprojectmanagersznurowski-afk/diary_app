@@ -46,7 +46,7 @@ export const RoundIconButton: React.FC<RoundIconButtonProps> = ({
       {badge ? (
         typeof badge === 'number' ? (
           <View style={[styles.count, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.countText, { color: colors.onPrimary }]}>{badge}</Text>
+            <Text style={[styles.countText, { color: colors.onPrimary }]}>{badge > 9 ? '9+' : badge}</Text>
           </View>
         ) : (
           <View style={[styles.dot, { backgroundColor: badge === 'error' ? ACCENTS.error : colors.primary }]} />

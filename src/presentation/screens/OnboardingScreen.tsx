@@ -125,28 +125,7 @@ export const OnboardingScreen = () => {
     }
   };
 
-  if (goals) {
-    return (
-      <ScreenContainer paddingHorizontal={24} style={styles.centered}>
-        <View style={styles.successCircle}>
-          <Feather name="check" size={32} color={STATUS_TEXT} />
-        </View>
-        <GradientText text={pl.onboarding.goalsSet} style={styles.successTitle} />
-        <Text style={[styles.successSubtitle, { color: colors.textSecondary }]}>{pl.onboarding.goalsSetSubtitle}</Text>
-        <View style={styles.goalChips}>
-          {goals.map((goal) => (
-            <Chip key={goal} label={goal} />
-          ))}
-        </View>
-        <View style={styles.fullWidth}>
-          <PrimaryButton label={pl.onboarding.start} onPress={handleStart} loading={isSaving} />
-        </View>
-      </ScreenContainer>
-    );
-  }
-
   const isLastStep = currentStep === QUESTIONS.length - 1;
-  const hint = isRecording ? null : pl.onboarding.tapToRecord;
 
   return (
     <ScreenContainer paddingHorizontal={20} style={styles.main}>
@@ -158,38 +137,64 @@ export const OnboardingScreen = () => {
         </Text>
       </View>
 
-      <GlassCard style={styles.card} padding={24}>
-        <Text style={[styles.step, { color: colors.primary }]}>
-          {pl.onboarding.stepLabel(currentStep + 1, QUESTIONS.length)}
-        </Text>
-        <Text style={[styles.question, { color: colors.text }]}>{QUESTIONS[currentStep]}</Text>
+      {goals ? (
+        <GlassCard style={styles.card} padding={24}>
+          <View style={styles.successCircle}>
+            <Feather name="check" size={32} color={STATUS_TEXT} />
+          </View>
+          <Text style={[styles.successTitle, { color: colors.text }]}>{pl.onboarding.goalsSet}</Text>
+          <Text style={[styles.successSubtitle, { color: colors.textSecondary }]}>
+            {pl.onboarding.goalsSetSubtitle}
+          </Text>
+          <View style={styles.goalChips}>
+            {goals.map((goal) => (
+              <Chip key={goal} label={goal} />
+            ))}
+          </View>
+          <View style={styles.fullWidth}>
+            <PrimaryButton label={pl.onboarding.start} onPress={handleStart} loading={isSaving} />
+          </View>
+        </GlassCard>
+      ) : (
+        <GlassCard style={styles.card} padding={24}>
+          <Text style={[styles.step, { color: colors.primary }]}>
+            {pl.onboarding.stepLabel(currentStep + 1, QUESTIONS.length)}
+          </Text>
+          <Text style={[styles.question, { color: colors.text }]}>{QUESTIONS[currentStep]}</Text>
 
-        <View style={styles.recordArea}>
-          {isProcessing ? (
-            <View style={styles.processing}>
-              <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={[styles.processingText, { color: colors.text }]}>
-                {isLastStep ? pl.onboarding.analyzing : pl.onboarding.processing}
-              </Text>
-            </View>
-          ) : (
-            <>
-              <RecordButton isRecording={isRecording} onPress={handleRecordPress} size={96} />
-              {isRecording ? (
-                <Text style={styles.timer}>{formatTimer(seconds)}</Text>
-              ) : (
-                <Text style={[styles.hint, { color: colors.textSecondary }]}>{hint}</Text>
-              )}
-            </>
-          )}
-        </View>
+          <View style={styles.recordArea}>
+            {isProcessing ? (
+              <View style={styles.processing}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={[styles.processingText, { color: colors.text }]}>
+                  {isLastStep ? pl.onboarding.analyzing : pl.onboarding.processing}
+                </Text>
+              </View>
+            ) : (
+              <>
+                <RecordButton isRecording={isRecording} onPress={handleRecordPress} size={96} />
+                {isRecording ? (
+                  <>
+                    <Text style={styles.timer}>{pl.onboarding.recording(formatTimer(seconds))}</Text>
+                    <Text style={[styles.hint, { color: colors.textSecondary }]}>{pl.onboarding.tapToStop}</Text>
+                  </>
+                ) : (
+                  <Text style={[styles.hint, { color: colors.textSecondary }]}>{pl.onboarding.tapToRecord}</Text>
+                )}
+              </>
+            )}
+          </View>
 
-        <View style={styles.dots}>
-          {QUESTIONS.map((q, i) => (
-            <View key={q} style={[styles.dot, { backgroundColor: i <= currentStep ? colors.primary : colors.track }]} />
-          ))}
-        </View>
-      </GlassCard>
+          <View style={styles.dots}>
+            {QUESTIONS.map((q, i) => (
+              <View
+                key={q}
+                style={[styles.dot, { backgroundColor: i <= currentStep ? colors.primary : colors.track }]}
+              />
+            ))}
+          </View>
+        </GlassCard>
+      )}
 
       {error ? (
         <View style={styles.errorBox}>
@@ -197,24 +202,25 @@ export const OnboardingScreen = () => {
         </View>
       ) : null}
 
-      <Pressable
-        onPress={handleSkip}
-        disabled={isSaving || isProcessing || isRecording}
-        style={styles.skip}
-        accessibilityRole="button"
-      >
-        <Text style={[styles.skipText, { color: colors.textSecondary }]}>{pl.onboarding.skip}</Text>
-      </Pressable>
+      {!goals ? (
+        <Pressable
+          onPress={handleSkip}
+          disabled={isSaving || isProcessing || isRecording}
+          style={styles.skip}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.skipText, { color: colors.textSecondary }]}>{pl.onboarding.skip}</Text>
+        </Pressable>
+      ) : null}
     </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
   main: { paddingTop: 72, gap: 22 },
-  centered: { alignItems: 'center', justifyContent: 'center', gap: 12 },
   header: { gap: 2 },
   hello: { fontSize: 22, fontWeight: '700' },
-  appName: { fontSize: 34, fontWeight: '800', letterSpacing: -0.5 },
+  appName: { fontSize: 38, fontWeight: '800', letterSpacing: -0.5 },
   subtitle: { fontSize: 16, lineHeight: 24, marginTop: 6 },
   card: { alignItems: 'center' },
   step: { fontSize: 12, fontWeight: '700', letterSpacing: 2, textAlign: 'center' },
@@ -245,8 +251,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 6,
   },
-  successTitle: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5, textAlign: 'center' },
-  successSubtitle: { fontSize: 15, textAlign: 'center', lineHeight: 22 },
-  goalChips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 10 },
+  successTitle: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5, textAlign: 'center', lineHeight: 25 },
+  successSubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 18, marginTop: 2, marginBottom: 12 },
+  goalChips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   fullWidth: { alignSelf: 'stretch', marginTop: 14 },
 });
