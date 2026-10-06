@@ -93,7 +93,7 @@ flowchart LR
 
 ## Faza 7: Web i eksport
 
-- [ ] Zależności webowe Expo: `react-native-web`, `react-dom`, `@expo/metro-runtime`
+- [x] Zależności webowe Expo: `react-native-web`, `react-dom`, `@expo/metro-runtime`
 - [ ] Web: bundle bez `expo-sqlite` (kolejka nagrań w wariancie platformowym `*.web.ts`)
 - [ ] Układ dla komputera: graf i czat obok siebie, lista dokumentów
 - [ ] Eksport `.zip` z plikami `.md` (sejf Obsidiana)
