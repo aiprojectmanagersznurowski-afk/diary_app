@@ -1,209 +1,195 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Animated, Text } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { BlurView } from 'expo-blur';
+import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { useDiaryStore } from '../../application/store/useDiaryStore';
+import { ACCENTS, RecordButton, formatTimer, useTheme } from './ui';
+import { pl } from '../i18n/pl';
 
 interface Props {
   isRecording: boolean;
+  /** Dotknięcie przycisku stop w overlayu. */
+  onStop: () => void;
 }
 
-// LERP function for smoothing
-const lerp = (start: number, end: number, amt: number) => {
-  return (1 - amt) * start + amt * end;
+const EQ_BARS = 10;
+const WAVES = [
+  { size: 220, delayMs: 0, metering: 1 },
+  { size: 260, delayMs: 800, metering: 0.7 },
+  { size: 240, delayMs: 1600, metering: 0.4 },
+] as const;
+
+const lerp = (from: number, to: number, amount: number) => (1 - amount) * from + amount * to;
+
+/** Pulsująca fala (miękki radialny gradient); skala zależy od głośności nagrywania. */
+const Wave: React.FC<{ id: string; color: string; size: number; delayMs: number; level: Animated.Value }> = ({
+  id,
+  color,
+  size,
+  delayMs,
+  level,
+}) => {
+  const breathe = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const animation = Animated.sequence([
+      Animated.delay(delayMs),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(breathe, {
+            toValue: 1,
+            duration: 1200,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(breathe, {
+            toValue: 0,
+            duration: 1200,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      ),
+    ]);
+    animation.start();
+    return () => animation.stop();
+  }, [breathe, delayMs]);
+
+  const scale = Animated.multiply(breathe.interpolate({ inputRange: [0, 1], outputRange: [0.75, 1.08] }), level);
+  return (
+    <Animated.View
+      style={[
+        styles.wave,
+        { width: size, height: size },
+        { opacity: breathe.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.8] }), transform: [{ scale }] },
+      ]}
+    >
+      <Svg width={size} height={size}>
+        <Defs>
+          <RadialGradient id={id} cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor={color} stopOpacity={1} />
+            <Stop offset="0.7" stopColor={color} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Circle cx={size / 2} cy={size / 2} r={size / 2} fill={`url(#${id})`} />
+      </Svg>
+    </Animated.View>
+  );
 };
 
-export const RecordingOverlay: React.FC<Props> = ({ isRecording }) => {
-  const [durationStr, setDurationStr] = useState('00:00');
+/** Pasek equalizera: wysokość animowana przez scaleY (natywny sterownik), przesunięta w fazie. */
+const EqBar: React.FC<{ index: number; color: string }> = ({ index, color }) => {
+  const level = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const animation = Animated.sequence([
+      Animated.delay(index * 80),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(level, {
+            toValue: 1,
+            duration: 500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(level, {
+            toValue: 0,
+            duration: 500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      ),
+    ]);
+    animation.start();
+    return () => animation.stop();
+  }, [level, index]);
+  return (
+    <Animated.View
+      style={[
+        styles.eqBar,
+        {
+          backgroundColor: color,
+          transform: [{ scaleY: level.interpolate({ inputRange: [0, 1], outputRange: [0.25, 1] }) }],
+        },
+      ]}
+    />
+  );
+};
 
-  // Use Animated.Value for Native Driver compatibility
-  const waveScale1 = useRef(new Animated.Value(1)).current;
-  const waveScale2 = useRef(new Animated.Value(1)).current;
-  const waveScale3 = useRef(new Animated.Value(1)).current;
-  const waveOpacity = useRef(new Animated.Value(0)).current;
-
-  // We keep the current target scale in a mutable ref to lerp towards it
-  const currentScaleRef = useRef(1);
+/** Pełnoekranowy overlay nagrywania: rozmycie, fale reagujące na głos, timer, equalizer i stop. */
+export const RecordingOverlay: React.FC<Props> = ({ isRecording, onStop }) => {
+  const { colors } = useTheme();
+  const [seconds, setSeconds] = useState(0);
+  const level = useRef(new Animated.Value(1)).current;
+  const smoothed = useRef(1);
 
   useEffect(() => {
-    let animationFrameId: number;
-    let timerInterval: NodeJS.Timeout;
-    
-    if (isRecording) {
-      setDurationStr('00:00');
-      timerInterval = setInterval(() => {
-        const millis = useDiaryStore.getState().getRecordingDuration();
-        const rawDb = useDiaryStore.getState().getCurrentMetering();
-        console.log('[RecordingOverlay] timer tick, duration:', millis, 'metering:', rawDb);
-        const totalSeconds = Math.floor(millis / 1000);
-        const mins = Math.floor(totalSeconds / 60);
-        const secs = totalSeconds % 60;
-        setDurationStr(`${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
-      }, 500);
-
-      // Show waves
-      Animated.timing(waveOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-
-      const updateWave = () => {
-        const store = useDiaryStore.getState();
-        const rawDb = store.getCurrentMetering(); // e.g., -160 (silence) to 0 (loud)
-        
-        // Normalize -60..0 to 0..1 (ignore anything below -60 as silence)
-        let normalized = (rawDb + 60) / 60;
-        if (normalized < 0) normalized = 0;
-        if (normalized > 1) normalized = 1;
-
-        // Target scale: 1.0 (silence) to ~2.5 (loud)
-        const targetScale = 1 + normalized * 1.5;
-
-        // LERP for smooth transition - 0.05 factor since updates come every 500ms
-        currentScaleRef.current = lerp(currentScaleRef.current, targetScale, 0.05);
-
-        Animated.parallel([
-          Animated.timing(waveScale1, {
-            toValue: currentScaleRef.current,
-            duration: 16, // roughly 1 frame
-            useNativeDriver: true,
-          }),
-          Animated.timing(waveScale2, {
-            toValue: 1 + (currentScaleRef.current - 1) * 0.7,
-            duration: 16,
-            useNativeDriver: true,
-          }),
-          Animated.timing(waveScale3, {
-            toValue: 1 + (currentScaleRef.current - 1) * 0.4,
-            duration: 16,
-            useNativeDriver: true,
-          })
-        ]).start();
-
-        animationFrameId = requestAnimationFrame(updateWave);
-      };
-
-      animationFrameId = requestAnimationFrame(updateWave);
-
-    } else {
-      // Hide waves smoothly
-      Animated.timing(waveOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-
-      Animated.parallel([
-        Animated.timing(waveScale1, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.timing(waveScale2, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.timing(waveScale3, { toValue: 1, duration: 200, useNativeDriver: true }),
-      ]).start();
-      
-      currentScaleRef.current = 1;
-    }
-
+    if (!isRecording) return undefined;
+    setSeconds(0);
+    smoothed.current = 1;
+    const timer = setInterval(() => {
+      setSeconds(Math.floor(useDiaryStore.getState().getRecordingDuration() / 1000));
+    }, 500);
+    const meter = setInterval(() => {
+      // Głośność w dB (−160 cisza … 0 głośno) → 0..1 → skala fal 1.0..1.6
+      const normalized = Math.min(1, Math.max(0, (useDiaryStore.getState().getCurrentMetering() + 60) / 60));
+      smoothed.current = lerp(smoothed.current, 1 + normalized * 0.6, 0.35);
+      Animated.timing(level, { toValue: smoothed.current, duration: 100, useNativeDriver: true }).start();
+    }, 100);
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-      if (timerInterval) {
-        clearInterval(timerInterval);
-      }
+      clearInterval(timer);
+      clearInterval(meter);
     };
-  }, [isRecording, waveOpacity, waveScale1, waveScale2, waveScale3]);
+  }, [isRecording, level]);
 
-  // Optymalizacja: BlurView mocno obciąża GPU. 
-  // Całkowicie odmontowujemy go z drzewa, gdy isRecording === false.
-  // Zostawiamy jedynie moment wygaszania (animacja), więc czekamy z odmontowaniem 
-  // albo możemy po prostu odmontować natychmiast - co spowoduje gwałtowne zniknięcie blura.
-  // Aby zniknięcie było płynne, musielibyśmy zaimplementować lokalny stan "isUnmounting".
-  // Ponieważ użytkownik wymógł rygor unikania re-renderów, dla idealnej optymalizacji 
-  // odmontowujemy od razu (BlurView zniknie gwałtownie, co nie jest błędem - to czysta wydajność).
-  
-  // Actually, wait, let's keep it simple: if (!isRecording) return null. The fade out won't be visible 
-  // because the component unmounts. Let's just unmount it immediately.
+  const waveColors = useMemo(() => colors.gradientColors, [colors.gradientColors]);
+
+  // BlurView mocno obciąża GPU, więc overlay jest w ogóle odmontowany poza nagrywaniem.
   if (!isRecording) return null;
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
-      
-      <View style={styles.wavesContainer}>
-        <Animated.View style={[
-          styles.wave, 
-          styles.wave1, 
-          { 
-            opacity: waveOpacity,
-            transform: [{ scale: waveScale1 }] 
-          }
-        ]} />
-        <Animated.View style={[
-          styles.wave, 
-          styles.wave2, 
-          { 
-            opacity: waveOpacity,
-            transform: [{ scale: waveScale2 }] 
-          }
-        ]} />
-        <Animated.View style={[
-          styles.wave, 
-          styles.wave3, 
-          { 
-            opacity: waveOpacity,
-            transform: [{ scale: waveScale3 }] 
-          }
-        ]} />
+    <View style={[StyleSheet.absoluteFill, styles.root]}>
+      <BlurView intensity={40} tint={colors.isLight ? 'light' : 'dark'} style={StyleSheet.absoluteFill} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.veil }]} />
+
+      <View style={styles.liveRow}>
+        <View style={[styles.liveDot, { backgroundColor: ACCENTS.error }]} />
+        <Text style={[styles.liveText, { color: ACCENTS.error }]}>{pl.overlay.recording}</Text>
       </View>
 
-      <Animated.View style={[styles.timerContainer, { opacity: waveOpacity }]}>
-        <Text style={styles.timerText}>{durationStr}</Text>
-      </Animated.View>
+      <View style={styles.waves}>
+        {WAVES.map((wave, i) => (
+          <Wave
+            key={wave.size}
+            id={`recWave${i}`}
+            color={waveColors[i] ?? waveColors[0]}
+            size={wave.size}
+            delayMs={wave.delayMs}
+            level={level}
+          />
+        ))}
+        <RecordButton isRecording onPress={onStop} size={96} />
+      </View>
+
+      <Text style={[styles.timer, { color: colors.text }]}>{formatTimer(seconds)}</Text>
+      <View style={styles.eq}>
+        {Array.from({ length: EQ_BARS }, (_, i) => (
+          <EqBar key={i} index={i} color={colors.primary} />
+        ))}
+      </View>
+      <Text style={[styles.hint, { color: colors.textSecondary }]}>{pl.overlay.hint}</Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  wavesContainer: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  wave: {
-    position: 'absolute',
-    borderRadius: 999,
-  },
-  wave1: {
-    width: 250,
-    height: 250,
-    backgroundColor: 'rgba(244, 114, 182, 0.05)',
-  },
-  wave2: {
-    width: 180,
-    height: 180,
-    backgroundColor: 'rgba(167, 139, 250, 0.1)',
-  },
-  wave3: {
-    width: 120,
-    height: 120,
-    backgroundColor: 'rgba(96, 165, 250, 0.15)',
-  },
-  timerContainer: {
-    position: 'absolute',
-    top: 100, // Show timer near top
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  timerText: {
-    color: '#fff',
-    fontSize: 32,
-    fontWeight: '300',
-    letterSpacing: 2,
-    fontVariant: ['tabular-nums'], // keep timer numbers aligned
-  }
+  root: { alignItems: 'center', justifyContent: 'center', gap: 22, paddingHorizontal: 40, zIndex: 70 },
+  liveRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  liveDot: { width: 9, height: 9, borderRadius: 5 },
+  liveText: { fontSize: 13, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase' },
+  waves: { width: 260, height: 260, alignItems: 'center', justifyContent: 'center' },
+  wave: { position: 'absolute' },
+  timer: { fontSize: 46, fontWeight: '800', letterSpacing: -1, fontVariant: ['tabular-nums'] },
+  eq: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 36 },
+  eqBar: { width: 4, height: 34, borderRadius: 2 },
+  hint: { fontSize: 13, lineHeight: 19, textAlign: 'center' },
 });
