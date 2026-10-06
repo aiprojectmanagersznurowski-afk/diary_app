@@ -4,13 +4,14 @@
     "slug": "diary-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/splash-icon.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.michal.sznurowski.diary-app",
       "appleTeamId": "SB2HT4N2JQ",
       "infoPlist": {
+        "CFBundleDisplayName": "Vocaly",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
