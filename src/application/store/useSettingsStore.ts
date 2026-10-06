@@ -16,6 +16,19 @@ export interface ThemeColors {
   tileBorder: string;
   tileTint: 'dark' | 'light' | 'default';
   gradientColors: readonly [string, string, ...string[]];
+  /** Tokeny designu z docs/08-design-ui.md §1 (Faza 8). */
+  isLight: boolean;
+  border: string;
+  card: string;
+  card2: string;
+  segOn: string;
+  track: string;
+  sheet: string;
+  veil: string;
+  onPrimary: string;
+  link: string;
+  /** Trzy plamy aurory za treścią (kolor z alfą). */
+  aurora: readonly [string, string, string];
 }
 
 export const THEMES: Record<ThemeName, ThemeColors> = {
@@ -27,6 +40,17 @@ export const THEMES: Record<ThemeName, ThemeColors> = {
     tileBorder: 'rgba(255,255,255,0.1)',
     tileTint: 'dark',
     gradientColors: ['#A78BFA', '#F472B6', '#38BDF8'],
+    isLight: false,
+    border: 'rgba(255,255,255,0.10)',
+    card: 'rgba(255,255,255,0.06)',
+    card2: 'rgba(255,255,255,0.08)',
+    segOn: 'rgba(255,255,255,0.16)',
+    track: 'rgba(255,255,255,0.10)',
+    sheet: 'rgba(24,24,28,0.94)',
+    veil: 'rgba(0,0,0,0.6)',
+    onPrimary: '#0B0B12',
+    link: 'rgba(226,232,240,0.55)',
+    aurora: ['rgba(167,139,250,0.50)', 'rgba(244,114,182,0.38)', 'rgba(56,189,248,0.36)'],
   },
   Sepia: {
     background: '#F4ECD8',
@@ -36,6 +60,17 @@ export const THEMES: Record<ThemeName, ThemeColors> = {
     tileBorder: 'rgba(0,0,0,0.1)',
     tileTint: 'light',
     gradientColors: ['#D97757', '#C48A71', '#8C5A46'],
+    isLight: true,
+    border: 'rgba(0,0,0,0.10)',
+    card: 'rgba(255,255,255,0.42)',
+    card2: 'rgba(74,59,50,0.06)',
+    segOn: 'rgba(255,255,255,0.75)',
+    track: 'rgba(74,59,50,0.09)',
+    sheet: 'rgba(250,244,230,0.97)',
+    veil: 'rgba(244,236,216,0.6)',
+    onPrimary: '#FFFFFF',
+    link: 'rgba(74,59,50,0.38)',
+    aurora: ['rgba(217,119,87,0.20)', 'rgba(196,138,113,0.18)', 'rgba(140,90,70,0.13)'],
   },
   AppleLight: {
     background: '#FFFFFF',
@@ -45,6 +80,17 @@ export const THEMES: Record<ThemeName, ThemeColors> = {
     tileBorder: 'rgba(0,0,0,0.05)',
     tileTint: 'light',
     gradientColors: ['#007AFF', '#5856D6', '#FF2D55'],
+    isLight: true,
+    border: 'rgba(0,0,0,0.05)',
+    card: 'rgba(255,255,255,0.82)',
+    card2: 'rgba(0,0,0,0.04)',
+    segOn: '#FFFFFF',
+    track: 'rgba(0,0,0,0.07)',
+    sheet: 'rgba(255,255,255,0.97)',
+    veil: 'rgba(255,255,255,0.6)',
+    onPrimary: '#FFFFFF',
+    link: 'rgba(28,28,30,0.35)',
+    aurora: ['rgba(0,122,255,0.16)', 'rgba(88,86,214,0.13)', 'rgba(255,45,85,0.11)'],
   },
 };
 

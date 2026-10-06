@@ -48,15 +48,15 @@ export default function App() {
     };
   }, []);
 
+  const themeColors = THEMES[theme];
+
   if (initializing || !hasHydrated) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#ffffff" />
+      <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <ActivityIndicator size="large" color={themeColors.primary} />
       </View>
     );
   }
-
-  const themeColors = THEMES[theme];
 
   const appTheme = {
     ...DefaultTheme,
@@ -69,11 +69,14 @@ export default function App() {
   return (
     <DependenciesProvider>
       <NavigationContainer theme={appTheme}>
-        <StatusBar style="light" />
+        <StatusBar style={themeColors.isLight ? 'dark' : 'light'} />
         <Stack.Navigator
           screenOptions={{
             headerShown: false,
+            // Brief (docs/08-design-ui.md §0): ekran wjeżdża od dołu z fade, ~400 ms.
             animation: 'fade_from_bottom',
+            animationDuration: 400,
+            contentStyle: { backgroundColor: themeColors.background },
           }}
         >
           {!user ? (
@@ -100,7 +103,6 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
