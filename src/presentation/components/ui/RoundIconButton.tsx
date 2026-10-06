@@ -41,7 +41,9 @@ export const RoundIconButton: React.FC<RoundIconButtonProps> = ({
         pressed && styles.pressed,
       ]}
     >
-      <BlurView intensity={20} style={StyleSheet.absoluteFill} tint={colors.isLight ? 'light' : 'dark'} />
+      <View style={[styles.blurClip, { borderRadius: size / 2 }]} pointerEvents="none">
+        <BlurView intensity={20} style={StyleSheet.absoluteFill} tint={colors.isLight ? 'light' : 'dark'} />
+      </View>
       <Feather name={icon} size={18} color={iconColor ?? colors.text} />
       {badge ? (
         typeof badge === 'number' ? (
@@ -57,9 +59,10 @@ export const RoundIconButton: React.FC<RoundIconButtonProps> = ({
 };
 
 const styles = StyleSheet.create({
-  button: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, overflow: 'hidden' },
+  button: { alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  blurClip: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
   pressed: { transform: [{ scale: 0.94 }] },
-  dot: { position: 'absolute', top: 7, right: 7, width: 8, height: 8, borderRadius: 4 },
+  dot: { position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 4 },
   count: {
     position: 'absolute',
     top: 2,

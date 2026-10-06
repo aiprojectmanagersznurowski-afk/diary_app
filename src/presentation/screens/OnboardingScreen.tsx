@@ -250,6 +250,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
+    alignSelf: 'center',
   },
   successTitle: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5, textAlign: 'center', lineHeight: 25 },
   successSubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 18, marginTop: 2, marginBottom: 12 },
