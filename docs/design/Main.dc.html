@@ -1,0 +1,2332 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Vocaly – prototyp</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.stage,.stage *{box-sizing:border-box}
+.stage{width:1080px;height:980px;background:#0E0E12;display:flex;align-items:center;justify-content:center;gap:80px;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.stage button{font-family:inherit}
+.dev-col{display:flex;flex-direction:column;align-items:center;gap:18px}
+.dev-cap{color:#8E8E99;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700}
+.dev-note{color:#7A7A85;font-size:12px;max-width:230px;text-align:center;line-height:1.45;margin:0}
+.iphone{width:417px;height:876px;border-radius:67px;background:#1C1C20;padding:12px;box-shadow:0 0 0 2px #45454C,0 0 0 5px #0A0A0C,0 40px 90px rgba(0,0,0,0.6);position:relative}
+.screen-wrap{position:relative;width:393px;height:852px;border-radius:55px;overflow:hidden;background:var(--bg);color:var(--text);isolation:isolate;transition:background .35s,color .35s}
+.theme-dark{--bg:#000000;--text:#E2E8F0;--sec:#94A3B8;--pri:#A78BFA;--border:rgba(255,255,255,0.10);--card:rgba(255,255,255,0.06);--card2:rgba(255,255,255,0.08);--segOn:rgba(255,255,255,0.16);--grad:linear-gradient(90deg,#A78BFA,#F472B6,#38BDF8);--g1:#A78BFA;--g2:#F472B6;--g3:#38BDF8;--aur1:rgba(167,139,250,0.50);--aur2:rgba(244,114,182,0.38);--aur3:rgba(56,189,248,0.36);--sheet:rgba(24,24,28,0.94);--veil:rgba(0,0,0,0.6);--onPri:#0B0B12;--link:rgba(226,232,240,0.55);--track:rgba(255,255,255,0.10)}
+.theme-light{--bg:#FFFFFF;--text:#1C1C1E;--sec:#8E8E93;--pri:#007AFF;--border:rgba(0,0,0,0.05);--card:rgba(255,255,255,0.82);--card2:rgba(0,0,0,0.04);--segOn:#FFFFFF;--grad:linear-gradient(90deg,#007AFF,#5856D6,#FF2D55);--g1:#007AFF;--g2:#5856D6;--g3:#FF2D55;--aur1:rgba(0,122,255,0.16);--aur2:rgba(88,86,214,0.13);--aur3:rgba(255,45,85,0.11);--sheet:rgba(255,255,255,0.97);--veil:rgba(255,255,255,0.6);--onPri:#FFFFFF;--link:rgba(28,28,30,0.35);--track:rgba(0,0,0,0.07)}
+.theme-sepia{--bg:#F4ECD8;--text:#4A3B32;--sec:#7A6B62;--pri:#D97757;--border:rgba(0,0,0,0.10);--card:rgba(255,255,255,0.42);--card2:rgba(74,59,50,0.06);--segOn:rgba(255,255,255,0.75);--grad:linear-gradient(90deg,#D97757,#C48A71,#8C5A46);--g1:#D97757;--g2:#C48A71;--g3:#8C5A46;--aur1:rgba(217,119,87,0.20);--aur2:rgba(196,138,113,0.18);--aur3:rgba(140,90,70,0.13);--sheet:rgba(250,244,230,0.97);--veil:rgba(244,236,216,0.6);--onPri:#FFFFFF;--link:rgba(74,59,50,0.38);--track:rgba(74,59,50,0.09)}
+.aurora{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.au{position:absolute;border-radius:50%;filter:blur(70px)}
+.a1{width:320px;height:320px;left:-110px;top:-70px;background:var(--aur1);animation:drift 16s ease-in-out infinite alternate}
+.a2{width:280px;height:280px;right:-120px;top:200px;background:var(--aur2);animation:drift 19s ease-in-out infinite alternate-reverse}
+.a3{width:300px;height:300px;left:30px;bottom:-150px;background:var(--aur3);animation:drift 22s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(40px,30px) scale(1.15)}}
+.sbar{position:absolute;top:0;left:0;right:0;height:54px;display:flex;align-items:center;justify-content:space-between;padding:4px 30px 0 52px;z-index:200;font-size:16px;font-weight:600;color:var(--text);pointer-events:none}
+.sbar-r{display:flex;align-items:center;gap:6px}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:124px;height:36px;border-radius:20px;background:#000;z-index:210;display:flex;align-items:center;justify-content:space-between;padding:0 14px;transition:width .35s cubic-bezier(.2,.8,.2,1)}
+.island.live{width:170px}
+.isl-dot{width:9px;height:9px;border-radius:5px;background:#EF4444;animation:pulseOp 1s infinite}
+.isl-t{color:#F87171;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.homeind{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--text);opacity:.85;z-index:220;pointer-events:none}
+.screen{position:absolute;inset:0;z-index:2;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding:60px 20px 48px}
+.screen::-webkit-scrollbar{display:none}
+.noscroll{overflow:hidden}
+.anim-up{animation:pushUp .4s cubic-bezier(.2,.8,.2,1) both}
+.anim-back{animation:fadeBack .3s ease both}
+@keyframes pushUp{from{opacity:0;transform:translateY(46px)}to{opacity:1;transform:none}}
+@keyframes fadeBack{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+@keyframes pop{0%{opacity:0;transform:scale(.86)}100%{opacity:1;transform:none}}
+@keyframes pulseOp{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic.s14{width:14px;height:14px}.ic.s16{width:16px;height:16px}.ic.s18{width:18px;height:18px}
+.row{display:flex;align-items:center}
+.between{justify-content:space-between}
+.g6{gap:6px}.g8{gap:8px}.g10{gap:10px}.g12{gap:12px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.stack8{display:flex;flex-direction:column;gap:8px}
+.circ{width:40px;height:40px;border-radius:20px;display:flex;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--border);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);color:var(--text);cursor:pointer;padding:0;flex:none;position:relative}
+.circ .dot-on{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:4px;background:var(--pri)}
+.title{font-size:32px;font-weight:800;letter-spacing:-0.5px;margin:0;line-height:1.1}
+.gt{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.h1{font-size:28px;font-weight:800;letter-spacing:-0.5px;line-height:1.15;margin:10px 0 16px}
+.h2{font-size:20px;font-weight:800;letter-spacing:-0.5px;margin:0;line-height:1.25}
+.lbl{font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--sec);margin:26px 4px 10px}
+.lbl0{font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--sec);margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:22px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 8px 20px rgba(0,0,0,0.1);padding:16px;position:relative;color:var(--text)}
+.tap{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;transition:transform .15s}
+.tap:active{transform:scale(.985)}
+.body{font-size:15px;line-height:1.5;margin:0}
+.sec{color:var(--sec)}
+.small{font-size:13px;line-height:1.4}
+.clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.clamp3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:12px;padding:7px 11px;font-size:13px;font-weight:600;background:var(--card2);border:1px solid var(--border);color:var(--text);cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--pri);color:var(--onPri);border-color:transparent}
+.chip.static{cursor:default}
+.dot{width:8px;height:8px;border-radius:4px;flex:none}
+.pill{display:inline-flex;align-items:center;border-radius:12px;padding:4px 10px;font-size:12px;font-weight:700;color:#1A1625;white-space:nowrap}
+.stchip{border-radius:12px;padding:4px 9px;font-size:11.5px;font-weight:700;color:#0B0B12;white-space:nowrap}
+.pulse{animation:pulseOp 1.2s ease-in-out infinite}
+.seg{display:flex;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:3px;gap:3px;margin:24px 0 14px}
+.seg button{flex:1;height:36px;border:0;border-radius:9px;background:transparent;color:var(--sec);font-size:14px;font-weight:600;cursor:pointer}
+.seg button.on{background:var(--segOn);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,0.12)}
+.spinner{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--track);border-top-color:var(--pri);animation:spin .8s linear infinite;flex:none}
+.spinner.sm{width:16px;height:16px;border-width:2px}
+.recbtn{width:76px;height:76px;border-radius:38px;border:0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(135deg,#A78BFA,#F472B6,#60A5FA);box-shadow:0 10px 30px rgba(244,114,182,0.45);position:relative;padding:0;flex:none}
+.recbtn .ic{width:30px;height:30px}
+.recbtn.big{width:96px;height:96px;border-radius:48px}
+.recbtn.big .ic{width:36px;height:36px}
+.recbtn.live{background:linear-gradient(135deg,#EF4444,#B91C1C);box-shadow:0 10px 30px rgba(239,68,68,0.5)}
+.fillw{fill:#FFFFFF;stroke:none}
+.ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(239,68,68,0.65);animation:ringOut 1.8s ease-out infinite;pointer-events:none}
+.ring.r2{animation-delay:.6s}.ring.r3{animation-delay:1.2s}
+@keyframes ringOut{from{transform:scale(1);opacity:.9}to{transform:scale(2.3);opacity:0}}
+.fab{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);z-index:20}
+.procpill{position:absolute;left:50%;bottom:126px;transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:20px;background:var(--sheet);border:1px solid var(--border);box-shadow:0 8px 20px rgba(0,0,0,0.2);font-size:14px;font-weight:600;white-space:nowrap;animation:pop .25s both}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 0 14px;min-height:44px}
+.bar-title{font-size:16px;font-weight:700;letter-spacing:-0.2px}
+.txtbtn{background:none;border:0;color:var(--pri);font-size:16px;font-weight:600;cursor:pointer;padding:10px 4px;min-height:44px}
+.txtbtn.strong{font-weight:800}
+.login{display:flex;flex-direction:column;justify-content:space-between;padding:60px 28px 64px}
+.demo{position:absolute;top:58px;right:14px;display:flex;align-items:center;gap:7px;background:none;border:0;color:var(--sec);font-size:11px;font-weight:600;cursor:pointer;opacity:.6;padding:6px;z-index:3}
+.sw{width:30px;height:18px;border-radius:9px;background:var(--track);position:relative;transition:background .2s;flex:none}
+.sw .knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:7px;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.sw.on{background:#34D399}
+.sw.on .knob{left:14px}
+.login-mid{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:150px;text-align:center}
+.appicon{width:112px;height:112px;border-radius:28px;background:#0B0A12;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(255,255,255,0.08),0 16px 50px rgba(167,139,250,0.45);margin-bottom:8px}
+.appicon svg{filter:drop-shadow(0 0 6px rgba(244,114,182,0.8))}
+.login-title{font-size:44px}
+.login-sub{margin:0;font-size:17px;color:var(--sec);font-weight:500}
+.login-btns{display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.wbtn{height:54px;border-radius:16px;background:#FFFFFF;color:#111114;border:1px solid rgba(0,0,0,0.08);font-size:17px;font-weight:600;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,0.15)}
+.spin-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;height:120px;justify-content:center}
+.legal{font-size:12px;color:var(--sec);text-align:center;margin:8px 10px 0;line-height:1.4}
+.onb{display:flex;flex-direction:column;gap:22px;padding-top:80px}
+.onb-hi{font-size:22px;font-weight:700;margin:0 0 2px;color:var(--text)}
+.onb-card{display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px 20px 26px;gap:6px}
+.onb-q{font-size:19px;font-weight:700;line-height:1.35;margin:0 0 18px;letter-spacing:-0.2px}
+.onb-rec{display:flex;flex-direction:column;align-items:center;gap:14px;min-height:150px;justify-content:center}
+.onb-hint{font-size:13px;color:var(--sec);margin:0}
+.timer{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;color:#F87171}
+.odots{display:flex;gap:6px;margin-top:10px}
+.odot{width:22px;height:4px;border-radius:2px;background:var(--track)}
+.odot.on{background:var(--pri)}
+.okcirc{width:64px;height:64px;border-radius:32px;background:#34D399;color:#062E1F;display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+.okcirc .ic{width:32px;height:32px;stroke-width:3}
+.pbtn{height:54px;border-radius:16px;border:0;background:var(--pri);color:var(--onPri);font-size:17px;font-weight:700;cursor:pointer;width:100%;margin-top:14px}
+.linkbtn{background:none;border:0;color:var(--sec);font-size:15px;font-weight:600;cursor:pointer;padding:12px;align-self:center;text-decoration:underline;text-underline-offset:3px}
+.home-head{display:flex;align-items:center;justify-content:space-between;margin:2px 0 14px}
+.streak{display:flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:18px;background:var(--card);border:1px solid var(--border);font-weight:800;font-size:15px;color:var(--text);cursor:pointer}
+.flame{width:18px;height:18px}
+.date{font-weight:600;margin:0 0 4px 2px}
+.week{margin-top:18px;display:flex;flex-direction:column;gap:12px}
+.minibars{display:flex;align-items:flex-end;gap:5px;height:52px}
+.mbw{display:flex;flex-direction:column;align-items:center;gap:4px}
+.mb{width:12px;border-radius:5px;background:var(--track)}
+.mb.now{background:var(--grad)}
+.mbl{font-size:9.5px;color:var(--sec);font-weight:600}
+.wlink{color:var(--pri);font-weight:700;font-size:14px}
+.rec-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.rec-row.last{border-bottom:0}
+.rec-ic{width:36px;height:36px;border-radius:12px;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--sec);flex:none}
+.rec-mid{flex:1;min-width:0}
+.rec-t{font-size:15px;font-weight:600}
+.rec-s{font-size:12px;color:var(--sec);margin-top:2px}
+.pbar{height:3px;border-radius:2px;background:var(--track);margin-top:7px;overflow:hidden}
+.pbar span{display:block;height:100%;background:var(--grad);border-radius:2px;transition:width .6s}
+.retry{display:flex;align-items:center;gap:6px;background:rgba(248,113,113,0.14);color:#F87171;border:1px solid rgba(248,113,113,0.35);border-radius:12px;font-size:13px;font-weight:700;padding:8px 12px;cursor:pointer;margin:0 0 12px 48px}
+.ecard{display:flex;flex-direction:column;gap:8px}
+.ecard-date{font-size:13px;font-weight:600;color:var(--sec)}
+.today{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--onPri);background:var(--pri);padding:3px 8px;border-radius:8px}
+.ecard-dom{font-size:17px;font-weight:700;letter-spacing:-0.2px;line-height:1.3}
+.hl{animation:hlGlow 2.6s ease both}
+@keyframes hlGlow{0%{box-shadow:0 0 0 2px var(--pri),0 0 34px var(--pri)}70%{box-shadow:0 0 0 2px var(--pri),0 0 18px var(--pri)}100%{box-shadow:0 8px 20px rgba(0,0,0,0.1)}}
+.frow{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -20px 14px;padding:0 20px}
+.frow::-webkit-scrollbar{display:none}
+.ncard{display:flex;flex-direction:column;gap:8px}
+.tchip{display:inline-flex;align-items:center;gap:6px;border-radius:12px;padding:5px 10px 5px 8px;font-size:12px;font-weight:700;color:var(--text)}
+.tchip.lg{font-size:13px;padding:7px 12px 7px 10px}
+.ntitle{font-size:16px;font-weight:700;letter-spacing:-0.2px;line-height:1.3}
+.meta{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sec);margin-top:12px}
+.empty{text-align:center;color:var(--sec);font-size:14px;padding:30px 10px}
+.secard{transition:box-shadow .2s,border-color .2s}
+.secard.selectable{padding-right:46px}
+.secard.selected{border-color:var(--pri);box-shadow:0 0 0 1.5px var(--pri),0 8px 20px rgba(0,0,0,0.1)}
+.selov{position:absolute;inset:0;border:0;background:transparent;border-radius:22px;cursor:pointer;padding:0;z-index:2}
+.selmark{position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:13px;border:2px solid var(--sec);display:flex;align-items:center;justify-content:center;color:var(--onPri)}
+.selmark .ic{width:15px;height:15px;stroke-width:3;opacity:0}
+.selmark.on{background:var(--pri);border-color:var(--pri)}
+.selmark.on .ic{opacity:1}
+.dom{font-size:24px;font-weight:800;letter-spacing:-0.5px;line-height:1.2;margin:0 0 12px}
+.quote{display:flex;gap:8px;margin-top:12px;font-size:15px;font-style:italic;line-height:1.45;color:var(--text)}
+.qmark{font-size:30px;line-height:.9;font-weight:800;color:var(--pri);font-style:normal}
+.emo-row{display:flex;align-items:center;gap:10px}
+.li{display:flex;align-items:flex-start;gap:10px;font-size:15px;line-height:1.4}
+.ok{width:22px;height:22px;border-radius:11px;background:rgba(52,211,153,0.18);color:#34D399;display:flex;align-items:center;justify-content:center;flex:none}
+.ok .ic{width:13px;height:13px;stroke-width:3}
+.icw{width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex:none}
+.voice{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--pri);margin-bottom:8px}
+.idea{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:16px;background:var(--card2);border:1px solid var(--border);margin-top:8px}
+.idea-ic{width:32px;height:32px;border-radius:10px;background:rgba(251,191,36,0.18);color:#FBBF24;display:flex;align-items:center;justify-content:center;flex:none}
+.rel{display:flex;align-items:center;gap:12px;padding:14px}
+.rel-dot{width:12px;height:12px;border-radius:6px;flex:none}
+.rel-mid{flex:1;min-width:0}
+.rel-t{font-size:15px;font-weight:600;line-height:1.3}
+.rel-tag{font-size:11px;font-weight:700;color:var(--pri);background:var(--card2);padding:4px 8px;border-radius:10px;white-space:nowrap;flex:none}
+.dn{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);background:none;border-left:0;border-right:0;border-top:0;width:100%;text-align:left;cursor:pointer;color:var(--text);font:inherit}
+.dn.last{border-bottom:0}
+.dn-t{flex:1;font-size:14px;font-weight:600;min-width:0}
+.overlay{position:absolute;inset:0;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:var(--veil);backdrop-filter:blur(34px);-webkit-backdrop-filter:blur(34px);animation:fadeIn .25s ease both;padding:0 40px;text-align:center}
+.rec-top{font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#F87171;display:flex;align-items:center;gap:8px}
+.waves{position:relative;width:260px;height:260px;display:flex;align-items:center;justify-content:center}
+.wv{position:absolute;border-radius:50%;filter:blur(18px);opacity:.75}
+.w1{width:200px;height:200px;background:radial-gradient(circle,#A78BFA,transparent 70%);animation:wave 2.4s ease-in-out infinite}
+.w2{width:240px;height:240px;background:radial-gradient(circle,#F472B6,transparent 70%);animation:wave 2.4s ease-in-out .8s infinite}
+.w3{width:220px;height:220px;background:radial-gradient(circle,#38BDF8,transparent 70%);animation:wave 2.4s ease-in-out 1.6s infinite}
+@keyframes wave{0%,100%{transform:scale(.75);opacity:.35}50%{transform:scale(1.08);opacity:.8}}
+.rec-timer{font-size:46px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.eq{display:flex;align-items:center;gap:4px;height:36px}
+.eq span{width:4px;border-radius:2px;background:var(--grad);height:10px;animation:eq 1s ease-in-out infinite}
+.eq span:nth-child(2){animation-delay:.1s}.eq span:nth-child(3){animation-delay:.25s}.eq span:nth-child(4){animation-delay:.05s}.eq span:nth-child(5){animation-delay:.35s}.eq span:nth-child(6){animation-delay:.15s}.eq span:nth-child(7){animation-delay:.45s}.eq span:nth-child(8){animation-delay:.2s}.eq span:nth-child(9){animation-delay:.3s}.eq span:nth-child(10){animation-delay:.05s}.eq span:nth-child(11){animation-delay:.4s}.eq span:nth-child(12){animation-delay:.12s}
+@keyframes eq{0%,100%{height:8px}50%{height:34px}}
+.veil{position:absolute;inset:0;z-index:80;background:rgba(0,0,0,0.45);display:flex;align-items:flex-end;animation:fadeIn .2s both}
+.veil.center{align-items:center;justify-content:center;z-index:90;padding:0 34px}
+.sheet{width:100%;max-height:84%;background:var(--sheet);border-top-left-radius:28px;border-top-right-radius:28px;padding:10px 20px 34px;backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);animation:sheetUp .34s cubic-bezier(.2,.8,.2,1) both;display:flex;flex-direction:column;color:var(--text);border:1px solid var(--border)}
+.grab{width:38px;height:5px;border-radius:3px;background:var(--sec);opacity:.4;margin:0 auto 12px;flex:none}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex:none}
+.md{flex:1;overflow:auto;margin:0;padding:14px;border-radius:16px;background:var(--card2);border:1px solid var(--border);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11.5px;line-height:1.6;white-space:pre-wrap;color:var(--text)}
+.modal{width:100%;background:var(--sheet);border:1px solid var(--border);border-radius:28px;padding:28px 22px 22px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;animation:pop .35s cubic-bezier(.2,.8,.2,1) both;color:var(--text);box-shadow:0 30px 60px rgba(0,0,0,0.35)}
+.badge-big{width:96px;height:96px;border-radius:48px;background:linear-gradient(135deg,#FBBF24,#F472B6);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 0 40px rgba(251,191,36,0.55);margin:8px 0 10px}
+.badge-big .ic{width:44px;height:44px}
+.alert{width:270px;background:var(--sheet);border-radius:16px;overflow:hidden;text-align:center;animation:pop .25s both;color:var(--text);border:1px solid var(--border)}
+.al-t{font-size:17px;font-weight:700;padding:20px 16px 4px}
+.al-m{font-size:13px;line-height:1.4;padding:0 16px 18px;color:var(--sec)}
+.al-btns{display:flex;border-top:1px solid var(--border)}
+.al-b{flex:1;height:46px;background:none;border:0;font-size:16px;color:var(--pri);cursor:pointer}
+.al-b+.al-b{border-left:1px solid var(--border)}
+.al-b.danger{color:#EF4444;font-weight:700}
+.toast{position:absolute;top:60px;left:50%;transform:translateX(-50%);z-index:230;background:rgba(28,28,32,0.94);color:#FFFFFF;font-size:13px;font-weight:600;padding:10px 16px;border-radius:14px;white-space:nowrap;animation:fadeIn .2s both;box-shadow:0 8px 20px rgba(0,0,0,0.3)}
+.story-veil{position:absolute;inset:0;z-index:85;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;flex-direction:column;align-items:center;padding-top:70px;animation:fadeIn .25s both}
+.story-x{position:absolute;top:64px;right:18px;z-index:3}
+.story{width:236px;height:420px;border-radius:24px;background:linear-gradient(160deg,var(--g1),var(--g2) 55%,var(--g3));padding:22px 18px 16px;display:flex;flex-direction:column;gap:12px;color:#FFFFFF;box-shadow:0 20px 50px rgba(0,0,0,0.5);overflow:hidden;animation:pop .35s both}
+.st-date{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:.85}
+.st-body{flex:1;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.sb-l{font-size:9.5px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;opacity:.75;margin-bottom:3px}
+.sb-t{font-size:12.5px;line-height:1.35;font-weight:600;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.sb-t.big{font-size:19px;font-weight:800;letter-spacing:-0.4px;line-height:1.2}
+.st-foot{font-size:10px;font-weight:600;opacity:.8;text-align:center;padding-top:8px;border-top:1px solid rgba(255,255,255,0.3)}
+.ios-share{position:absolute;left:8px;right:8px;bottom:22px;background:rgba(242,242,247,0.97);border-radius:22px;padding:14px 16px 16px;color:#1C1C1E;animation:sheetUp .35s cubic-bezier(.2,.8,.2,1) both}
+.ios-share-h{font-size:13px;font-weight:600;color:#6E6E73;text-align:center;margin-bottom:14px}
+.ios-row{display:flex;justify-content:space-around}
+.ios-app{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;cursor:pointer;font-size:11px;color:#1C1C1E;padding:0;min-width:70px}
+.ios-tile{width:58px;height:58px;border-radius:15px;display:flex;align-items:center;justify-content:center;color:#FFFFFF}
+.ios-tile .ic{width:28px;height:28px}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.tile{padding:12px;border-radius:18px}
+.tile-v{font-size:22px;font-weight:800;letter-spacing:-0.5px}
+.tile-l{font-size:11px;color:var(--sec);font-weight:600;margin-top:2px}
+.chart{width:100%;height:140px;display:block;overflow:visible}
+.grid{stroke:var(--track);stroke-width:1;fill:none}
+.ln{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.xl{display:flex;justify-content:space-between;font-size:11px;color:var(--sec);font-weight:600;margin-top:6px}
+.legend{display:flex;gap:12px;font-size:12px;font-weight:600;color:var(--sec)}
+.legend span{display:flex;align-items:center;gap:5px}
+.ebars{display:flex;align-items:flex-end;gap:3px;height:90px;margin-top:12px}
+.eb{flex:1;border-radius:4px;background:linear-gradient(to top,var(--g1),var(--g2));min-height:4px;transition:height .5s}
+.ringbox{position:relative;width:124px;height:124px;flex:none}
+.ringbox svg{width:124px;height:124px;transform:rotate(-90deg)}
+.ring-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-v{font-size:28px;font-weight:800;letter-spacing:-0.5px}
+.goalrow{margin-top:14px}
+.gbar{height:6px;border-radius:3px;background:var(--track);margin-top:6px;overflow:hidden}
+.gbar span{display:block;height:100%;border-radius:3px;background:var(--grad);transition:width .5s}
+.streak-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:26px 16px 22px}
+.big-flame{width:64px;height:64px;margin-bottom:4px;filter:drop-shadow(0 0 16px rgba(251,191,36,0.6))}
+.streak-n{font-size:72px;font-weight:800;letter-spacing:-2px;line-height:1}
+.wdots{display:flex;gap:8px;margin-top:16px}
+.wd{width:28px;height:28px;border-radius:14px;background:var(--track);display:flex;align-items:center;justify-content:center;color:#1A1625}
+.wd.on{background:linear-gradient(135deg,#FBBF24,#F472B6)}
+.wd .ic{width:13px;height:13px;stroke-width:3}
+.badge{display:flex;align-items:center;gap:14px}
+.badge.locked{opacity:.45;filter:grayscale(1)}
+.bicon{width:56px;height:56px;border-radius:28px;background:linear-gradient(135deg,#FBBF24,#F472B6);display:flex;align-items:center;justify-content:center;color:#fff;flex:none;box-shadow:0 0 22px rgba(251,191,36,0.35)}
+.bicon .ic{width:26px;height:26px}
+.bmid{flex:1;min-width:0}
+.bname{font-size:16px;font-weight:700}
+.breq{font-size:12px;font-weight:700;color:var(--pri);display:flex;align-items:center;gap:5px;margin-top:4px}
+.opt{display:flex;align-items:center;gap:12px;width:100%;padding:12px 0;background:none;border:0;border-bottom:1px solid var(--border);cursor:pointer;color:var(--text);text-align:left;font:inherit}
+.opt.last{border-bottom:0}
+.radio{width:22px;height:22px;border-radius:11px;border:2px solid var(--sec);flex:none;display:flex;align-items:center;justify-content:center}
+.opt.on .radio{border-color:var(--pri)}
+.opt.on .radio::after{content:"";width:11px;height:11px;border-radius:6px;background:var(--pri)}
+.opt-t{font-size:15px;font-weight:600}
+.preview{margin-top:12px;padding:12px;border-radius:14px;background:var(--card2);font-size:13px;line-height:1.45;font-style:italic;color:var(--text)}
+.thms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.thm{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px;border-radius:18px;background:var(--card2);border:1.5px solid var(--border);cursor:pointer;color:var(--text);font-size:14px;font-weight:700}
+.thm.on{border-color:var(--pri);box-shadow:0 0 0 1.5px var(--pri)}
+.sws{width:44px;height:44px;border-radius:22px;position:relative;overflow:hidden;box-shadow:0 0 0 1px rgba(128,128,128,0.35)}
+.sws span{position:absolute;right:0;bottom:0;width:22px;height:22px;border-top-left-radius:22px}
+.mbtn{display:flex;align-items:center;gap:12px;width:100%;padding:14px 0;background:none;border:0;border-bottom:1px solid var(--border);cursor:pointer;color:var(--text);font-size:15px;font-weight:600;text-align:left}
+.mbtn.danger{color:#EF4444;border-bottom:0}
+.glegend{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 10px;font-size:11.5px;color:var(--sec);font-weight:600}
+.glegend span{display:flex;align-items:center;gap:5px}
+.gbox{position:relative;height:600px;border-radius:24px;overflow:hidden;background:var(--card);border:1px solid var(--border);touch-action:none;cursor:grab;user-select:none}
+.gworld{position:absolute;left:0;top:0;width:353px;height:600px;transform-origin:0 0}
+.glink{position:absolute;height:1.5px;transform-origin:0 50%;background:var(--link);pointer-events:none}
+.gnode{position:absolute;border-radius:50%;border:0;padding:0;cursor:pointer;transform:translate(-50%,-50%);touch-action:none}
+.gnode::after{content:"";position:absolute;inset:-12px;border-radius:50%}
+.gnode.ent{width:30px;height:30px;box-shadow:0 0 18px var(--g2);border:2px solid rgba(255,255,255,0.6)}
+.gnode.nt{width:14px;height:14px}
+.gnode.sel{outline:2.5px solid var(--text);outline-offset:3px}
+.glabel{position:absolute;transform:translate(-50%,20px);font-size:10px;font-weight:700;color:var(--sec);white-space:nowrap;pointer-events:none}
+.gctl{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:8px;z-index:4}
+.gcount{position:absolute;left:12px;bottom:12px;font-size:11px;font-weight:600;color:var(--sec);z-index:4;pointer-events:none}
+.gtip{position:absolute;width:200px;z-index:5;background:var(--sheet);border:1px solid var(--border);border-radius:18px;padding:12px 14px;box-shadow:0 12px 30px rgba(0,0,0,0.3);animation:pop .2s both;cursor:default}
+.gtip-k{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--sec)}
+.gtip-t{font-size:14px;font-weight:700;line-height:1.3;margin:6px 0 10px}
+.gopen{height:34px;border-radius:10px;border:0;background:var(--pri);color:var(--onPri);font-weight:700;font-size:13px;cursor:pointer;padding:0 14px}
+.gclose{height:34px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text);font-weight:600;font-size:13px;cursor:pointer;padding:0 12px}
+.ghint{font-size:12px;color:var(--sec);text-align:center;margin:10px 0 0}
+.chat{display:flex;flex-direction:column;padding:0}
+.chat-head{padding:60px 20px 8px;display:flex;align-items:center;gap:12px;flex:none}
+.chat-title{font-size:20px;font-weight:800;letter-spacing:-0.5px;line-height:1.15}
+.chat-scroll{flex:1;overflow-y:auto;scrollbar-width:none;padding:10px 20px 16px;display:flex;flex-direction:column;gap:12px}
+.chat-scroll::-webkit-scrollbar{display:none}
+.chat-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;margin-top:40px}
+.chat-orb{width:72px;height:72px;border-radius:36px;background:linear-gradient(135deg,#A78BFA,#F472B6,#38BDF8);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 10px 40px rgba(167,139,250,0.5)}
+.chat-orb .ic{width:32px;height:32px}
+.qchips{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:14px}
+.qchip{padding:12px 14px;border-radius:16px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.bub-u{align-self:flex-end;max-width:80%;background:var(--pri);color:var(--onPri);padding:10px 14px;border-radius:20px 20px 6px 20px;font-size:15px;line-height:1.4;animation:pop .2s both}
+.bub-a{align-self:flex-start;max-width:88%;background:var(--card);border:1px solid var(--border);padding:12px 14px;border-radius:20px 20px 20px 6px;font-size:15px;line-height:1.5}
+.typing{align-self:flex-start;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sec);padding:10px 14px;border-radius:18px;background:var(--card);border:1px solid var(--border)}
+.tdots{display:flex;gap:3px}
+.tdots span{width:6px;height:6px;border-radius:3px;background:var(--pri);animation:pulseOp 1s infinite}
+.tdots span:nth-child(2){animation-delay:.2s}.tdots span:nth-child(3){animation-delay:.4s}
+.srcs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
+.srcl{font-size:11px;font-weight:700;color:var(--sec);letter-spacing:.5px}
+.src{font-size:12px;font-weight:700;padding:5px 9px;border-radius:12px;background:var(--card2);border:1px solid var(--border);color:var(--pri);cursor:pointer}
+.chat-bar{flex:none;display:flex;gap:10px;align-items:center;padding:10px 16px 30px;border-top:1px solid var(--border);background:var(--sheet)}
+.chat-in{flex:1;height:44px;border-radius:22px;border:1px solid var(--border);background:var(--card2);color:var(--text);padding:0 16px;font-size:15px;font-family:inherit;outline:none;min-width:0}
+.chat-in:focus{border-color:var(--pri)}
+.sendb{width:44px;height:44px;border-radius:22px;border:0;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;padding:0}
+.watch{display:flex;flex-direction:column;align-items:center}
+.band{width:146px;height:112px;background:linear-gradient(180deg,#2A2A30,#1A1A1E)}
+.band.top{border-radius:24px 24px 6px 6px;margin-bottom:-8px}
+.band.bot{border-radius:6px 6px 24px 24px;margin-top:-8px;background:linear-gradient(0deg,#2A2A30,#1A1A1E)}
+.wbody{position:relative;width:226px;height:272px;border-radius:58px;background:#161618;padding:14px;box-shadow:0 0 0 2px #3E3E44,0 0 0 4px #0C0C0E,0 30px 60px rgba(0,0,0,0.55);z-index:1}
+.crown{position:absolute;right:-10px;top:64px;width:11px;height:40px;border-radius:4px;background:linear-gradient(90deg,#3B3B40,#5E5E66)}
+.sbtn{position:absolute;right:-6px;top:128px;width:6px;height:54px;border-radius:3px;background:#2E2E33}
+.wscreen{width:198px;height:244px;border-radius:46px;background:#000;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding:14px 16px 20px;color:#FFFFFF}
+.wscreen::-webkit-scrollbar{display:none}
+.w-head{display:flex;justify-content:space-between;align-items:center;padding:0 6px}
+.w-title{font-size:15px;font-weight:700;color:#A78BFA}
+.w-time{font-size:14px;font-weight:600}
+.w-center{display:flex;flex-direction:column;align-items:center;gap:6px;margin:10px 0 12px}
+.w-mic{width:78px;height:78px;border-radius:39px;border:0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(135deg,#A78BFA,#F472B6,#60A5FA);position:relative;padding:0}
+.w-mic .ic{width:30px;height:30px}
+.w-mic.live{background:linear-gradient(135deg,#EF4444,#B91C1C)}
+.w-timer{font-size:15px;font-weight:700;color:#F87171;font-variant-numeric:tabular-nums}
+.w-hint{font-size:11px;color:#8E8E93}
+.w-sec{font-size:12px;font-weight:700;color:#8E8E93;margin:10px 4px 6px}
+.w-item{display:flex;justify-content:space-between;align-items:center;background:#1C1C1E;border-radius:12px;padding:8px 10px;font-size:13px;font-weight:600;margin-bottom:5px}
+.wst{font-size:12px;color:#8E8E93;font-weight:600}
+.wst.sent{color:#60A5FA}
+.w-empty{font-size:12px;color:#636366;text-align:center;padding:6px 0}
+.hbadge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:var(--pri);color:var(--onPri);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px;animation:pulseOp 1.2s ease-in-out infinite}
+.hbadge.err{background:#EF4444;color:#FFFFFF;animation:none}
+.hring{position:relative;width:88px;height:88px;flex:none}
+.hring svg{width:88px;height:88px;transform:rotate(-90deg)}
+.hring-v{font-size:22px;font-weight:800;letter-spacing:-0.5px}
+.wgoal-n{font-size:12.5px;font-weight:600}
+.wgoal .gbar{height:5px;margin-top:5px}
+.banner{display:flex;align-items:center;gap:12px;margin-top:16px;padding:12px 14px}
+.ban-err{width:24px;height:24px;border-radius:12px;background:#EF4444;color:#FFFFFF;display:flex;align-items:center;justify-content:center;flex:none}
+.ban-err .ic{width:15px;height:15px;stroke-width:2.6}
+.rec-btn{width:100%;background:none;border:0;border-bottom:1px solid var(--border);cursor:pointer;text-align:left;font:inherit;color:inherit;border-radius:0}
+.rec-row.hl{border-radius:12px}
+</style>
+</helmet>
+<div class="stage">
+  <div class="dev-col">
+    <div class="iphone">
+      <div class="screen-wrap theme-{{theme}}">
+        <div class="aurora"><span class="au a1"></span><span class="au a2"></span><span class="au a3"></span></div>
+
+        <sc-if value="{{scr.login}}" hint-placeholder-val="{{ true }}">
+          <div class="screen login {{screenCls}}">
+            <button class="demo" onClick="{{toggleDemo}}" aria-pressed="{{demoPressed}}">
+              <span class="{{demoSwCls}}"><span class="knob"></span></span>
+              <span>Demo: powracający użytkownik</span>
+            </button>
+            <div class="login-mid">
+              <div class="appicon">
+                <svg viewBox="0 0 64 64" width="74" height="74">
+                  <defs>
+                    <linearGradient id="appHg" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" style="stop-color: #A78BFA"></stop>
+                      <stop offset="1" style="stop-color: #F472B6"></stop>
+                    </linearGradient>
+                  </defs>
+                  <path d="M32 54 C 12 40, 6 30, 6 21 C 6 13, 12 8, 19 8 C 25 8, 29 12, 32 16 C 35 12, 39 8, 45 8 C 52 8, 58 13, 58 21 C 58 30, 52 40, 32 54 Z" fill="none" stroke="url(#appHg)" style="stroke-width: 3.5; stroke-linejoin: round"></path>
+                  <path d="M14 30 H22 L26 22 L31 38 L36 18 L40 32 L43 27 H50" fill="none" stroke="url(#appHg)" style="stroke-width: 3; stroke-linecap: round; stroke-linejoin: round"></path>
+                </svg>
+              </div>
+              <h1 class="title gt login-title">Vocaly</h1>
+              <p class="login-sub">Twój pamiętnik głosowy</p>
+            </div>
+            <div class="login-btns">
+              <sc-if value="{{loggingIn}}" hint-placeholder-val="{{ false }}">
+                <div class="spin-wrap"><span class="spinner"></span><span class="sec small">Logowanie...</span></div>
+              </sc-if>
+              <sc-if value="{{notLoggingIn}}" hint-placeholder-val="{{ true }}">
+                <button class="wbtn" onClick="{{login}}">Sign in with Apple</button>
+                <button class="wbtn" onClick="{{login}}">Zaloguj z Google</button>
+              </sc-if>
+              <p class="legal">Twoje nagrania są prywatne i służą wyłącznie Twojemu pamiętnikowi.</p>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{scr.onb}}" hint-placeholder-val="{{ false }}">
+          <div class="screen onb {{screenCls}}">
+            <div>
+              <p class="onb-hi">Witaj w</p>
+              <h1 class="title gt" style="font-size: 38px">Twoim Pamiętniku</h1>
+              <p class="body sec" style="margin-top: 10px">Zdefiniuj swoje 2 główne cele.</p>
+            </div>
+            <sc-if value="{{onb.notDone}}" hint-placeholder-val="{{ true }}">
+              <div class="card onb-card">
+                <div class="lbl0">{{onb.stepLabel}}</div>
+                <p class="onb-q">{{onb.q}}</p>
+                <div class="onb-rec">
+                  <sc-if value="{{onb.btnShow}}" hint-placeholder-val="{{ true }}">
+                    <button class="{{onb.btnCls}}" onClick="{{onbTap}}" aria-label="Nagraj odpowiedź">
+                      <sc-if value="{{onb.rec}}" hint-placeholder-val="{{ false }}">
+                        <span class="ring"></span><span class="ring r2"></span><span class="ring r3"></span>
+                        <svg class="ic" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" class="fillw"></rect></svg>
+                      </sc-if>
+                      <sc-if value="{{onb.idle}}" hint-placeholder-val="{{ true }}">
+                        <svg class="ic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"></path></svg>
+                      </sc-if>
+                    </button>
+                  </sc-if>
+                  <sc-if value="{{onb.idle}}" hint-placeholder-val="{{ true }}">
+                    <p class="onb-hint">Dotknij i powiedz to własnymi słowami</p>
+                  </sc-if>
+                  <sc-if value="{{onb.rec}}" hint-placeholder-val="{{ false }}">
+                    <div class="timer">Nagrywam · {{onb.timer}}</div>
+                    <p class="onb-hint">Dotknij ponownie, aby zakończyć</p>
+                  </sc-if>
+                  <sc-if value="{{onb.proc}}" hint-placeholder-val="{{ false }}">
+                    <span class="spinner"></span>
+                    <p class="onb-hint" style="font-weight: 600; font-size: 15px; color: inherit">{{onb.procText}}</p>
+                  </sc-if>
+                </div>
+                <div class="odots"><span class="{{onb.dot1}}"></span><span class="{{onb.dot2}}"></span></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{onb.done}}" hint-placeholder-val="{{ false }}">
+              <div class="card onb-card">
+                <div class="okcirc"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div>
+                <div class="h2">Twoje cele ustawione!</div>
+                <p class="small sec" style="margin: 2px 0 12px">Na ich podstawie AI będzie dopasowywać rady w Twoich wpisach.</p>
+                <div class="chips" style="justify-content: center">
+                  <sc-for list="{{defaultGoalChips}}" as="g" hint-placeholder-count="3">
+                    <span class="chip static">{{g.t}}</span>
+                  </sc-for>
+                </div>
+                <button class="pbtn" onClick="{{finishOnb}}">Zaczynamy</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{onb.notDone}}" hint-placeholder-val="{{ true }}">
+              <button class="linkbtn" onClick="{{skipOnb}}">Pomiń</button>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{scr.home}}" hint-placeholder-val="{{ false }}">
+          <div class="screen {{screenCls}}" ref="{{scrollRef}}" style="padding-bottom: 150px">
+            <div class="home-head">
+              <button class="streak" onClick="{{goAch}}" aria-label="Twoja seria">
+                <svg class="flame" viewBox="0 0 24 24"><path d="M12 2c1.2 3.6 5.5 5.6 5.5 11a5.5 5.5 0 0 1-11 0c0-3 1.6-4.7 2.8-5.8.2 1.8 1.1 2.9 2.2 3.4.4-3.2-.7-5.8.5-8.6z" style="fill: #FBBF24"></path></svg>
+                <span>{{streak}}</span>
+              </button>
+              <div class="row g8">
+                <button class="circ" onClick="{{goGraph}}" aria-label="Graf wiedzy" style="color: #38BDF8"><svg class="ic" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"></path></svg></button>
+                <button class="circ" onClick="{{goChat}}" aria-label="Czat z pamiętnikiem" style="color: #A855F7"><svg class="ic" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></button>
+                <button class="circ" onClick="{{goRecs}}" aria-label="Status nagrań" style="color: #F472B6">
+                  <svg class="ic" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                  <sc-if value="{{recBadge.show}}" hint-placeholder-val="{{ false }}"><span class="{{recBadge.cls}}">{{recBadge.n}}</span></sc-if>
+                </button>
+                <button class="circ" onClick="{{goAch}}" aria-label="Osiągnięcia" style="color: #FBBF24"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="7"></circle><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"></path></svg></button>
+                <button class="circ" onClick="{{goSettings}}" aria-label="Ustawienia"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+              </div>
+            </div>
+            <div class="sec small date">Wtorek, 6 października</div>
+            <h1 class="title gt">Mój Pamiętnik</h1>
+
+            <sc-if value="{{banner.show}}" hint-placeholder-val="{{ false }}">
+              <button class="card tap banner" onClick="{{goRecs}}">
+                <sc-if value="{{banner.isProc}}" hint-placeholder-val="{{ true }}"><span class="spinner"></span></sc-if>
+                <sc-if value="{{banner.isErr}}" hint-placeholder-val="{{ false }}"><span class="ban-err"><svg class="ic" viewBox="0 0 24 24"><path d="M12 7v6M12 17h.01"></path></svg></span></sc-if>
+                <span style="flex: 1; min-width: 0"><span class="rec-t" style="display: block">{{banner.text}}</span><span class="rec-s">{{banner.sub}}</span></span>
+                <svg class="ic s18" viewBox="0 0 24 24" style="color: var(--sec)"><path d="M9 18l6-6-6-6"></path></svg>
+              </button>
+            </sc-if>
+
+            <button class="card tap week" onClick="{{goAnalytics}}">
+              <div class="lbl0" style="margin: 0">Podsumowanie tygodnia</div>
+              <div class="row g12">
+                <div class="hring">
+                  <svg viewBox="0 0 88 88">
+                    <defs>
+                      <linearGradient id="homeRingG" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" style="stop-color: #A78BFA"></stop>
+                        <stop offset="0.5" style="stop-color: #F472B6"></stop>
+                        <stop offset="1" style="stop-color: #38BDF8"></stop>
+                      </linearGradient>
+                    </defs>
+                    <circle cx="44" cy="44" r="36" fill="none" style="stroke: var(--track); stroke-width: 9"></circle>
+                    <circle cx="44" cy="44" r="36" fill="none" stroke="url(#homeRingG)" style="stroke-width: 9; stroke-linecap: round; stroke-dasharray: {{H.dash}}"></circle>
+                  </svg>
+                  <div class="ring-c"><span class="hring-v">{{H.pct}}%</span></div>
+                </div>
+                <div style="flex: 1; min-width: 0">
+                  <div class="h2" style="font-size: 18px">Zgodność z celami życiowymi</div>
+                  <div class="sec small" style="margin-top: 4px">{{H.msg}}</div>
+                </div>
+              </div>
+              <div class="stack8">
+                <sc-for list="{{H.goals}}" as="g" hint-placeholder-count="3">
+                  <div class="wgoal">
+                    <div class="row between"><span class="wgoal-n">{{g.name}}</span><span class="sec" style="font-size: 12px; font-weight: 600">{{g.pct}}%</span></div>
+                    <div class="gbar"><span style="width: {{g.pct}}%"></span></div>
+                  </div>
+                </sc-for>
+              </div>
+              <div class="wlink">Zobacz Weekly Insights →</div>
+            </button>
+
+            <div class="seg" role="tablist">
+              <button class="{{segE}}" onClick="{{setTabE}}">Wpisy dnia</button>
+              <button class="{{segN}}" onClick="{{setTabN}}">Notatki ({{notesCount}})</button>
+            </div>
+
+            <sc-if value="{{tabEntries}}" hint-placeholder-val="{{ true }}">
+              <div class="stack">
+                <sc-for list="{{entryCards}}" as="e" hint-placeholder-count="3">
+                  <button class="{{e.cls}}" onClick="{{e.open}}">
+                    <div class="row between">
+                      <span class="ecard-date">{{e.long}}</span>
+                      <sc-if value="{{e.isToday}}" hint-placeholder-val="{{ false }}"><span class="today">Dziś</span></sc-if>
+                    </div>
+                    <div class="ecard-dom">{{e.dominant}}</div>
+                    <div class="body sec clamp3" style="font-size: 14px">{{e.summary}}</div>
+                    <div class="chips" style="gap: 6px">
+                      <sc-for list="{{e.emotions}}" as="em" hint-placeholder-count="2">
+                        <span class="pill" style="background: {{em.color}}">{{em.n}}</span>
+                      </sc-for>
+                    </div>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{tabNotes}}" hint-placeholder-val="{{ false }}">
+              <div class="frow">
+                <sc-for list="{{filters}}" as="f" hint-placeholder-count="5">
+                  <button class="{{f.cls}}" onClick="{{f.pick}}">{{f.label}}</button>
+                </sc-for>
+              </div>
+              <div class="stack">
+                <sc-for list="{{noteCards}}" as="n" hint-placeholder-count="4">
+                  <button class="card tap ncard {{n.hlCls}}" onClick="{{n.open}}">
+                    <div class="row between">
+                      <span class="tchip" style="background: {{n.tbg}}">
+                        <span class="row" style="color: {{n.tcolor}}">
+                          <sc-if value="{{n.ip}}" hint-placeholder-val="{{ false }}"><svg class="ic s14" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg></sc-if>
+                          <sc-if value="{{n.iz}}" hint-placeholder-val="{{ false }}"><svg class="ic s14" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></sc-if>
+                          <sc-if value="{{n.ir}}" hint-placeholder-val="{{ false }}"><svg class="ic s14" viewBox="0 0 24 24"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><path d="M16 8L2 22M17.5 15H9"></path></svg></sc-if>
+                          <sc-if value="{{n.iw}}" hint-placeholder-val="{{ false }}"><svg class="ic s14" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg></sc-if>
+                        </span>
+                        {{n.tlabel}}
+                      </span>
+                      <span class="sec small">{{n.when}}</span>
+                    </div>
+                    <div class="ntitle">{{n.title}}</div>
+                    <div class="sec small clamp2">{{n.text}}</div>
+                  </button>
+                </sc-for>
+                <sc-if value="{{noNotes}}" hint-placeholder-val="{{ false }}"><div class="empty">Brak notatek tego typu. Nagraj coś nowego!</div></sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{scr.recs}}" hint-placeholder-val="{{ false }}">
+          <div class="screen {{screenCls}}" ref="{{scrollRef}}" style="padding-bottom: 150px">
+            <div class="topbar">
+              <button class="circ" onClick="{{back}}" aria-label="Wstecz"><svg class="ic" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"></path></svg></button>
+              <span class="bar-title">Nagrania</span>
+              <span style="width: 40px"></span>
+            </div>
+            <h1 class="title gt">Twoje nagrania</h1>
+            <p class="small sec" style="margin: 8px 2px 0">Nagrania z iPhone'a i Apple Watch, które AI zamienia w notatki i wpisy dnia.</p>
+            <div class="tiles">
+              <div class="card tile"><div class="tile-v">{{recStats.all}}</div><div class="tile-l">Wszystkie</div></div>
+              <div class="card tile"><div class="tile-v" style="color: var(--pri)">{{recStats.active}}</div><div class="tile-l">W toku</div></div>
+              <div class="card tile"><div class="tile-v" style="color: #F87171">{{recStats.errors}}</div><div class="tile-l">Błędy</div></div>
+            </div>
+
+            <div class="lbl">Status nagrań na żywo</div>
+            <div class="card" style="padding: 4px 14px">
+              <sc-for list="{{liveRows}}" as="r" hint-placeholder-count="1">
+                <div class="{{r.rowCls}}">
+                  <div class="rec-ic">
+                    <sc-if value="{{r.isWatch}}" hint-placeholder-val="{{ false }}"><svg class="ic s18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"></circle><path d="M12 9v3l1.5 1.5M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83M7.49 6.65l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path></svg></sc-if>
+                    <sc-if value="{{r.isPhone}}" hint-placeholder-val="{{ true }}"><svg class="ic s18" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg></sc-if>
+                  </div>
+                  <div class="rec-mid">
+                    <div class="rec-t">{{r.label}}</div>
+                    <div class="rec-s">{{r.sub}}</div>
+                    <sc-if value="{{r.inProg}}" hint-placeholder-val="{{ false }}"><div class="pbar"><span style="width: {{r.barW}}%"></span></div></sc-if>
+                  </div>
+                  <span class="{{r.chipCls}}" style="background: {{r.color}}">{{r.status}}</span>
+                </div>
+                <sc-if value="{{r.isError}}" hint-placeholder-val="{{ false }}">
+                  <button class="retry" onClick="{{r.retry}}"><svg class="ic s14" viewBox="0 0 24 24"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>Ponów przetwarzanie</button>
+                </sc-if>
+              </sc-for>
+              <sc-if value="{{noLive}}" hint-placeholder-val="{{ true }}"><div class="empty" style="padding: 18px 6px">Nic się teraz nie przetwarza. Dotknij mikrofonu, aby nagrać nowy wpis.</div></sc-if>
+            </div>
+
+            <div class="lbl">Lista nagrań</div>
+            <div class="card" style="padding: 4px 14px">
+              <sc-for list="{{histRows}}" as="r" hint-placeholder-count="3">
+                <button class="{{r.rowCls}}" onClick="{{r.open}}" aria-label="Otwórz wpis dnia: {{r.label}}">
+                  <span class="rec-ic">
+                    <sc-if value="{{r.isWatch}}" hint-placeholder-val="{{ false }}"><svg class="ic s18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"></circle><path d="M12 9v3l1.5 1.5M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83M7.49 6.65l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path></svg></sc-if>
+                    <sc-if value="{{r.isPhone}}" hint-placeholder-val="{{ true }}"><svg class="ic s18" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg></sc-if>
+                  </span>
+                  <span class="rec-mid">
+                    <span class="rec-t" style="display: block">{{r.label}}</span>
+                    <span class="rec-s" style="display: block">{{r.sub}}</span>
+                  </span>
+                  <span class="{{r.chipCls}}" style="background: {{r.color}}">{{r.status}}</span>
+                  <svg class="ic s16" viewBox="0 0 24 24" style="color: var(--sec)"><path d="M9 18l6-6-6-6"></path></svg>
+                </button>
+              </sc-for>
+              <sc-if value="{{noHist}}" hint-placeholder-val="{{ false }}"><div class="empty" style="padding: 18px 6px">Brak przetworzonych nagrań.</div></sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{scr.entry}}" hint-placeholder-val="{{ false }}">
+          <div class="screen {{screenCls}}" ref="{{scrollRef}}">
+            <sc-if value="{{notShare}}" hint-placeholder-val="{{ true }}">
+              <div class="topbar">
+                <button class="circ" onClick="{{back}}" aria-label="Wstecz"><svg class="ic" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"></path></svg></button>
+                <div class="row g8">
+                  <button class="circ" onClick="{{startShare}}" aria-label="Udostępnij"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"></path></svg></button>
+                  <button class="circ" onClick="{{openMd}}" aria-label="Podgląd pliku .md"><svg class="ic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></button>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{shareMode}}" hint-placeholder-val="{{ false }}">
+              <div class="topbar">
+                <button class="txtbtn" onClick="{{cancelShare}}">Anuluj</button>
+                <span class="small sec" style="font-weight: 600">Wybrane sekcje: {{shareCount}}</span>
+                <button class="txtbtn strong" onClick="{{finishShare}}">Gotowe</button>
+              </div>
+            </sc-if>
+            <div class="sec small" style="font-weight: 600; margin: 0 0 10px 2px">{{D.long}}</div>
+            <div class="stack">
+              <div class="{{sc.hero}}">
+                <div class="lbl0">Myśl dnia</div>
+                <div class="dom gt">{{D.dominant}}</div>
+                <p class="body">{{D.summary}}</p>
+                <sc-for list="{{D.quotes}}" as="q" hint-placeholder-count="1">
+                  <div class="quote"><span class="qmark">“</span><span>{{q.t}}</span></div>
+                </sc-for>
+                <sc-if value="{{shareMode}}" hint-placeholder-val="{{ false }}"><button class="selov" onClick="{{tg.hero}}" aria-label="Zaznacz sekcję Myśl dnia"><span class="{{mk.hero}}"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></button></sc-if>
+              </div>
+
+              <div class="{{sc.emotions}}">
+                <div class="lbl0">Emocje</div>
+                <div class="stack8">
+                  <sc-for list="{{D.emotions}}" as="em" hint-placeholder-count="2">
+                    <div class="emo-row"><span class="pill" style="background: {{em.color}}">{{em.n}}</span><span class="sec small">{{em.t}}</span></div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{shareMode}}" hint-placeholder-val="{{ false }}"><button class="selov" onClick="{{tg.emotions}}" aria-label="Zaznacz sekcję Emocje"><span class="{{mk.emotions}}"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></button></sc-if>
+              </div>
+
+              <div class="{{sc.done}}">
+                <div class="lbl0">Zrobione</div>
+                <div class="stack8">
+                  <sc-for list="{{D.done}}" as="d" hint-placeholder-count="2">
+                    <div class="li"><span class="ok"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span><span>{{d.t}}</span></div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{shareMode}}" hint-placeholder-val="{{ false }}"><button class="selov" onClick="{{tg.done}}" aria-label="Zaznacz sekcję Zrobione"><span class="{{mk.done}}"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></button></sc-if>
+              </div>
+
+              <div class="{{sc.events}}">
+                <div class="lbl0">Ważne wydarzenia</div>
+                <div class="stack8">
+                  <sc-for list="{{D.events}}" as="v" hint-placeholder-count="1">
+                    <div class="li"><span class="icw" style="color: #38BDF8"><svg class="ic s18" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg></span><span>{{v.t}}</span></div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{shareMode}}" hint-placeholder-val="{{ false }}"><button class="selov" onClick="{{tg.events}}" aria-label="Zaznacz sekcję Ważne wydarzenia"><span class="{{mk.events}}"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></button></sc-if>
+              </div>
+
+              <div class="{{sc.goals}}">
+                <div class="row between" style="margin-bottom: 10px">
+                  <div class="lbl0" style="margin: 0">Wpływ na cele</div>
+                  <span class="pill" style="background: {{D.goalColor}}">{{D.goalLabel}}</span>
+                </div>
+                <p class="body">{{D.goalText}}</p>
+                <div class="chips" style="margin-top: 12px; gap: 6px">
+                  <sc-for list="{{D.goals}}" as="g" hint-placeholder-count="3"><span class="chip static" style="font-size: 12px; padding: 5px 9px">{{g.t}}</span></sc-for>
+                </div>
+                <sc-if value="{{shareMode}}" hint-placeholder-val="{{ false }}"><button class="selov" onClick="{{tg.goals}}" aria-label="Zaznacz sekcję Wpływ na cele"><span class="{{mk.goals}}"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></button></sc-if>
+              </div>
+
+              <div class="{{sc.advice}}">
+                <div class="lbl0">Rada oparta na twoich celach</div>
+                <div class="voice"><svg class="ic s14" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>Głos: {{D.pname}}</div>
+                <p class="body">{{D.advice}}</p>
+                <sc-if value="{{shareMode}}" hint-placeholder-val="{{ false }}"><button class="selov" onClick="{{tg.advice}}" aria-label="Zaznacz sekcję Rada"><span class="{{mk.advice}}"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></button></sc-if>
+              </div>
+
+              <div class="{{sc.grateful}}">
+                <div class="lbl0">Za to jestem wdzięczny</div>
+                <div class="stack8">
+                  <sc-for list="{{D.grateful}}" as="gr" hint-placeholder-count="2">
+                    <div class="li"><span class="icw" style="color: #F472B6"><svg class="ic s18" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></span><span>{{gr.t}}</span></div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{shareMode}}" hint-placeholder-val="{{ false }}"><button class="selov" onClick="{{tg.grateful}}" aria-label="Zaznacz sekcję Za to jestem wdzięczny"><span class="{{mk.grateful}}"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></button></sc-if>
+              </div>
+
+              <div class="{{sc.ideas}}">
+                <div class="lbl0" style="margin-bottom: 2px">💡 Pomysły, na które wpadłem</div>
+                <sc-for list="{{D.ideas}}" as="i" hint-placeholder-count="1">
+                  <button class="idea tap" onClick="{{i.open}}">
+                    <span class="idea-ic"><svg class="ic s16" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg></span>
+                    <span style="flex: 1; min-width: 0"><span class="ntitle" style="display: block; font-size: 15px">{{i.title}}</span><span class="sec small clamp2" style="margin-top: 2px">{{i.text}}</span></span>
+                  </button>
+                </sc-for>
+                <sc-if value="{{D.noIdeas}}" hint-placeholder-val="{{ false }}"><p class="sec small" style="margin: 8px 0 0">Tego dnia nie zapisałeś żadnego pomysłu.</p></sc-if>
+                <sc-if value="{{shareMode}}" hint-placeholder-val="{{ false }}"><button class="selov" onClick="{{tg.ideas}}" aria-label="Zaznacz sekcję Pomysły"><span class="{{mk.ideas}}"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></button></sc-if>
+              </div>
+
+              <div class="{{sc.keywords}}">
+                <div class="lbl0">Najważniejsze słowa</div>
+                <div class="chips">
+                  <sc-for list="{{D.keywords}}" as="k" hint-placeholder-count="4"><span class="chip static">{{k.t}}</span></sc-for>
+                </div>
+                <sc-if value="{{shareMode}}" hint-placeholder-val="{{ false }}"><button class="selov" onClick="{{tg.keywords}}" aria-label="Zaznacz sekcję Najważniejsze słowa"><span class="{{mk.keywords}}"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></button></sc-if>
+              </div>
+            </div>
+
+            <div class="lbl">Notatki z tego dnia ({{D.dayCount}})</div>
+            <div class="card" style="padding: 4px 16px">
+              <sc-for list="{{D.dayNotes}}" as="n" hint-placeholder-count="3">
+                <button class="dn" onClick="{{n.open}}">
+                  <span class="dot" style="background: {{n.tcolor}}"></span>
+                  <span class="dn-t">{{n.title}}</span>
+                  <span class="sec small">{{n.time}}</span>
+                </button>
+              </sc-for>
+            </div>
+
+            <div class="lbl">Powiązane myśli</div>
+            <div class="stack">
+              <sc-for list="{{D.related}}" as="r" hint-placeholder-count="3">
+                <button class="card tap rel" onClick="{{r.open}}">
+                  <span class="rel-dot" style="background: {{r.color}}"></span>
+                  <span class="rel-mid"><span class="rel-t" style="display: block">{{r.title}}</span><span class="sec small">{{r.sub}}</span></span>
+                  <span class="rel-tag">{{r.relation}}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{scr.note}}" hint-placeholder-val="{{ false }}">
+          <div class="screen {{screenCls}}" ref="{{scrollRef}}">
+            <div class="topbar">
+              <button class="circ" onClick="{{back}}" aria-label="Wstecz"><svg class="ic" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"></path></svg></button>
+              <span class="bar-title">Szczegóły notatki</span>
+              <span style="width: 40px"></span>
+            </div>
+            <span class="tchip lg" style="background: {{Nv.tbg}}">
+              <span class="row" style="color: {{Nv.tcolor}}">
+                <sc-if value="{{Nv.ip}}" hint-placeholder-val="{{ false }}"><svg class="ic s16" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg></sc-if>
+                <sc-if value="{{Nv.iz}}" hint-placeholder-val="{{ false }}"><svg class="ic s16" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></sc-if>
+                <sc-if value="{{Nv.ir}}" hint-placeholder-val="{{ false }}"><svg class="ic s16" viewBox="0 0 24 24"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><path d="M16 8L2 22M17.5 15H9"></path></svg></sc-if>
+                <sc-if value="{{Nv.iw}}" hint-placeholder-val="{{ false }}"><svg class="ic s16" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg></sc-if>
+              </span>
+              {{Nv.tlabel}}
+            </span>
+            <h1 class="h1 gt">{{Nv.title}}</h1>
+            <div class="card">
+              <p class="body" style="font-size: 16px">{{Nv.text}}</p>
+              <div class="meta"><svg class="ic s16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>{{Nv.dateLong}}</div>
+              <div class="meta">
+                <sc-if value="{{Nv.isWatch}}" hint-placeholder-val="{{ false }}"><svg class="ic s16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"></circle><path d="M12 9v3l1.5 1.5M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83M7.49 6.65l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path></svg></sc-if>
+                <sc-if value="{{Nv.isPhone}}" hint-placeholder-val="{{ true }}"><svg class="ic s16" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg></sc-if>
+                {{Nv.srcText}}
+              </div>
+            </div>
+            <div class="lbl">Wpis dnia</div>
+            <button class="card tap rel" onClick="{{Nv.openEntry}}">
+              <span class="rel-dot" style="background: linear-gradient(135deg, #A78BFA, #F472B6)"></span>
+              <span class="rel-mid"><span class="rel-t" style="display: block">{{Nv.dayTitle}}</span><span class="sec small">{{Nv.dayLong}}</span></span>
+              <svg class="ic s18" viewBox="0 0 24 24" style="color: var(--sec)"><path d="M9 18l6-6-6-6"></path></svg>
+            </button>
+            <div class="lbl">Powiązane myśli</div>
+            <div class="stack">
+              <sc-for list="{{Nv.related}}" as="r" hint-placeholder-count="3">
+                <button class="card tap rel" onClick="{{r.open}}">
+                  <span class="rel-dot" style="background: {{r.color}}"></span>
+                  <span class="rel-mid"><span class="rel-t" style="display: block">{{r.title}}</span><span class="sec small">{{r.sub}}</span></span>
+                  <span class="rel-tag">{{r.relation}}</span>
+                </button>
+              </sc-for>
+              <sc-if value="{{Nv.noRelated}}" hint-placeholder-val="{{ false }}"><div class="empty">Brak powiązanych myśli – na razie.</div></sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{scr.analytics}}" hint-placeholder-val="{{ false }}">
+          <div class="screen {{screenCls}}" ref="{{scrollRef}}">
+            <div class="topbar">
+              <button class="circ" onClick="{{back}}" aria-label="Wstecz"><svg class="ic" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"></path></svg></button>
+              <span class="bar-title">Weekly Insights</span>
+              <span style="width: 40px"></span>
+            </div>
+            <h1 class="title gt">Twoje Analizy</h1>
+            <div class="seg">
+              <button class="{{r7}}" onClick="{{setR7}}">7 dni</button>
+              <button class="{{r30}}" onClick="{{setR30}}">30 dni</button>
+            </div>
+            <div class="card">
+              <div class="row between" style="margin-bottom: 12px">
+                <div class="lbl0" style="margin: 0">Stres vs. Spokój</div>
+                <div class="legend"><span><span class="dot" style="background: #F87171"></span>Stres</span><span><span class="dot" style="background: #38BDF8"></span>Spokój</span></div>
+              </div>
+              <svg class="chart" viewBox="0 0 320 140" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="calmFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" style="stop-color: #38BDF8; stop-opacity: 0.32"></stop>
+                    <stop offset="1" style="stop-color: #38BDF8; stop-opacity: 0"></stop>
+                  </linearGradient>
+                </defs>
+                <path class="grid" d="M0 10 H320 M0 70 H320 M0 130 H320"></path>
+                <path d="{{A.calmArea}}" fill="url(#calmFill)"></path>
+                <path class="ln" d="{{A.calm}}" style="stroke: #38BDF8"></path>
+                <path class="ln" d="{{A.stress}}" style="stroke: #F87171"></path>
+                <circle cx="{{A.cx}}" cy="{{A.cy}}" r="4" style="fill: #38BDF8"></circle>
+                <circle cx="{{A.sx}}" cy="{{A.sy}}" r="4" style="fill: #F87171"></circle>
+              </svg>
+              <div class="xl"><sc-for list="{{A.labels}}" as="l" hint-placeholder-count="3"><span>{{l.t}}</span></sc-for></div>
+            </div>
+            <div class="tiles">
+              <div class="card tile"><div class="tile-v" style="color: #F87171">{{A.avgS}}%</div><div class="tile-l">Śr. stres</div></div>
+              <div class="card tile"><div class="tile-v" style="color: #38BDF8">{{A.avgC}}%</div><div class="tile-l">Śr. spokój</div></div>
+              <div class="card tile"><div class="tile-v gt">{{A.avgE}}%</div><div class="tile-l">Śr. energia</div></div>
+            </div>
+            <div class="card" style="margin-top: 12px">
+              <div class="row between">
+                <div class="lbl0" style="margin: 0">Energia</div>
+                <span class="sec small" style="font-weight: 600">{{A.energyNote}}</span>
+              </div>
+              <div class="ebars"><sc-for list="{{A.energy}}" as="b" hint-placeholder-count="7"><div class="eb" style="height: {{b.h}}%"></div></sc-for></div>
+            </div>
+            <div class="card" style="margin-top: 12px">
+              <div class="lbl0">Zgodność z celami życiowymi</div>
+              <div class="row g12">
+                <div class="ringbox">
+                  <svg viewBox="0 0 124 124">
+                    <defs>
+                      <linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" style="stop-color: #A78BFA"></stop>
+                        <stop offset="0.5" style="stop-color: #F472B6"></stop>
+                        <stop offset="1" style="stop-color: #38BDF8"></stop>
+                      </linearGradient>
+                    </defs>
+                    <circle cx="62" cy="62" r="50" fill="none" style="stroke: var(--track); stroke-width: 12"></circle>
+                    <circle cx="62" cy="62" r="50" fill="none" stroke="url(#ringG)" style="stroke-width: 12; stroke-linecap: round; stroke-dasharray: {{A.dash}}; transition: stroke-dasharray .6s"></circle>
+                  </svg>
+                  <div class="ring-c"><span class="ring-v">{{A.pct}}%</span><span class="sec" style="font-size: 11px; font-weight: 600">zgodności</span></div>
+                </div>
+                <p class="body" style="font-weight: 600">{{A.msg}}</p>
+              </div>
+              <sc-for list="{{A.goals}}" as="g" hint-placeholder-count="3">
+                <div class="goalrow">
+                  <div class="row between small"><span style="font-weight: 600">{{g.name}}</span><span class="sec">{{g.note}}</span></div>
+                  <div class="gbar"><span style="width: {{g.pct}}%"></span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{scr.ach}}" hint-placeholder-val="{{ false }}">
+          <div class="screen {{screenCls}}" ref="{{scrollRef}}">
+            <div class="topbar">
+              <button class="circ" onClick="{{back}}" aria-label="Wstecz"><svg class="ic" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"></path></svg></button>
+              <span class="bar-title">Osiągnięcia</span>
+              <span style="width: 40px"></span>
+            </div>
+            <div class="card streak-hero">
+              <div class="lbl0">Twoja obecna seria</div>
+              <svg class="big-flame" viewBox="0 0 24 24">
+                <defs>
+                  <linearGradient id="flameG" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="0" style="stop-color: #F472B6"></stop>
+                    <stop offset="1" style="stop-color: #FBBF24"></stop>
+                  </linearGradient>
+                </defs>
+                <path d="M12 2c1.2 3.6 5.5 5.6 5.5 11a5.5 5.5 0 0 1-11 0c0-3 1.6-4.7 2.8-5.8.2 1.8 1.1 2.9 2.2 3.4.4-3.2-.7-5.8.5-8.6z" fill="url(#flameG)"></path>
+              </svg>
+              <div class="streak-n gt">{{ach.streak}}</div>
+              <div class="sec" style="font-weight: 600; margin-top: 4px">{{ach.unit}}</div>
+              <div class="wdots">
+                <sc-for list="{{ach.dots}}" as="d" hint-placeholder-count="7">
+                  <span class="{{d.cls}}"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span>
+                </sc-for>
+              </div>
+              <p class="small sec" style="margin: 14px 0 0">{{ach.next}}</p>
+            </div>
+            <div class="lbl">Gablota Odznak</div>
+            <div class="stack">
+              <sc-for list="{{ach.badges}}" as="b" hint-placeholder-count="3">
+                <div class="{{b.cls}}">
+                  <span class="bicon">
+                    <sc-if value="{{b.k1}}" hint-placeholder-val="{{ false }}"><svg class="ic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"></path></svg></sc-if>
+                    <sc-if value="{{b.k2}}" hint-placeholder-val="{{ false }}"><svg class="ic" viewBox="0 0 24 24"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><path d="M16 8L2 22M17.5 15H9"></path></svg></sc-if>
+                    <sc-if value="{{b.k3}}" hint-placeholder-val="{{ false }}"><svg class="ic" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></sc-if>
+                  </span>
+                  <div class="bmid">
+                    <div class="bname">{{b.name}}</div>
+                    <div class="sec small">{{b.desc}}</div>
+                    <div class="breq">
+                      <sc-if value="{{b.l}}" hint-placeholder-val="{{ false }}"><svg class="ic s14" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></sc-if>
+                      <sc-if value="{{b.u}}" hint-placeholder-val="{{ false }}"><svg class="ic s14" viewBox="0 0 24 24" style="color: #34D399"><path d="M20 6L9 17l-5-5"></path></svg></sc-if>
+                      {{b.req}}
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{scr.settings}}" hint-placeholder-val="{{ false }}">
+          <div class="screen {{screenCls}}" ref="{{scrollRef}}">
+            <div class="topbar">
+              <button class="circ" onClick="{{back}}" aria-label="Wstecz"><svg class="ic" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"></path></svg></button>
+              <span class="bar-title">Ustawienia</span>
+              <span style="width: 40px"></span>
+            </div>
+            <div class="lbl" style="margin-top: 6px">Twoje Aktualne Cele Życiowe</div>
+            <div class="card">
+              <div class="chips"><sc-for list="{{goalChips}}" as="g" hint-placeholder-count="3"><span class="chip static">{{g.t}}</span></sc-for></div>
+            </div>
+            <div class="lbl">Osobowość AI</div>
+            <div class="card" style="padding: 4px 16px 14px">
+              <sc-for list="{{pers}}" as="p" hint-placeholder-count="4">
+                <button class="{{p.cls}}" onClick="{{p.pick}}" aria-pressed="{{p.on}}">
+                  <span class="radio"></span>
+                  <span style="flex: 1"><span class="opt-t" style="display: block">{{p.name}}</span><span class="sec small">{{p.desc}}</span></span>
+                </button>
+              </sc-for>
+              <div class="preview">{{advicePreview}}</div>
+            </div>
+            <div class="lbl">Wybór Motywu Akcentów</div>
+            <div class="thms">
+              <sc-for list="{{themes}}" as="t" hint-placeholder-count="3">
+                <button class="{{t.cls}}" onClick="{{t.pick}}">
+                  <span class="sws" style="background: {{t.a}}"><span style="background: {{t.b}}"></span></span>
+                  {{t.label}}
+                </button>
+              </sc-for>
+            </div>
+            <div class="lbl">Zarządzanie</div>
+            <div class="card" style="padding: 0 16px">
+              <button class="mbtn" onClick="{{askReset}}"><svg class="ic s18" viewBox="0 0 24 24"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>Zresetuj Cele Życiowe</button>
+              <button class="mbtn danger" onClick="{{askLogout}}"><svg class="ic s18" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path></svg>Wyloguj się</button>
+            </div>
+            <p class="small sec" style="text-align: center; margin-top: 22px">Vocaly 1.0 · Twój pamiętnik głosowy</p>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{scr.graph}}" hint-placeholder-val="{{ false }}">
+          <div class="screen noscroll {{screenCls}}">
+            <div class="topbar">
+              <button class="circ" onClick="{{back}}" aria-label="Wstecz"><svg class="ic" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"></path></svg></button>
+              <span class="bar-title">Graf wiedzy</span>
+              <button class="circ" onClick="{{openGSheet}}" aria-label="Filtry grafu">
+                <svg class="ic s18" viewBox="0 0 24 24"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"></path></svg>
+                <sc-if value="{{G.filterOn}}" hint-placeholder-val="{{ false }}"><span class="dot-on"></span></sc-if>
+              </button>
+            </div>
+            <div class="glegend">
+              <span><span class="dot" style="background: linear-gradient(135deg, #A78BFA, #F472B6)"></span>Wpis dnia</span>
+              <span><span class="dot" style="background: #FBBF24"></span>Pomysł</span>
+              <span><span class="dot" style="background: #60A5FA"></span>Zadanie</span>
+              <span><span class="dot" style="background: #F0ABFC"></span>Refleksja</span>
+              <span><span class="dot" style="background: #38BDF8"></span>Wydarzenie</span>
+            </div>
+            <div class="gbox" ref="{{graphRef}}" onPointerDown="{{gDown}}" onPointerMove="{{gMove}}" onPointerUp="{{gUp}}" onPointerCancel="{{gUp}}" onWheel="{{gWheel}}">
+              <div class="gworld" style="transform: {{G.world}}">
+                <sc-for list="{{G.links}}" as="l" hint-placeholder-count="10">
+                  <span class="glink" style="left: {{l.x}}px; top: {{l.y}}px; width: {{l.len}}px; transform: rotate({{l.ang}}deg); opacity: {{l.op}}"></span>
+                </sc-for>
+                <sc-for list="{{G.notes}}" as="n" hint-placeholder-count="10">
+                  <button class="{{n.cls}}" style="left: {{n.x}}px; top: {{n.y}}px; background: {{n.color}}" onPointerDown="{{n.down}}" aria-label="{{n.aria}}"></button>
+                </sc-for>
+                <sc-for list="{{G.entries}}" as="n" hint-placeholder-count="5">
+                  <button class="{{n.cls}}" style="left: {{n.x}}px; top: {{n.y}}px; background: {{n.color}}" onPointerDown="{{n.down}}" aria-label="{{n.aria}}"></button>
+                  <span class="glabel" style="left: {{n.x}}px; top: {{n.y}}px">{{n.label}}</span>
+                </sc-for>
+              </div>
+              <sc-if value="{{G.empty}}" hint-placeholder-val="{{ false }}"><div class="empty" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center">Żaden element nie pasuje do filtrów.</div></sc-if>
+              <sc-if value="{{hasTip}}" hint-placeholder-val="{{ false }}">
+                <div class="gtip" style="left: {{gTip.left}}px; top: {{gTip.top}}px" onPointerDown="{{stopProp}}">
+                  <div class="gtip-k"><span class="dot" style="background: {{gTip.color}}"></span>{{gTip.kind}}</div>
+                  <div class="gtip-t">{{gTip.title}}</div>
+                  <div class="row g8">
+                    <button class="gopen" onClick="{{gTip.open}}">Otwórz</button>
+                    <button class="gclose" onClick="{{gTip.close}}">Zamknij</button>
+                  </div>
+                </div>
+              </sc-if>
+              <div class="gctl" onPointerDown="{{stopProp}}">
+                <button class="circ" onClick="{{zoomIn}}" aria-label="Przybliż"><svg class="ic s18" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
+                <button class="circ" onClick="{{zoomOut}}" aria-label="Oddal"><svg class="ic s18" viewBox="0 0 24 24"><path d="M5 12h14"></path></svg></button>
+                <button class="circ" onClick="{{zoomReset}}" aria-label="Wyśrodkuj"><svg class="ic s18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg></button>
+              </div>
+              <div class="gcount">{{G.count}} · {{G.zoomPct}}</div>
+            </div>
+            <p class="ghint">Przeciągaj węzły i tło, przybliżaj kółkiem lub przyciskami</p>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{scr.chat}}" hint-placeholder-val="{{ false }}">
+          <div class="screen chat noscroll {{screenCls}}">
+            <div class="chat-head">
+              <button class="circ" onClick="{{back}}" aria-label="Wstecz"><svg class="ic" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"></path></svg></button>
+              <div class="chat-title gt">Czat z Twoim pamiętnikiem</div>
+            </div>
+            <div class="chat-scroll" ref="{{chatRef}}">
+              <sc-if value="{{chatEmpty}}" hint-placeholder-val="{{ true }}">
+                <div class="chat-empty">
+                  <div class="chat-orb"><svg class="ic" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></div>
+                  <div class="h2">Szybkie pytania do pamiętnika</div>
+                  <p class="small sec" style="margin: 0">Odpowiadam na podstawie Twoich notatek i wpisów, zawsze ze źródłami.</p>
+                  <div class="qchips">
+                    <sc-for list="{{quick}}" as="q" hint-placeholder-count="4">
+                      <button class="qchip" onClick="{{q.ask}}">{{q.t}}<svg class="ic s16" viewBox="0 0 24 24" style="color: var(--pri)"><path d="M9 18l6-6-6-6"></path></svg></button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-for list="{{chatMsgs}}" as="m" hint-placeholder-count="0">
+                <sc-if value="{{m.isUser}}" hint-placeholder-val="{{ false }}"><div class="bub-u">{{m.text}}</div></sc-if>
+                <sc-if value="{{m.isAi}}" hint-placeholder-val="{{ false }}">
+                  <div class="bub-a">
+                    <div>{{m.text}}</div>
+                    <sc-if value="{{m.showSrc}}" hint-placeholder-val="{{ false }}">
+                      <div class="srcs">
+                        <span class="srcl">Źródła:</span>
+                        <sc-for list="{{m.sources}}" as="sr" hint-placeholder-count="2"><button class="src" onClick="{{sr.open}}">{{sr.label}}</button></sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </sc-for>
+              <sc-if value="{{chatTyping}}" hint-placeholder-val="{{ false }}">
+                <div class="typing"><span class="tdots"><span></span><span></span><span></span></span>Odpowiadam...</div>
+              </sc-if>
+            </div>
+            <div class="chat-bar">
+              <input class="chat-in" type="text" placeholder="Zadaj pytanie swojemu pamiętnikowi..." value="{{chatInput}}" onChange="{{onChatInput}}" onKeyDown="{{onChatKey}}" aria-label="Pytanie do pamiętnika">
+              <button class="sendb" onClick="{{sendChat}}" aria-label="Wyślij"><svg class="ic s18" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg></button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showFab}}" hint-placeholder-val="{{ false }}">
+          <div class="fab">
+            <button class="recbtn" onClick="{{startRec}}" aria-label="Nagraj wpis głosowy"><svg class="ic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"></path></svg></button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{procPill}}" hint-placeholder-val="{{ false }}">
+          <div class="procpill"><span class="spinner sm"></span>Przetwarzam nagranie...</div>
+        </sc-if>
+
+        <sc-if value="{{recording}}" hint-placeholder-val="{{ false }}">
+          <div class="overlay">
+            <div class="rec-top"><span class="isl-dot"></span>Nagrywam</div>
+            <div class="waves">
+              <span class="wv w1"></span><span class="wv w2"></span><span class="wv w3"></span>
+              <button class="recbtn big live" onClick="{{stopRec}}" aria-label="Zatrzymaj nagrywanie">
+                <span class="ring"></span><span class="ring r2"></span><span class="ring r3"></span>
+                <svg class="ic" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" class="fillw"></rect></svg>
+              </button>
+            </div>
+            <div class="rec-timer">{{recTimer}}</div>
+            <div class="eq"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+            <p class="small sec" style="margin: 0">Opowiedz o swoim dniu, pomysłach, zadaniach i emocjach. Dotknij, aby zakończyć.</p>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showMd}}" hint-placeholder-val="{{ false }}">
+          <div class="veil">
+            <div class="sheet" style="height: 80%">
+              <div class="grab"></div>
+              <div class="sheet-h">
+                <span class="h2" style="font-size: 18px">Podgląd pliku .md</span>
+                <button class="txtbtn strong" onClick="{{closeMd}}">Gotowe</button>
+              </div>
+              <pre class="md">{{mdText}}</pre>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{gSheet}}" hint-placeholder-val="{{ false }}">
+          <div class="veil">
+            <div class="sheet">
+              <div class="grab"></div>
+              <div class="sheet-h">
+                <span class="h2" style="font-size: 18px">Filtry grafu</span>
+                <button class="txtbtn strong" onClick="{{closeGSheet}}">Gotowe</button>
+              </div>
+              <div class="lbl0" style="margin-top: 10px">Zakres dat</div>
+              <div class="chips"><sc-for list="{{gf.ranges}}" as="o" hint-placeholder-count="4"><button class="{{o.cls}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+              <div class="lbl0" style="margin-top: 22px">Typy notatek</div>
+              <div class="chips"><sc-for list="{{gf.types}}" as="o" hint-placeholder-count="4"><button class="{{o.cls}}" onClick="{{o.pick}}"><span class="dot" style="background: {{o.color}}"></span>{{o.label}}</button></sc-for></div>
+              <div class="lbl0" style="margin-top: 22px">Powiązania semantyczne</div>
+              <div class="chips"><sc-for list="{{gf.strengths}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+              <button class="linkbtn" style="margin-top: 18px" onClick="{{clearG}}">Wyczyść</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showStory}}" hint-placeholder-val="{{ false }}">
+          <div class="story-veil">
+            <button class="circ story-x" onClick="{{closeStory}}" aria-label="Zamknij podgląd" style="color: #FFFFFF; background: rgba(255,255,255,0.14)"><svg class="ic s18" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"></path></svg></button>
+            <div class="story">
+              <div class="st-date">{{D.long}}</div>
+              <div class="st-body">
+                <sc-for list="{{story}}" as="b" hint-placeholder-count="2">
+                  <div><div class="sb-l">{{b.label}}</div><div class="{{b.cls}}">{{b.text}}</div></div>
+                </sc-for>
+              </div>
+              <div class="st-foot">Wygenerowano w Mój Pamiętnik AI</div>
+            </div>
+            <div class="ios-share">
+              <div class="ios-share-h">Udostępnij historię</div>
+              <div class="ios-row">
+                <button class="ios-app" onClick="{{shareMsg}}"><span class="ios-tile" style="background: linear-gradient(180deg, #5AF575, #13C23A)"><svg class="ic" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></span>Wiadomości</button>
+                <button class="ios-app" onClick="{{shareIg}}"><span class="ios-tile" style="background: linear-gradient(45deg, #F9A23B, #E1306C, #8A3AB9)"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><path d="M17.5 6.5h.01"></path></svg></span>Instagram</button>
+                <button class="ios-app" onClick="{{shareSave}}"><span class="ios-tile" style="background: linear-gradient(180deg, #8E8E93, #636366)"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg></span>Zapisz obraz</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{hasModal}}" hint-placeholder-val="{{ false }}">
+          <div class="veil center">
+            <div class="modal">
+              <div class="lbl0" style="margin: 0; color: #FBBF24">Nowe Osiągnięcie!</div>
+              <div class="badge-big"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="7"></circle><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"></path></svg></div>
+              <div class="h2" style="font-size: 24px">{{modal.name}}</div>
+              <p class="small sec" style="margin: 0">{{modal.desc}}</p>
+              <button class="pbtn" onClick="{{closeModal}}">Świetnie!</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{hasConfirm}}" hint-placeholder-val="{{ false }}">
+          <div class="veil center" style="z-index: 95">
+            <div class="alert">
+              <div class="al-t">{{cf.title}}</div>
+              <div class="al-m">{{cf.msg}}</div>
+              <div class="al-btns">
+                <button class="al-b" onClick="{{cancelConfirm}}">Anuluj</button>
+                <button class="al-b danger" onClick="{{doConfirm}}">{{cf.action}}</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+          <div class="toast">{{toast}}</div>
+        </sc-if>
+
+        <div class="sbar">
+          <span>{{clock}}</span>
+          <span class="sbar-r">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1"></rect><rect x="10" y="3" width="3" height="9" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg>
+            <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 2.3c2.4 0 4.6.9 6.2 2.5l1.2-1.2C14 1.7 11.4.6 8.5.6S3 1.7 1.1 3.6l1.2 1.2C3.9 3.2 6.1 2.3 8.5 2.3zm0 3.4c1.5 0 2.8.6 3.8 1.5l1.2-1.2c-1.3-1.2-3.1-2-5-2s-3.7.8-5 2l1.2 1.2c1-.9 2.3-1.5 3.8-1.5zm0 3.4c.6 0 1.1.2 1.5.6L8.5 11.2 7 9.7c.4-.4.9-.6 1.5-.6z"></path></svg>
+            <svg width="27" height="13" viewBox="0 0 27 13"><rect x="0.5" y="0.5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" style="opacity: 0.4"></rect><rect x="2" y="2" width="18" height="9" rx="2" fill="currentColor"></rect><path d="M25 4.5v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2z" fill="currentColor" style="opacity: 0.5"></path></svg>
+          </span>
+        </div>
+        <div class="{{islandCls}}">
+          <sc-if value="{{islandLive}}" hint-placeholder-val="{{ false }}"><span class="isl-dot"></span><span class="isl-t">{{recTimer}}</span></sc-if>
+        </div>
+        <div class="homeind"></div>
+      </div>
+    </div>
+    <div class="dev-cap">iPhone 15 Pro</div>
+  </div>
+
+  <div class="dev-col">
+    <div class="watch">
+      <div class="band top"></div>
+      <div class="wbody">
+        <div class="crown"></div>
+        <div class="sbtn"></div>
+        <div class="wscreen">
+          <div class="w-head"><span class="w-title">Vocaly</span><span class="w-time">{{clock}}</span></div>
+          <div class="w-center">
+            <button class="{{W.micCls}}" onClick="{{watchToggle}}" aria-label="Nagraj na zegarku">
+              <sc-if value="{{W.idle}}" hint-placeholder-val="{{ true }}"><svg class="ic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"></path></svg></sc-if>
+              <sc-if value="{{W.rec}}" hint-placeholder-val="{{ false }}"><span class="ring"></span><span class="ring r2"></span><svg class="ic" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" class="fillw"></rect></svg></sc-if>
+            </button>
+            <sc-if value="{{W.rec}}" hint-placeholder-val="{{ false }}"><span class="w-timer">{{W.timer}}</span></sc-if>
+            <sc-if value="{{W.idle}}" hint-placeholder-val="{{ true }}"><span class="w-hint">Dotknij, aby nagrać</span></sc-if>
+          </div>
+          <div class="w-sec">Transfer</div>
+          <sc-for list="{{W.items}}" as="w" hint-placeholder-count="0">
+            <div class="w-item"><span>{{w.time}}</span><span class="{{w.stCls}}">{{w.stText}}</span></div>
+          </sc-for>
+          <sc-if value="{{W.empty}}" hint-placeholder-val="{{ true }}"><div class="w-empty">Brak nagrań</div></sc-if>
+          <div class="w-sec">Status</div>
+          <sc-for list="{{W.items}}" as="w" hint-placeholder-count="0">
+            <div class="w-item">
+              <span>{{w.time}}</span>
+              <sc-if value="{{w.pending}}" hint-placeholder-val="{{ true }}"><svg class="ic s16" viewBox="0 0 24 24" style="color: #8E8E93"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg></sc-if>
+              <sc-if value="{{w.done}}" hint-placeholder-val="{{ false }}"><svg class="ic s16" viewBox="0 0 24 24" style="color: #34D399; stroke-width: 3"><path d="M20 6L9 17l-5-5"></path></svg></sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{W.empty}}" hint-placeholder-val="{{ true }}"><div class="w-empty">—</div></sc-if>
+        </div>
+      </div>
+      <div class="band bot"></div>
+    </div>
+    <div class="dev-cap">Apple Watch · 45 mm</div>
+    <p class="dev-note">Nagraj na zegarku – po wysłaniu nagranie pojawi się w „Status nagrań na żywo” na iPhonie.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1080,"height":980}}'>
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.timers = [];
+    this.pos = {};
+    this.nid = 100;
+    this.GW = 353;
+    this.GH = 600;
+    this.state = this.initialState();
+    this.scrollRef = (el) => { this.scrollEl = el; };
+    this.chatRef = (el) => { this.chatEl = el; };
+    this.graphRef = (el) => { this.graphEl = el; };
+    this.stopProp = (e) => { e.stopPropagation(); };
+  }
+
+  componentDidMount() {
+    this.clockI = setInterval(() => this.setState({ now: Date.now() }), 15000);
+  }
+
+  componentWillUnmount() {
+    this.timers.forEach((t) => clearTimeout(t));
+    [this.clockI, this.recI, this.onbI, this.watchI, this.streamI].forEach((i) => { if (i) clearInterval(i); });
+    if (this.raf) cancelAnimationFrame(this.raf);
+  }
+
+  componentDidUpdate() {
+    if (this.chatEl) this.chatEl.scrollTop = this.chatEl.scrollHeight;
+  }
+
+  later(ms, fn) {
+    const t = setTimeout(() => { this.timers = this.timers.filter((x) => x !== t); fn(); }, ms);
+    this.timers.push(t);
+    return t;
+  }
+  pad(n) { return String(n).padStart(2, '0'); }
+  hhmm(d) { return this.pad(d.getHours()) + ':' + this.pad(d.getMinutes()); }
+  mmss(sec) { return this.pad(Math.floor(sec / 60)) + ':' + this.pad(sec % 60); }
+  pl(n, one, few, many) {
+    const a = n % 10, b = n % 100;
+    if (n === 1) return one;
+    if (a >= 2 && a <= 4 && !(b >= 12 && b <= 14)) return few;
+    return many;
+  }
+  plNotes(n) { return this.pl(n, 'notatkę', 'notatki', 'notatek'); }
+  plDays(n) { return n === 1 ? 'dzień' : 'dni'; }
+  defaultGoals() { return ['Biegać 3 razy w tygodniu', 'Lepiej się wysypiać', 'Awansować na seniora']; }
+
+  types() {
+    return {
+      pomysl: { label: 'Pomysł', color: '#FBBF24' },
+      zadanie: { label: 'Zadanie', color: '#60A5FA' },
+      refleksja: { label: 'Refleksja', color: '#F0ABFC' },
+      wydarzenie: { label: 'Wydarzenie', color: '#38BDF8' }
+    };
+  }
+  emoColors() {
+    return { 'Radość': '#FDBA74', 'Spokój': '#7DD3FC', 'Stres': '#FCA5A5', 'Wdzięczność': '#C4B5FD', 'Skupienie': '#93C5FD', 'Zmęczenie': '#A5B4FC', 'Nadzieja': '#F0ABFC' };
+  }
+  personalities() {
+    return [
+      { k: 'friend', name: 'Po prostu przyjaciel', desc: 'Ciepło i po koleżeńsku' },
+      { k: 'buddha', name: 'Buddha', desc: 'Uważność, spokój, akceptacja' },
+      { k: 'pilsudski', name: 'Józef Piłsudski', desc: 'Dyscyplina i charakter' },
+      { k: 'banach', name: 'Stefan Banach', desc: 'Logika krok po kroku' }
+    ];
+  }
+  pname() {
+    const p = this.personalities().find((x) => x.k === this.state.personality);
+    return p ? p.name : 'Po prostu przyjaciel';
+  }
+  advice(core, p) {
+    if (p === 'buddha') return 'Umysł jest jak woda – gdy się uspokoi, widać dno. ' + core + ' Oddychaj i bądź tu i teraz.';
+    if (p === 'pilsudski') return 'Być zwyciężonym i nie ulec – to zwycięstwo. ' + core + ' Do dzieła, bez marudzenia!';
+    if (p === 'banach') return 'Rozłóż to jak twierdzenie: założenia, kroki, wniosek. ' + core + ' Reszta to już tylko dowód.';
+    return 'Hej, słuchaj. ' + core + ' Trzymam za Ciebie kciuki!';
+  }
+  badges() {
+    return [
+      { k: 'first', name: 'Pierwszy Krok', desc: 'Pierwsze nagranie trafiło do pamiętnika.', req: 'Pierwsze nagranie', th: 1 },
+      { k: 'three', name: 'Trzy Dni Refleksji', desc: 'Refleksja staje się nawykiem – tak trzymaj.', req: 'Seria 4 dni', th: 4 },
+      { k: 'week', name: 'Tydzień Świadomości', desc: 'Pełny tydzień uważności z pamiętnikiem.', req: 'Seria 7 dni', th: 7 }
+    ];
+  }
+  pairs() {
+    return [
+      ['n5', 'n22', 0.82], ['n22', 'n23', 0.74], ['n3', 'n5', 0.71], ['n3', 'n23', 0.66], ['n3', 'n16', 0.52],
+      ['n1', 'n18', 0.85], ['n18', 'n20', 0.78], ['n20', 'n1', 0.62], ['n14', 'n18', 0.55], ['n19', 'n18', 0.8],
+      ['n4', 'n17', 0.58], ['n15', 'n17', 0.9], ['n6', 'n4', 0.75], ['n15', 'n16', 0.6], ['n11', 'n12', 0.83],
+      ['n11', 'n13', 0.72], ['n12', 'n9', 0.48], ['n7', 'n8', 0.88], ['n8', 'n10', 0.45], ['n2', 'n12', 0.42], ['n21', 'n8', 0.4]
+    ];
+  }
+  notePools() {
+    return [
+      [
+        { type: 'pomysl', title: 'Aplikacja do wymiany książek z sąsiadami', text: 'Prosta aplikacja dla bloku: każdy dodaje książki, które już przeczytał, a sąsiedzi mogą je pożyczyć. Zacząć od półki na klatce schodowej.', kw: 'książki', rel: [] },
+        { type: 'zadanie', title: 'Zadzwonić do mamy w sobotę', text: 'Obiecałem, że zadzwonię w sobotę przed południem i ustalimy szczegóły urodzin brata.', kw: 'rodzina', rel: [['n7', 0.72], ['n10', 0.6]] },
+        { type: 'refleksja', title: 'Spacer po pracy naprawdę mnie wycisza', text: 'Dwadzieścia minut spaceru zaraz po zamknięciu laptopa działa lepiej niż serial. Głowa przestaje mielić zadania z pracy.', kw: 'spacer', rel: [['n20', 0.64], ['n16', 0.58]] }
+      ],
+      [
+        { type: 'zadanie', title: 'Zarezerwować trening interwałowy na czwartek', text: 'Czwartek 7:00, interwały 6 × 400 m. To będzie trzeci trening w tym tygodniu.', kw: 'trening', rel: [['n19', 0.62], ['n1', 0.7]] },
+        { type: 'wydarzenie', title: 'Lunch z Martą o ścieżce awansu', text: 'Marta podpowiedziała, żebym poprowadził demo migracji dla całego działu. To byłby mocny argument przy awansie na seniora.', kw: 'awans', rel: [['n11', 0.81], ['n12', 0.66]] }
+      ],
+      [
+        { type: 'pomysl', title: 'Notatki głosowe po każdym 1:1', text: 'Po każdym spotkaniu 1:1 nagrywać minutę podsumowania. Za kwartał będę mieć gotową listę feedbacku i postępów.', kw: '1:1', rel: [['n11', 0.68], ['n12', 0.74]] },
+        { type: 'zadanie', title: 'Kupić zasłony zaciemniające do sypialni', text: 'Latarnia za oknem świeci prosto na łóżko. Zasłony to szybki sposób na lepszy sen.', kw: 'sen', rel: [['n23', 0.7], ['n22', 0.55]] },
+        { type: 'refleksja', title: 'Lepiej mi się myśli bez powiadomień', text: 'Gdy wyłączam komunikator na dwie godziny, robię więcej niż przez całe popołudnie chaosu.', kw: 'skupienie', rel: [['n16', 0.6]] }
+      ],
+      [
+        { type: 'wydarzenie', title: 'Wieczorny bieg 6 km w deszczu', text: 'Mimo deszczu wyszedłem na 6 km. Tempo spokojne, ale głowa po wszystkim zupełnie czysta.', kw: 'bieg', rel: [['n1', 0.8], ['n18', 0.72]] },
+        { type: 'refleksja', title: 'Jestem dumny, że wyszedłem mimo pogody', text: 'Kiedyś deszcz byłby wymówką. Dziś zrobiłem swoje i czuję, że nawyk naprawdę się buduje.', kw: 'motywacja', rel: [['n20', 0.6]] }
+      ]
+    ];
+  }
+
+  seedEntries() {
+    return [
+      { id: 'd06', ago: 0, iso: '2026-10-06', long: 'Wtorek, 6 października', short: '6 paź', wd: 'Wt',
+        dominant: 'Poranny bieg ustawił mi cały dzień',
+        summary: 'Wstałem o 6:30 i przed pracą przebiegłem 5 km w parku. Do południa pracowałem w skupieniu nad migracją bazy, z wyłączonymi powiadomieniami. Po wczorajszym napięciu wraca równowaga.',
+        quotes: ['Po biegu mam głowę na swoim miejscu.'],
+        emotions: [{ n: 'Spokój', t: 'cichy park o świcie' }, { n: 'Skupienie', t: 'dwie godziny bez powiadomień' }],
+        done: ['Poranny bieg 5 km', 'Dwie godziny głębokiej pracy nad migracją'],
+        events: ['Bieg w parku o 6:45'],
+        goal: { level: 'pozytywny', text: 'Pierwszy trening w tym tygodniu to dobry start w stronę celu „Biegać 3 razy w tygodniu”.' },
+        core: 'Zaplanuj kolejny bieg na czwartek rano, zanim kalendarz zdąży się zapełnić.',
+        grateful: ['Słońce nad parkiem o świcie', 'Cichy poranek bez maili'],
+        keywords: ['bieg', 'skupienie', 'migracja', 'poranek'],
+        rel: [['entry', 'd30', 'podobny temat'], ['note', 'n20', 'podobny temat'], ['entry', 'd05', 'dzień wcześniej']],
+        stress: 28, calm: 69, energy: 75 },
+      { id: 'd05', ago: 1, iso: '2026-10-05', long: 'Poniedziałek, 5 października', short: '5 paź', wd: 'Pn',
+        dominant: 'Za dużo na głowie przed terminem migracji',
+        summary: 'Retro zespołu było napięte – rozmawialiśmy o przesuniętym terminie migracji. Wieczorem zauważyłem, że kawa o 16:00 znów utrudni mi zaśnięcie. Wpadłem na pomysł wieczornego rytuału bez ekranu.',
+        quotes: ['Nie muszę wszystkiego dowieźć sam.'],
+        emotions: [{ n: 'Stres', t: 'retro i przesunięty termin' }, { n: 'Zmęczenie', t: 'krótki sen z niedzieli na poniedziałek' }, { n: 'Nadzieja', t: 'pomysł na wieczorny rytuał' }],
+        done: ['Przeprowadzone retro zespołu', 'Code review dwóch pull requestów'],
+        events: ['Retro zespołu – trudna rozmowa o terminach'],
+        goal: { level: 'negatywny', text: 'Stres i późna kawa oddalają Cię od celu „Lepiej się wysypiać”.' },
+        core: 'Ustal, że ostatnia kawa jest najpóźniej o 14:00, a po 22:00 telefon zostaje w kuchni.',
+        grateful: ['Marta, która wsparła mnie na retro'],
+        keywords: ['retro', 'termin', 'kawa', 'sen'],
+        rel: [['entry', 'd29', 'podobny temat'], ['note', 'n22', 'podobny temat'], ['entry', 'd01', 'podobny nastrój']],
+        stress: 71, calm: 38, energy: 50 },
+      { id: 'd04', ago: 2, iso: '2026-10-04', long: 'Niedziela, 4 października', short: '4 paź', wd: 'Nd',
+        dominant: 'Rodzina ładuje mi baterie',
+        summary: 'Niedzielny obiad u mamy i długa rozmowa z bratem o jego nowej pracy. Po południu spacer i zero laptopa. Wieczorem wpadłem na pomysł automatycznego raportu z code review.',
+        quotes: ['Dawno się tak nie śmiałem przy stole.'],
+        emotions: [{ n: 'Radość', t: 'obiad u mamy i żarty brata' }, { n: 'Wdzięczność', t: 'mama ugotowała moją ulubioną zupę' }],
+        done: ['Spacer 6 km', 'Cały dzień bez laptopa'],
+        events: ['Niedzielny obiad u mamy'],
+        goal: { level: 'neutralny', text: 'Dzień bez treningu, ale dobry odpoczynek wspiera regenerację i sen.' },
+        core: 'Zapisz, co dziś dało Ci energię, i zaplanuj podobny dzień offline raz w miesiącu.',
+        grateful: ['Mama i jej pomidorowa', 'Rozmowa z bratem'],
+        keywords: ['rodzina', 'odpoczynek', 'spacer', 'code review'],
+        rel: [['note', 'n8', 'ten sam dzień'], ['entry', 'd29', 'podobny nastrój'], ['note', 'n12', 'podobny temat']],
+        stress: 20, calm: 74, energy: 70 },
+      { id: 'd02', ago: 4, iso: '2026-10-02', long: 'Piątek, 2 października', short: '2 paź', wd: 'Pt',
+        dominant: 'Awans jest bliżej, niż myślałem',
+        summary: 'Na 1:1 Marta powiedziała, że widzi mnie w roli seniora w przyszłym kwartale, jeśli przejmę ownership migracji. Mimo zmęczenia po incydencie czuję nadzieję. Wpadłem na pomysł klubu biegowego w firmie.',
+        quotes: ['Pierwszy raz usłyszałem konkretny plan, a nie „zobaczymy”.'],
+        emotions: [{ n: 'Nadzieja', t: 'feedback od Marty' }, { n: 'Zmęczenie', t: 'skutki nocnego incydentu' }],
+        done: ['Rozmowa 1:1 z Martą', 'Post-mortem incydentu wysłany'],
+        events: ['Rozmowa 1:1 o ścieżce na seniora'],
+        goal: { level: 'pozytywny', text: 'Konkretny plan przybliża Cię do celu „Awansować na seniora”.' },
+        core: 'Spisz trzy najważniejsze osiągnięcia z kwartału i pokaż je Marcie na kolejnym 1:1.',
+        grateful: ['Szczery feedback od Marty'],
+        keywords: ['awans', '1:1', 'ownership', 'zmęczenie'],
+        rel: [['entry', 'd01', 'dzień wcześniej'], ['note', 'n9', 'podobny temat'], ['note', 'n18', 'podobny temat']],
+        stress: 55, calm: 48, energy: 45 },
+      { id: 'd01', ago: 5, iso: '2026-10-01', long: 'Czwartek, 1 października', short: '1 paź', wd: 'Cz',
+        dominant: 'Noc z incydentem rozbiła mi rytm',
+        summary: 'O 2:10 obudził mnie alert – baza na produkcji przestała odpowiadać. Naprawiliśmy to do 4:00, ale spałem w sumie pięć godzin. Cały dzień walczyłem ze zmęczeniem i irytacją.',
+        quotes: ['Muszę nauczyć się odpuszczać wieczorem.'],
+        emotions: [{ n: 'Stres', t: 'nocny alert z produkcji' }, { n: 'Zmęczenie', t: 'tylko 5 godzin snu' }],
+        done: ['Przywrócona baza na produkcji', 'Szkic post-mortem'],
+        events: ['Nocny incydent na produkcji'],
+        goal: { level: 'negatywny', text: 'Zarwana noc odsunęła cel „Lepiej się wysypiać” – priorytetem jest regeneracja.' },
+        core: 'Dziś połóż się przed 22:30 i odpuść wieczorny trening – regeneracja też jest częścią planu.',
+        grateful: ['Zespół, który wstał razem ze mną'],
+        keywords: ['incydent', 'dyżur', 'zmęczenie', 'granice'],
+        rel: [['entry', 'd05', 'podobny nastrój'], ['note', 'n22', 'podobny temat'], ['entry', 'd02', 'dzień później']],
+        stress: 82, calm: 30, energy: 35 },
+      { id: 'd30', ago: 6, iso: '2026-09-30', long: 'Środa, 30 września', short: '30 wrz', wd: 'Śr',
+        dominant: 'Pierwsze 8 km bez zatrzymania',
+        summary: 'Po pracy przebiegłem 8 km – najdłuższy dystans w tym roku. Głowa zupełnie się wyczyściła, a wieczorem z ciekawością czytałem o planach treningowych na półmaraton.',
+        quotes: ['Ostatni kilometr biegłem na samej satysfakcji.'],
+        emotions: [{ n: 'Radość', t: 'rekord 8 km' }, { n: 'Skupienie', t: 'spokojna praca przed południem' }],
+        done: ['Bieg 8 km', 'Zamknięte zadanie z backlogu'],
+        events: ['Najdłuższy bieg w tym roku'],
+        goal: { level: 'pozytywny', text: 'Rekordowy bieg to mocny krok w stronę celu „Biegać 3 razy w tygodniu”.' },
+        core: 'Nie zwiększaj dystansu o więcej niż 10% tygodniowo – wtedy półmaraton będzie realny.',
+        grateful: ['Zdrowe kolana', 'Ciepły wieczór'],
+        keywords: ['bieg', '8 km', 'półmaraton', 'radość'],
+        rel: [['entry', 'd06', 'podobny temat'], ['note', 'n14', 'podobny temat'], ['entry', 'd29', 'dzień wcześniej']],
+        stress: 25, calm: 72, energy: 80 },
+      { id: 'd29', ago: 7, iso: '2026-09-29', long: 'Wtorek, 29 września', short: '29 wrz', wd: 'Wt',
+        dominant: 'Wcześniejsze zaśnięcie naprawdę działa',
+        summary: 'Położyłem się o 22:45 i rano obudziłem się przed budzikiem. Wieczorem kolacja z Kubą i rozmowa o jego przeprowadzce. Spokojny, równy dzień.',
+        quotes: ['Wyspany jestem po prostu innym człowiekiem.'],
+        emotions: [{ n: 'Spokój', t: 'wyspany poranek' }, { n: 'Wdzięczność', t: 'kolacja z Kubą' }],
+        done: ['Sen przed 23:00', 'Zakupy na cały tydzień'],
+        events: ['Kolacja z Kubą'],
+        goal: { level: 'pozytywny', text: 'Wczesny sen to bezpośredni krok w stronę celu „Lepiej się wysypiać”.' },
+        core: 'Powtórz ten wieczór – ta sama godzina i ta sama rutyna przez kolejne pięć dni.',
+        grateful: ['Kuba i nasza rozmowa', 'Wyspany poranek'],
+        keywords: ['sen', 'rutyna', 'przyjaźń', 'spokój'],
+        rel: [['entry', 'd05', 'podobny temat'], ['note', 'n3', 'podobny temat'], ['entry', 'd04', 'podobny nastrój']],
+        stress: 30, calm: 68, energy: 62 }
+    ];
+  }
+
+  seedNotes() {
+    const N = (id, day, time, source, type, title, text) => ({ id, day, time, source, type, title, text, rel: [], isNew: false });
+    return [
+      N('n1', 'd06', '07:12', 'zegarek', 'wydarzenie', 'Poranny bieg 5 km', '5 km w parku w spokojnym tempie, 28 minut. Pierwszy kilometr był ciężki, potem złapałem rytm.'),
+      N('n2', 'd06', '07:14', 'zegarek', 'zadanie', 'Przygotować demo migracji na czwartek', 'Do czwartku slajdy i krótka prezentacja dla zespołu: co migrujemy, jakie są ryzyka i jaki mamy plan wycofania.'),
+      N('n3', 'd05', '21:40', 'telefon', 'pomysl', 'Wieczorny rytuał bez ekranu', 'Godzina przed snem bez telefonu: książka, rozciąganie, herbata. Telefon ląduje w kuchni o 22:00. Spróbować przez tydzień i zobaczyć, co się zmieni.'),
+      N('n4', 'd05', '18:05', 'telefon', 'zadanie', 'Zamknąć migrację bazy do piątku', 'Zostały dwa ostatnie serwisy i testy obciążeniowe. Poprosić Adama z DevOps o okno serwisowe.'),
+      N('n5', 'd05', '21:42', 'telefon', 'refleksja', 'Kawa po 15:00 psuje mi sen', 'Znowu wypiłem kawę o 16:00 i czuję, że nie zasnę przed północą. To powtarza się za każdym razem.'),
+      N('n6', 'd05', '18:07', 'telefon', 'wydarzenie', 'Retro zespołu – rozmowa o terminach', 'Napięta rozmowa o przesuniętym terminie migracji. Udało się ustalić nowy plan, ale wyszedłem zmęczony.'),
+      N('n7', 'd04', '19:30', 'telefon', 'wydarzenie', 'Niedzielny obiad u mamy', 'Pomidorowa, sernik i długie rozmowy. Brat opowiadał o nowej pracy, śmialiśmy się do łez.'),
+      N('n8', 'd04', '19:33', 'telefon', 'refleksja', 'Czas z rodziną ładuje mi baterie', 'Po takim dniu czuję, że mam siłę na cały tydzień. Muszę częściej znajdować na to czas, nie tylko w święta.'),
+      N('n9', 'd04', '21:15', 'telefon', 'pomysl', 'Automatyczny raport z code review', 'Skrypt, który raz w tygodniu zbiera moje review i komentarze w krótki raport. Przyda się jako dowód zaangażowania przy rozmowie o awansie.'),
+      N('n10', 'd04', '21:17', 'telefon', 'zadanie', 'Kupić bratu prezent na urodziny', 'Urodziny za dwa tygodnie. Pomysły: zegarek do biegania albo bilety na koncert.'),
+      N('n11', 'd02', '16:20', 'telefon', 'wydarzenie', 'Rozmowa 1:1 z Martą o awansie', 'Marta widzi mnie w roli seniora w przyszłym kwartale, jeśli przejmę ownership migracji i poprowadzę demo.'),
+      N('n12', 'd02', '16:24', 'telefon', 'zadanie', 'Spisać osiągnięcia z kwartału', 'Lista: migracja, mentoring nowej osoby, skrócenie czasu buildów o 30%. Przygotować na kolejne 1:1.'),
+      N('n13', 'd02', '22:05', 'zegarek', 'refleksja', 'Boję się, że nie jestem gotowy na seniora', 'Z jednej strony się cieszę, z drugiej czuję presję. Chyba boję się, że ktoś zauważy, czego jeszcze nie umiem.'),
+      N('n14', 'd02', '22:08', 'zegarek', 'pomysl', 'Klub biegowy w firmie', 'Wspólne bieganie we wtorki po pracy. Mniej stresu, więcej integracji, a ja miałbym motywację do trzeciego treningu.'),
+      N('n15', 'd01', '04:10', 'telefon', 'wydarzenie', 'Nocny incydent na produkcji', 'Alert o 2:10, baza przestała odpowiadać. Naprawione do 4:00. Przyczyna: przepełniona pula połączeń.'),
+      N('n16', 'd01', '20:30', 'telefon', 'refleksja', 'Potrzebuję lepszych granic po pracy', 'Odbieram powiadomienia do późna, nawet gdy nie mam dyżuru. Muszę jasno oddzielić pracę od wieczoru.'),
+      N('n17', 'd01', '12:00', 'telefon', 'zadanie', 'Napisać post-mortem incydentu', 'Opisać przebieg, przyczynę i działania naprawcze. Wysłać zespołowi do piątku.'),
+      N('n18', 'd30', '19:10', 'zegarek', 'wydarzenie', 'Bieg 8 km bez zatrzymania', 'Najdłuższy dystans w tym roku, tempo 5:50/km. Ostatni kilometr na samej satysfakcji.'),
+      N('n19', 'd30', '21:00', 'telefon', 'zadanie', 'Zapisać się na półmaraton', 'Sprawdzić wiosenne półmaratony i plan treningowy na 16 tygodni.'),
+      N('n20', 'd30', '19:12', 'zegarek', 'refleksja', 'Bieganie porządkuje mi głowę', 'Po biegu problemy z pracy wydają się mniejsze. To mój najlepszy sposób na stres.'),
+      N('n21', 'd29', '22:00', 'telefon', 'wydarzenie', 'Kolacja z Kubą', 'Kuba przeprowadza się do Gdańska. Rozmawialiśmy o zmianach i o tym, czego obaj teraz szukamy.'),
+      N('n22', 'd29', '22:40', 'telefon', 'refleksja', 'Przed 23:00 – więcej energii rano', 'Położyłem się o 22:45 i obudziłem przed budzikiem. Wyraźna różnica w energii przez cały dzień.'),
+      N('n23', 'd29', '22:42', 'telefon', 'zadanie', 'Telefon na noc do drugiego pokoju', 'Od dziś ładowarka w przedpokoju, a w sypialni zwykły budzik.')
+    ];
+  }
+
+  initialState() {
+    return {
+      now: Date.now(), authed: false, hasGoals: false, demoReturning: false, loggingIn: false,
+      goals: this.defaultGoals(),
+      onbStep: 1, onbPhase: 'idle', onbSec: 0,
+      stack: [{ name: 'home', params: {} }], navDir: 'push',
+      homeTab: 'entries', noteFilter: 'all',
+      entries: this.seedEntries(), notes: this.seedNotes(),
+      recordings: [
+        { id: 'r0', time: '07:12', day: 'Dziś', source: 'zegarek', stage: 4, error: false, noteCount: 2, entryId: 'd06' },
+        { id: 'r1', time: '21:40', day: 'Wczoraj', source: 'telefon', stage: 4, error: false, noteCount: 2, entryId: 'd05' },
+        { id: 'r2', time: '18:05', day: 'Wczoraj', source: 'telefon', stage: 4, error: false, noteCount: 2, entryId: 'd05' }
+      ],
+      recCount: 0, recording: false, recSec: 0, procPill: false,
+      streak: 3, unlocked: { first: true, three: false, week: false }, firstDone: false, modalQueue: [],
+      todayHl: false, poolIdx: 0,
+      personality: 'friend', theme: 'dark', confirm: null,
+      shareMode: false, shareSel: { hero: true }, storyOpen: false, mdOpen: false, toast: null,
+      aRange: 7,
+      gRange: 'all', gTypes: { pomysl: true, zadanie: true, refleksja: true, wydarzenie: true }, gStrength: 0, gSheet: false,
+      gZoom: 1, gPanX: 0, gPanY: 0, gSel: null, gTick: 0,
+      chat: [], chatInput: '', chatTyping: false,
+      watchRec: false, watchSec: 0, watchItems: []
+    };
+  }
+
+  // ---------- navigation ----------
+  go(name, params) {
+    this.setState((st) => ({ stack: st.stack.concat([{ name, params: params || {} }]), navDir: 'push', shareMode: false, storyOpen: false, mdOpen: false, gSel: null, gSheet: false }));
+    this.later(0, () => { if (this.scrollEl) this.scrollEl.scrollTop = 0; });
+    if (name === 'graph') this.prepGraph();
+  }
+  back() {
+    this.setState((st) => ({ stack: st.stack.length > 1 ? st.stack.slice(0, -1) : st.stack, navDir: 'back', shareMode: false, storyOpen: false, mdOpen: false, gSel: null, gSheet: false }));
+    this.later(0, () => { if (this.scrollEl) this.scrollEl.scrollTop = 0; });
+  }
+  openEntry(id) { if (this.state.shareMode) return; this.go('entry', { id }); }
+  openNote(id) { if (this.state.shareMode) return; this.go('note', { id }); }
+  openRef(kind, id) { if (kind === 'entry') this.openEntry(id); else this.openNote(id); }
+
+  // ---------- login & onboarding ----------
+  login() {
+    if (this.state.loggingIn) return;
+    this.setState({ loggingIn: true });
+    this.later(1000, () => {
+      const ret = this.state.demoReturning;
+      this.setState({ loggingIn: false, authed: true, hasGoals: ret, goals: this.defaultGoals(), onbStep: 1, onbPhase: 'idle', onbSec: 0, stack: [{ name: 'home', params: {} }], navDir: 'push' });
+    });
+  }
+  onbTap() {
+    const s = this.state;
+    if (s.onbPhase === 'idle') {
+      this.setState({ onbPhase: 'rec', onbSec: 0 });
+      if (this.onbI) clearInterval(this.onbI);
+      this.onbI = setInterval(() => this.setState((st) => ({ onbSec: st.onbSec + 1 })), 1000);
+    } else if (s.onbPhase === 'rec') {
+      clearInterval(this.onbI); this.onbI = null;
+      const step = s.onbStep;
+      this.setState({ onbPhase: 'proc' });
+      this.later(step === 1 ? 1500 : 2000, () => {
+        if (this.state.hasGoals || !this.state.authed) return;
+        this.setState({ onbPhase: 'idle', onbStep: step + 1, onbSec: 0 });
+      });
+    }
+  }
+  finishOnb() {
+    this.setState({ hasGoals: true, goals: this.defaultGoals(), stack: [{ name: 'home', params: {} }], navDir: 'push', onbStep: 1, onbPhase: 'idle' });
+  }
+  skipOnb() {
+    if (this.onbI) { clearInterval(this.onbI); this.onbI = null; }
+    this.setState({ hasGoals: true, goals: ['Chcę prowadzić pamiętnik i dbać o swój nastrój'], stack: [{ name: 'home', params: {} }], navDir: 'push', onbStep: 1, onbPhase: 'idle' });
+  }
+
+  // ---------- recording simulation ----------
+  startRec() {
+    if (this.state.recording) return;
+    this.setState({ recording: true, recSec: 0 });
+    this.recI = setInterval(() => this.setState((st) => ({ recSec: st.recSec + 1 })), 1000);
+  }
+  stopRec() {
+    if (this.recI) { clearInterval(this.recI); this.recI = null; }
+    this.setState({ recording: false, procPill: true });
+    this.later(1000, () => { this.setState({ procPill: false }); this.addRecording('telefon', null); });
+  }
+  addRecording(source, watchId) {
+    this.nid += 1;
+    const id = 'r' + this.nid;
+    const time = this.hhmm(new Date());
+    this.setState((st) => {
+      const n = st.recCount + 1;
+      return { recCount: n, recordings: [{ id, time, day: 'Dziś', source, stage: 0, error: false, willFail: n === 4, watchId, entryId: 'd06' }].concat(st.recordings) };
+    });
+    this.later(1500, () => this.advance(id));
+  }
+  updRec(id, patch) {
+    this.setState((st) => ({ recordings: st.recordings.map((r) => (r.id === id ? Object.assign({}, r, patch) : r)) }));
+  }
+  advance(id) {
+    const r = this.state.recordings.find((x) => x.id === id);
+    if (!r || r.error) return;
+    if (r.willFail && r.stage === 1) { this.updRec(id, { error: true, willFail: false }); return; }
+    const ns = r.stage + 1;
+    this.updRec(id, { stage: ns });
+    if (ns < 4) this.later(1500, () => this.advance(id));
+    else this.completeRec(id);
+  }
+  retry(id) {
+    this.updRec(id, { error: false, stage: 0 });
+    this.later(1500, () => this.advance(id));
+  }
+  completeRec(id) {
+    const pools = this.notePools();
+    this.setState((st) => {
+      const pool = pools[st.poolIdx % pools.length];
+      const r = st.recordings.find((x) => x.id === id) || {};
+      const t = r.time || this.hhmm(new Date());
+      const newNotes = pool.map((p, i) => ({ id: 'x' + st.poolIdx + '_' + i + '_' + id, day: 'd06', time: t, source: r.source || 'telefon', type: p.type, title: p.title, text: p.text, kw: p.kw, rel: p.rel, isNew: true }));
+      const streak = st.streak + 1;
+      const unlocked = Object.assign({}, st.unlocked);
+      const q = st.modalQueue.slice();
+      if (!st.firstDone) { unlocked.first = true; q.push('first'); }
+      if (streak >= 4 && !unlocked.three) { unlocked.three = true; q.push('three'); }
+      if (streak >= 7 && !unlocked.week) { unlocked.week = true; q.push('week'); }
+      const watchItems = st.watchItems.map((w) => (w.id === r.watchId ? Object.assign({}, w, { done: true }) : w));
+      const recordings = st.recordings.map((x) => (x.id === id ? Object.assign({}, x, { noteCount: pool.length, fresh: true, entryId: 'd06' }) : x));
+      return { notes: newNotes.concat(st.notes), streak, unlocked, modalQueue: q, firstDone: true, poolIdx: st.poolIdx + 1, todayHl: true, watchItems, recordings };
+    });
+    this.later(2700, () => this.setState((st) => ({ todayHl: false, recordings: st.recordings.map((x) => (x.fresh ? Object.assign({}, x, { fresh: false }) : x)) })));
+  }
+
+  // ---------- watch ----------
+  watchToggle() {
+    if (!this.state.watchRec) {
+      this.setState({ watchRec: true, watchSec: 0 });
+      this.watchI = setInterval(() => this.setState((st) => ({ watchSec: st.watchSec + 1 })), 1000);
+    } else {
+      if (this.watchI) { clearInterval(this.watchI); this.watchI = null; }
+      this.nid += 1;
+      const wid = 'w' + this.nid;
+      const time = this.hhmm(new Date());
+      this.setState((st) => ({ watchRec: false, watchItems: [{ id: wid, time, sent: false, done: false }].concat(st.watchItems) }));
+      this.later(1400, () => {
+        this.setState((st) => ({ watchItems: st.watchItems.map((w) => (w.id === wid ? Object.assign({}, w, { sent: true }) : w)) }));
+        this.addRecording('zegarek', wid);
+      });
+    }
+  }
+
+  // ---------- share & toast ----------
+  toggleSel(k) {
+    this.setState((st) => {
+      const sel = Object.assign({}, st.shareSel);
+      if (sel[k]) delete sel[k]; else sel[k] = true;
+      return { shareSel: sel };
+    });
+  }
+  finishShare() {
+    if (!Object.keys(this.state.shareSel).length) { this.showToast('Wybierz co najmniej jedną sekcję'); return; }
+    this.setState({ storyOpen: true });
+  }
+  shareTo(msg) { this.setState({ storyOpen: false, shareMode: false }); this.showToast(msg); }
+  showToast(msg) {
+    if (this.toastT) clearTimeout(this.toastT);
+    this.setState({ toast: msg });
+    this.toastT = this.later(1900, () => this.setState({ toast: null }));
+  }
+  doConfirm() {
+    const c = this.state.confirm;
+    if (c === 'reset') this.setState({ confirm: null, hasGoals: false, onbStep: 1, onbPhase: 'idle', onbSec: 0, stack: [{ name: 'home', params: {} }], navDir: 'push' });
+    else if (c === 'logout') this.setState({ confirm: null, authed: false, loggingIn: false, stack: [{ name: 'home', params: {} }], navDir: 'push', chat: [] });
+    else this.setState({ confirm: null });
+  }
+
+  // ---------- chat ----------
+  sortedNotes() {
+    const ago = {};
+    this.state.entries.forEach((e) => { ago[e.id] = e.ago; });
+    return this.state.notes.slice().sort((a, b) => ((ago[a.day] - ago[b.day]) || (a.time < b.time ? 1 : (a.time > b.time ? -1 : 0))));
+  }
+  answerFor(q) {
+    const s = this.state;
+    const T = this.types();
+    const E = {};
+    s.entries.forEach((e) => { E[e.id] = e; });
+    const src = (id) => { const n = s.notes.find((x) => x.id === id); return n ? { label: T[n.type].label + ' · ' + E[n.day].short, kind: 'note', id } : null; };
+    const esrc = (id) => ({ label: 'Wpis dnia · ' + E[id].short, kind: 'entry', id });
+    const ql = q.toLowerCase();
+    const sorted = this.sortedNotes();
+    if (ql.indexOf('wczoraj') >= 0 && ql.indexOf('pomys') >= 0) {
+      return { text: 'Wczoraj, 5 października, zapisałeś jeden pomysł: „Wieczorny rytuał bez ekranu” – godzina przed snem bez telefonu, za to z książką, rozciąganiem i herbatą. Tego samego wieczoru zauważyłeś, że kawa po 15:00 psuje Ci sen, więc oba wpisy wspierają cel „Lepiej się wysypiać”.', sources: [src('n3'), src('n5')].filter(Boolean) };
+    }
+    if (ql.indexOf('tygodni') >= 0) {
+      const cnt = s.notes.filter((n) => E[n.day].ago <= 6).length;
+      return { text: 'W tym tygodniu najważniejsze były: nocny incydent na produkcji w czwartek, rozmowa 1:1 z Martą o awansie w piątek, niedzielny obiad u mamy i napięte retro w poniedziałek. Dziś rano dołożyłeś bieg 5 km. Łącznie zapisałeś ' + cnt + ' ' + this.plNotes(cnt) + ' z 6 dni.', sources: [src('n15'), src('n11'), esrc('d04'), esrc('d05')].filter(Boolean) };
+    }
+    if (ql.indexOf('refleks') >= 0) {
+      const refl = sorted.filter((n) => n.type === 'refleksja').slice(0, 3);
+      return { text: 'Twoje ostatnie refleksje krążą wokół energii i granic: ' + refl.map((n) => '„' + n.title + '”').join(', ') + '. Widać wspólny wątek – najlepiej się czujesz, gdy wieczorem odcinasz pracę, a w ciągu dnia się ruszasz.', sources: refl.map((n) => src(n.id)).filter(Boolean) };
+    }
+    if (ql.indexOf('cel') >= 0) {
+      const g = s.goals;
+      const head = g.length === 1 ? 'Masz jeden cel: „' + g[0] + '”. ' : 'Masz ' + g.length + ' cele: ' + g.map((x) => '„' + x + '”').join(', ') + '. ';
+      if (g.indexOf('Biegać 3 razy w tygodniu') >= 0) {
+        return { text: head + 'Bieganie: 2 z 3 treningów w ostatnich 7 dniach. Sen: tylko 3 z 7 nocy przed 23:00 – tu masz najwięcej do zrobienia. Awans: po rozmowie z Martą masz konkretny plan na kwartał. Ogólna zgodność z celami to 72%.', sources: [src('n1'), src('n22'), src('n11')].filter(Boolean) };
+      }
+      return { text: head + 'W ostatnich 7 dniach prowadziłeś pamiętnik przez 6 dni, a średni poziom spokoju wyniósł 57%. To dobry fundament – doprecyzuj cele w ustawieniach, żebym mógł trafniej doradzać.', sources: [esrc('d06'), esrc('d05')] };
+    }
+    const two = sorted.slice(0, 2);
+    return { text: 'Przejrzałem Twój pamiętnik pod kątem pytania „' + q + '”. Najbliżej związane są Twoje dwie najnowsze notatki: ' + two.map((n) => '„' + n.title + '”').join(' i ') + '. Zapytaj konkretniej – np. o pomysły, refleksje albo cele – a odpowiem dokładniej.', sources: two.map((n) => src(n.id)).filter(Boolean) };
+  }
+  ask(q) {
+    const text = (q || '').trim();
+    if (!text || this.state.chatTyping || this.streamI) return;
+    const ans = this.answerFor(text);
+    this.nid += 1;
+    const uid = 'u' + this.nid;
+    this.setState((st) => ({ chat: st.chat.concat([{ id: uid, role: 'user', text }]), chatInput: '', chatTyping: true }));
+    this.later(1000, () => {
+      this.nid += 1;
+      const aid = 'a' + this.nid;
+      const words = ans.text.split(' ');
+      this.setState((st) => ({ chatTyping: false, chat: st.chat.concat([{ id: aid, role: 'ai', words, shown: 0, sources: ans.sources }]) }));
+      let k = 0;
+      this.streamI = setInterval(() => {
+        k += 1;
+        this.setState((st) => ({ chat: st.chat.map((m) => (m.id === aid ? Object.assign({}, m, { shown: k }) : m)) }));
+        if (k >= words.length) { clearInterval(this.streamI); this.streamI = null; }
+      }, 45);
+    });
+  }
+
+  // ---------- analytics ----------
+  pathFor(vals, w, h) {
+    const n = vals.length;
+    const pts = vals.map((v, i) => [i * (w / (n - 1)), (h - 10) - (v / 100) * (h - 20)]);
+    let d = 'M' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
+    for (let i = 1; i < n; i++) {
+      const x0 = pts[i - 1][0], y0 = pts[i - 1][1], x1 = pts[i][0], y1 = pts[i][1];
+      const cx = (x0 + x1) / 2;
+      d += ' C' + cx.toFixed(1) + ' ' + y0.toFixed(1) + ' ' + cx.toFixed(1) + ' ' + y1.toFixed(1) + ' ' + x1.toFixed(1) + ' ' + y1.toFixed(1);
+    }
+    return { d, area: d + ' L' + w + ' ' + h + ' L0 ' + h + ' Z', last: pts[n - 1] };
+  }
+  analytics(range) {
+    const s = this.state;
+    const es = s.entries.slice().sort((a, b) => b.ago - a.ago);
+    let stress = es.map((e) => e.stress), calm = es.map((e) => e.calm), energy = es.map((e) => e.energy);
+    let labels = [es[0].short, es[3].short, es[es.length - 1].short];
+    if (range === 30) {
+      const S = [], C = [], En = [];
+      for (let i = 0; i < 23; i++) {
+        const c = Math.max(12, Math.min(92, Math.round(56 + 14 * Math.sin(i / 2.6) + (((i * 37) % 11) - 5))));
+        C.push(c);
+        S.push(Math.max(8, Math.min(90, Math.round(100 - c - 8 + (((i * 13) % 9) - 4)))));
+        En.push(Math.max(15, Math.min(95, Math.round(58 + 16 * Math.sin(i / 3.3 + 1) + (((i * 7) % 9) - 4)))));
+      }
+      stress = S.concat(stress); calm = C.concat(calm); energy = En.concat(energy);
+      labels = ['7 wrz', '21 wrz', '6 paź'];
+    }
+    const avg = (a) => Math.round(a.reduce((x, y) => x + y, 0) / a.length);
+    const ps = this.pathFor(stress, 320, 140), pc = this.pathFor(calm, 320, 140);
+    const pct = range === 7 ? 72 : 64;
+    const circ = 2 * Math.PI * 50;
+    const GP = {
+      'Biegać 3 razy w tygodniu': range === 7 ? [67, '2 z 3 treningów'] : [75, '9 z 12 treningów'],
+      'Lepiej się wysypiać': range === 7 ? [43, '3 z 7 nocy przed 23:00'] : [52, '15 z 30 nocy'],
+      'Awansować na seniora': range === 7 ? [80, 'plan z Martą'] : [65, 'w trakcie'],
+      'Chcę prowadzić pamiętnik i dbać o swój nastrój': range === 7 ? [86, '6 z 7 dni z wpisem'] : [77, '23 z 30 dni']
+    };
+    return {
+      stress: ps.d, calm: pc.d, calmArea: pc.area,
+      sx: ps.last[0].toFixed(1), sy: ps.last[1].toFixed(1), cx: pc.last[0].toFixed(1), cy: pc.last[1].toFixed(1),
+      labels: labels.map((t) => ({ t })),
+      avgS: avg(stress), avgC: avg(calm), avgE: avg(energy),
+      energyNote: range === 7 ? 'ostatnie 7 wpisów' : 'ostatnie 30 dni',
+      energy: energy.map((v) => ({ h: v })),
+      pct, dash: (circ * pct / 100).toFixed(1) + ' ' + circ.toFixed(1),
+      msg: range === 7 ? 'Ostatnie dni świetnie przybliżyły Cię do celów' : 'W skali miesiąca idziesz w dobrą stronę – sen wciąż jest do poprawy',
+      goals: s.goals.map((g) => { const v = GP[g] || [60, 'w trakcie']; return { name: g, pct: v[0], note: v[1] }; })
+    };
+  }
+
+  // ---------- graph ----------
+  visibleGraph() {
+    const s = this.state;
+    const T = this.types();
+    const maxAgo = { 7: 6, 30: 29, 90: 89, all: 9999 }[s.gRange];
+    const ago = {}, short = {};
+    const all = [], nodes = [], vis = {};
+    s.entries.forEach((e) => {
+      ago[e.id] = e.ago; short[e.id] = e.short;
+      const nd = { id: e.id, kind: 'entry', day: null, label: e.short, title: e.dominant, kindLabel: 'Wpis dnia · ' + e.short, color: 'linear-gradient(135deg, #A78BFA, #F472B6)' };
+      all.push(nd);
+      if (e.ago <= maxAgo) { nodes.push(nd); vis[e.id] = true; }
+    });
+    s.notes.forEach((n) => {
+      const nd = { id: n.id, kind: 'note', day: n.day, label: '', title: n.title, kindLabel: T[n.type].label + ' · ' + short[n.day], color: T[n.type].color };
+      all.push(nd);
+      if (ago[n.day] <= maxAgo && s.gTypes[n.type]) { nodes.push(nd); vis[n.id] = true; }
+    });
+    const links = [], seen = {};
+    const add = (a, b, w) => {
+      const key = a < b ? a + '|' + b : b + '|' + a;
+      if (seen[key]) return;
+      seen[key] = true;
+      if (vis[a] && vis[b] && w >= s.gStrength) links.push({ a, b, w });
+    };
+    s.notes.forEach((n) => { add(n.id, n.day, 0.95); (n.rel || []).forEach((r) => add(n.id, r[0], r[1])); });
+    this.pairs().forEach((p) => add(p[0], p[1], p[2]));
+    s.entries.forEach((e) => e.rel.forEach((r) => { if (r[0] === 'entry') add(e.id, r[1], 0.6); }));
+    return { nodes, links, all };
+  }
+  ensurePos(nodes) {
+    const W = this.GW, H = this.GH;
+    nodes.forEach((n, i) => {
+      if (this.pos[n.id]) return;
+      const parent = n.kind === 'note' ? this.pos[n.day] : null;
+      const a = i * 2.399;
+      if (parent) this.pos[n.id] = { x: parent.x + Math.cos(a) * 42, y: parent.y + Math.sin(a) * 42, vx: 0, vy: 0 };
+      else { const r = 60 + (i % 4) * 50; this.pos[n.id] = { x: W / 2 + Math.cos(a) * r, y: H / 2 + Math.sin(a) * r * 1.4, vx: 0, vy: 0 }; }
+    });
+  }
+  simStep(nodes, links, alpha) {
+    const P = this.pos, W = this.GW, H = this.GH;
+    for (let i = 0; i < nodes.length; i++) {
+      const a = P[nodes[i].id];
+      if (!a) continue;
+      for (let j = i + 1; j < nodes.length; j++) {
+        const b = P[nodes[j].id];
+        if (!b) continue;
+        let dx = a.x - b.x, dy = a.y - b.y;
+        let d2 = dx * dx + dy * dy;
+        if (d2 < 1) { dx = 0.5 + (i % 3) * 0.3; dy = 0.5 - (j % 3) * 0.3; d2 = 1; }
+        const d = Math.sqrt(d2);
+        const f = Math.min(6, (1100 / d2)) * alpha;
+        const fx = (dx / d) * f, fy = (dy / d) * f;
+        a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
+      }
+    }
+    links.forEach((l) => {
+      const a = P[l.a], b = P[l.b];
+      if (!a || !b) return;
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const d = Math.sqrt(dx * dx + dy * dy) || 1;
+      const rest = l.w > 0.9 ? 46 : 78;
+      const f = (d - rest) * 0.05 * alpha * (0.5 + l.w);
+      const fx = (dx / d) * f, fy = (dy / d) * f;
+      a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
+    });
+    const dragId = this.drag && this.drag.moved ? this.drag.id : null;
+    nodes.forEach((n) => {
+      const p = P[n.id];
+      if (!p) return;
+      if (n.id === dragId) { p.vx = 0; p.vy = 0; return; }
+      p.vx += (W / 2 - p.x) * 0.004 * alpha;
+      p.vy += (H / 2 - p.y) * 0.003 * alpha;
+      p.vx *= 0.6; p.vy *= 0.6;
+      p.x = Math.max(18, Math.min(W - 18, p.x + p.vx));
+      p.y = Math.max(18, Math.min(H - 30, p.y + p.vy));
+    });
+  }
+  prepGraph() {
+    if (!this.layoutDone) {
+      const g = this.visibleGraph();
+      this.ensurePos(g.all);
+      for (let i = 0; i < 320; i++) this.simStep(g.all, g.links, 1);
+      this.layoutDone = true;
+    }
+    this.later(60, () => this.kick(30));
+  }
+  kick(frames) {
+    this.animLeft = Math.max(this.animLeft || 0, frames);
+    if (this.raf) return;
+    const loop = () => {
+      const g = this.visibleGraph();
+      this.ensurePos(g.all);
+      this.simStep(g.nodes, g.links, 0.5);
+      this.animLeft -= 1;
+      this.setState((st) => ({ gTick: st.gTick + 1 }));
+      if (this.animLeft > 0 || this.drag) this.raf = requestAnimationFrame(loop);
+      else this.raf = null;
+    };
+    this.raf = requestAnimationFrame(loop);
+  }
+  toWorld(e) {
+    const box = this.graphEl;
+    const s = this.state;
+    if (!box) return { x: 0, y: 0, px: 0, py: 0 };
+    const r = box.getBoundingClientRect();
+    const sc = (r.width / (box.offsetWidth || r.width)) || 1;
+    const px = (e.clientX - r.left) / sc, py = (e.clientY - r.top) / sc;
+    return { x: (px - s.gPanX) / s.gZoom, y: (py - s.gPanY) / s.gZoom, px, py };
+  }
+  nodeDown(id, e) {
+    e.stopPropagation();
+    const w = this.toWorld(e);
+    this.drag = { id, sx: w.px, sy: w.py, moved: false };
+    try { if (this.graphEl) this.graphEl.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+  }
+  boxDown(e) {
+    if (this.drag) return;
+    const w = this.toWorld(e);
+    this.pan = { sx: w.px, sy: w.py, ox: this.state.gPanX, oy: this.state.gPanY, moved: false };
+    try { if (this.graphEl) this.graphEl.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+  }
+  boxMove(e) {
+    if (this.drag) {
+      const w = this.toWorld(e);
+      if (Math.abs(w.px - this.drag.sx) + Math.abs(w.py - this.drag.sy) > 4) this.drag.moved = true;
+      if (this.drag.moved) {
+        const p = this.pos[this.drag.id];
+        if (p) { p.x = w.x; p.y = w.y; p.vx = 0; p.vy = 0; }
+        this.kick(2);
+      }
+    } else if (this.pan) {
+      const w = this.toWorld(e);
+      const dx = w.px - this.pan.sx, dy = w.py - this.pan.sy;
+      if (Math.abs(dx) + Math.abs(dy) > 3) this.pan.moved = true;
+      if (this.pan.moved) this.setState({ gPanX: this.pan.ox + dx, gPanY: this.pan.oy + dy });
+    }
+  }
+  boxUp() {
+    if (this.drag) {
+      const d = this.drag;
+      this.drag = null;
+      if (!d.moved) this.setState({ gSel: d.id });
+      else this.kick(40);
+    } else if (this.pan) {
+      const moved = this.pan.moved;
+      this.pan = null;
+      if (!moved) this.setState({ gSel: null });
+    }
+  }
+  wheel(e) {
+    const w = this.toWorld(e);
+    const z = this.state.gZoom;
+    const nz = Math.max(0.5, Math.min(2.5, z * (e.deltaY < 0 ? 1.1 : 0.9)));
+    this.setState({ gZoom: nz, gPanX: w.px - w.x * nz, gPanY: w.py - w.y * nz });
+  }
+  zoomBy(f) {
+    const s = this.state;
+    const cx = this.GW / 2, cy = this.GH / 2;
+    const wx = (cx - s.gPanX) / s.gZoom, wy = (cy - s.gPanY) / s.gZoom;
+    const nz = Math.max(0.5, Math.min(2.5, s.gZoom * f));
+    this.setState({ gZoom: nz, gPanX: cx - wx * nz, gPanY: cy - wy * nz });
+  }
+  setGraph(patch) { this.setState(Object.assign({ gSel: null }, patch)); this.later(20, () => this.kick(40)); }
+
+  // ---------- views ----------
+  entryView(e) {
+    const s = this.state;
+    const EM = this.emoColors();
+    const dayNotes = s.notes.filter((n) => n.day === e.id).sort((a, b) => (a.time < b.time ? 1 : (a.time > b.time ? -1 : 0)));
+    const added = dayNotes.filter((n) => n.isNew);
+    let summary = e.summary, emotions = e.emotions, keywords = e.keywords;
+    if (added.length) {
+      summary = e.summary + ' Dzisiejsze nagrania dodały ' + added.length + ' ' + this.plNotes(added.length) + ' – ostatnia: „' + added[0].title + '”.';
+      emotions = e.emotions.concat([{ n: 'Radość', t: 'nowe pomysły i plany z dzisiejszych nagrań' }]);
+      const kws = [];
+      added.forEach((a) => { if (a.kw && kws.indexOf(a.kw) < 0 && e.keywords.indexOf(a.kw) < 0) kws.push(a.kw); });
+      keywords = e.keywords.concat(kws).slice(0, 9);
+    }
+    return Object.assign({}, e, {
+      summary, keywords, dayNotes,
+      emotions: emotions.map((m) => ({ n: m.n, t: m.t, color: EM[m.n] || '#C4B5FD' })),
+      ideas: dayNotes.filter((n) => n.type === 'pomysl')
+    });
+  }
+  relView(kind, id, relation) {
+    const s = this.state;
+    const T = this.types();
+    if (kind === 'entry') {
+      const e = s.entries.find((x) => x.id === id);
+      if (!e) return null;
+      return { title: e.dominant, sub: 'Wpis dnia · ' + e.short, relation, color: 'linear-gradient(135deg, #A78BFA, #F472B6)', open: () => this.openEntry(id) };
+    }
+    const n = s.notes.find((x) => x.id === id);
+    if (!n) return null;
+    const e = s.entries.find((x) => x.id === n.day);
+    return { title: n.title, sub: T[n.type].label + ' · ' + (e ? e.short : ''), relation, color: T[n.type].color, open: () => this.openNote(id) };
+  }
+  noteRelated(n) {
+    const out = [], seen = {};
+    seen[n.id] = true;
+    const push = (id, r) => { if (!seen[id]) { seen[id] = true; out.push(['note', id, r]); } };
+    this.pairs().forEach((p) => { if (p[0] === n.id) push(p[1], 'podobny temat'); else if (p[1] === n.id) push(p[0], 'podobny temat'); });
+    (n.rel || []).forEach((r) => push(r[0], 'podobny temat'));
+    this.state.notes.forEach((m) => { (m.rel || []).forEach((r) => { if (r[0] === n.id) push(m.id, 'podobny temat'); }); });
+    this.state.notes.forEach((m) => { if (m.day === n.day && out.length < 5) push(m.id, 'ten sam dzień'); });
+    return out.slice(0, 5);
+  }
+  markdown(D) {
+    const T = this.types();
+    const L = ['---', 'data: ' + D.iso, 'typ: wpis-dnia', 'tagi: [' + D.keywords.join(', ') + ']', 'emocje: [' + D.emotions.map((m) => m.n).join(', ') + ']', 'wplyw_na_cele: ' + D.goal.level, 'osobowosc_ai: ' + this.pname(), '---', '', '# ' + D.long, '', '> ' + D.dominant, '', '## Podsumowanie', D.summary, ''];
+    D.quotes.forEach((q) => L.push('> „' + q + '”'));
+    L.push('', '## Emocje');
+    D.emotions.forEach((m) => L.push('- **' + m.n + '** – ' + m.t));
+    L.push('', '## Zrobione');
+    D.done.forEach((x) => L.push('- [x] ' + x));
+    L.push('', '## Ważne wydarzenia');
+    D.events.forEach((x) => L.push('- ' + x));
+    L.push('', '## Wpływ na cele', D.goal.text);
+    L.push('', '## Rada', this.advice(D.core, this.state.personality));
+    L.push('', '## Za to jestem wdzięczny');
+    D.grateful.forEach((x) => L.push('- ' + x));
+    L.push('', '## Pomysły');
+    if (D.ideas.length) D.ideas.forEach((n) => L.push('- [[' + n.title + ']]'));
+    else L.push('- (brak)');
+    L.push('', '## Notatki z dnia');
+    D.dayNotes.forEach((n) => L.push('- [[' + n.title + ']] · ' + T[n.type].label + ' · ' + n.time));
+    L.push('', '## Powiązane');
+    D.rel.forEach((r) => { const v = this.relView(r[0], r[1], r[2]); if (v) L.push('- [[' + v.title + ']] – ' + r[2]); });
+    return L.join('\n');
+  }
+
+  renderVals() {
+    const s = this.state;
+    const T = this.types();
+    const top = s.stack[s.stack.length - 1] || { name: 'home', params: {} };
+    const gate = !s.authed ? 'login' : (!s.hasGoals ? 'onb' : top.name);
+    const scr = {};
+    ['login', 'onb', 'home', 'recs', 'entry', 'note', 'analytics', 'ach', 'settings', 'graph', 'chat'].forEach((k) => { scr[k] = gate === k; });
+    const E = {};
+    s.entries.forEach((e) => { E[e.id] = e; });
+    const noteCard = (n) => {
+      const e = E[n.day];
+      return {
+        title: n.title, text: n.text, time: n.time,
+        tlabel: T[n.type].label, tcolor: T[n.type].color, tbg: T[n.type].color + '2E',
+        ip: n.type === 'pomysl', iz: n.type === 'zadanie', ir: n.type === 'refleksja', iw: n.type === 'wydarzenie',
+        when: (e.ago === 0 ? 'Dziś' : e.short) + ', ' + n.time,
+        isWatch: n.source === 'zegarek', isPhone: n.source !== 'zegarek',
+        hlCls: (n.isNew && s.todayHl) ? 'hl' : '',
+        open: () => this.openNote(n.id)
+      };
+    };
+    const now = new Date(s.now);
+    const out = {
+      theme: s.theme, clock: this.hhmm(now), scr,
+      screenCls: s.navDir === 'back' ? 'anim-back' : 'anim-up',
+      scrollRef: this.scrollRef, chatRef: this.chatRef, graphRef: this.graphRef, stopProp: this.stopProp,
+      back: () => this.back(),
+      recording: s.recording, recTimer: this.mmss(s.recSec),
+      islandCls: s.recording ? 'island live' : 'island', islandLive: s.recording,
+      procPill: s.procPill,
+      showFab: (scr.home || scr.recs) && !s.recording,
+      startRec: () => this.startRec(), stopRec: () => this.stopRec(),
+      streak: s.streak
+    };
+
+    // login
+    out.loggingIn = s.loggingIn;
+    out.notLoggingIn = !s.loggingIn;
+    out.login = () => this.login();
+    out.toggleDemo = () => this.setState((st) => ({ demoReturning: !st.demoReturning }));
+    out.demoPressed = s.demoReturning;
+    out.demoSwCls = s.demoReturning ? 'sw on' : 'sw';
+
+    // onboarding
+    out.onb = {
+      notDone: s.onbStep < 3, done: s.onbStep >= 3,
+      stepLabel: s.onbStep === 1 ? 'Krok 1 z 2' : 'Krok 2 z 2',
+      q: s.onbStep === 1 ? 'Jaki jest Twój najważniejszy cel osobisty lub zdrowotny?' : 'Jaki jest Twój główny cel zawodowy?',
+      idle: s.onbPhase === 'idle', rec: s.onbPhase === 'rec', proc: s.onbPhase === 'proc',
+      btnShow: s.onbPhase !== 'proc',
+      btnCls: s.onbPhase === 'rec' ? 'recbtn big live' : 'recbtn big',
+      procText: s.onbStep === 1 ? 'Przetwarzam...' : 'Analizuję Twoje cele...',
+      timer: this.mmss(s.onbSec),
+      dot1: 'odot on', dot2: s.onbStep >= 2 ? 'odot on' : 'odot'
+    };
+    out.onbTap = () => this.onbTap();
+    out.skipOnb = () => this.skipOnb();
+    out.finishOnb = () => this.finishOnb();
+    out.defaultGoalChips = this.defaultGoals().map((t) => ({ t }));
+
+    // home
+    const chrono = s.entries.slice().sort((a, b) => b.ago - a.ago);
+    const wk = this.analytics(7);
+    const hc = 2 * Math.PI * 36;
+    out.H = { pct: wk.pct, msg: wk.msg, goals: wk.goals, dash: (hc * wk.pct / 100).toFixed(1) + ' ' + hc.toFixed(1) };
+    out.goRecs = () => this.go('recs');
+    out.goGraph = () => this.go('graph');
+    out.goChat = () => this.go('chat');
+    out.goAch = () => this.go('ach');
+    out.goSettings = () => this.go('settings');
+    out.goAnalytics = () => this.go('analytics');
+    const ST = ['W kolejce', 'Wysłane', 'Transkrypcja...', 'Podział na notatki...', 'Gotowe'];
+    const SC = ['#9CA3AF', '#60A5FA', '#A78BFA', '#A78BFA', '#34D399'];
+    const recRow = (r, i, arr) => ({
+      label: 'Nagranie z ' + r.time,
+      sub: r.day + ' · ' + (r.source === 'zegarek' ? 'Apple Watch' : 'iPhone'),
+      isWatch: r.source === 'zegarek', isPhone: r.source !== 'zegarek',
+      status: r.error ? 'Błąd' : ST[r.stage],
+      color: r.error ? '#F87171' : SC[r.stage],
+      chipCls: (!r.error && r.stage < 4) ? 'stchip pulse' : 'stchip',
+      isError: !!r.error, inProg: !r.error && r.stage < 4,
+      barW: Math.round(((r.stage + 1) / 5) * 100),
+      rowCls: (i === arr.length - 1 && !r.error) ? 'rec-row last' : 'rec-row',
+      retry: () => this.retry(r.id)
+    });
+    const live = s.recordings.filter((r) => r.error || r.stage < 4);
+    const hist = s.recordings.filter((r) => !r.error && r.stage >= 4);
+    out.liveRows = live.map((r, i) => recRow(r, i, live));
+    out.histRows = hist.map((r, i) => Object.assign(recRow(r, i, hist), {
+      sub: r.day + ' · ' + (r.source === 'zegarek' ? 'Apple Watch' : 'iPhone') + (r.noteCount ? ' · ' + r.noteCount + ' ' + this.pl(r.noteCount, 'notatka', 'notatki', 'notatek') : ''),
+      rowCls: 'rec-row rec-btn' + (i === hist.length - 1 ? ' last' : '') + ((r.fresh && s.todayHl) ? ' hl' : ''),
+      open: () => this.openEntry(r.entryId || 'd06')
+    }));
+    out.noLive = live.length === 0;
+    out.noHist = hist.length === 0;
+    const errN = live.filter((r) => r.error).length;
+    const actN = live.length - errN;
+    out.recStats = { all: s.recordings.length, active: actN, errors: errN };
+    out.recBadge = { show: live.length > 0, n: live.length, cls: errN ? 'hbadge err' : 'hbadge' };
+    const firstAct = live.find((r) => !r.error);
+    out.banner = {
+      show: live.length > 0,
+      isErr: errN > 0, isProc: errN === 0,
+      text: errN ? 'Błąd przetwarzania nagrania' : (actN + ' ' + this.pl(actN, 'nagranie', 'nagrania', 'nagrań') + ' w przetwarzaniu'),
+      sub: errN ? 'Dotknij, aby sprawdzić i ponowić' : (firstAct ? ST[firstAct.stage] + ' · dotknij, aby zobaczyć status' : '')
+    };
+    out.tabEntries = s.homeTab === 'entries';
+    out.tabNotes = s.homeTab === 'notes';
+    out.segE = s.homeTab === 'entries' ? 'on' : '';
+    out.segN = s.homeTab === 'notes' ? 'on' : '';
+    out.setTabE = () => this.setState({ homeTab: 'entries' });
+    out.setTabN = () => this.setState({ homeTab: 'notes' });
+    out.notesCount = s.notes.length;
+    out.filters = [['all', 'Wszystkie'], ['pomysl', 'Pomysły'], ['zadanie', 'Zadania'], ['refleksja', 'Refleksje'], ['wydarzenie', 'Wydarzenia']].map((f) => ({ label: f[1], cls: s.noteFilter === f[0] ? 'chip on' : 'chip', pick: () => this.setState({ noteFilter: f[0] }) }));
+    const fNotes = this.sortedNotes().filter((n) => s.noteFilter === 'all' || n.type === s.noteFilter);
+    out.noteCards = fNotes.map(noteCard);
+    out.noNotes = fNotes.length === 0;
+    out.entryCards = chrono.slice().reverse().map((e) => {
+      const v = this.entryView(e);
+      return { long: e.long, dominant: e.dominant, summary: v.summary, emotions: v.emotions, isToday: e.ago === 0, cls: (e.ago === 0 && s.todayHl) ? 'card tap ecard hl' : 'card tap ecard', open: () => this.openEntry(e.id) };
+    });
+
+    // entry detail
+    out.D = {}; out.sc = {}; out.tg = {}; out.mk = {}; out.story = []; out.mdText = '';
+    out.shareMode = s.shareMode; out.notShare = !s.shareMode; out.shareCount = Object.keys(s.shareSel).length;
+    out.startShare = () => this.setState({ shareMode: true, shareSel: { hero: true } });
+    out.cancelShare = () => this.setState({ shareMode: false });
+    out.finishShare = () => this.finishShare();
+    out.openMd = () => this.setState({ mdOpen: true });
+    out.closeMd = () => this.setState({ mdOpen: false });
+    out.closeStory = () => this.setState({ storyOpen: false });
+    out.shareMsg = () => this.shareTo('Wysłano w Wiadomościach');
+    out.shareIg = () => this.shareTo('Udostępniono w relacji na Instagramie');
+    out.shareSave = () => this.shareTo('Zapisano obraz w Zdjęciach');
+    if (scr.entry) {
+      const base = E[top.params.id] || s.entries[0];
+      const D = this.entryView(base);
+      const GL = { pozytywny: ['Pozytywny wpływ', '#34D399'], neutralny: ['Neutralny wpływ', '#D1D5DB'], negatywny: ['Negatywny wpływ', '#F87171'] }[D.goal.level];
+      const adv = this.advice(D.core, s.personality);
+      out.D = {
+        long: D.long, dominant: D.dominant, summary: D.summary,
+        quotes: D.quotes.map((t) => ({ t })),
+        emotions: D.emotions,
+        done: D.done.map((t) => ({ t })),
+        events: D.events.map((t) => ({ t })),
+        goalLabel: GL[0], goalColor: GL[1], goalText: D.goal.text,
+        goals: s.goals.map((t) => ({ t })),
+        advice: adv, pname: this.pname(),
+        grateful: D.grateful.map((t) => ({ t })),
+        ideas: D.ideas.map((n) => ({ title: n.title, text: n.text, open: () => this.openNote(n.id) })),
+        noIdeas: D.ideas.length === 0,
+        keywords: D.keywords.map((t) => ({ t })),
+        dayNotes: D.dayNotes.map(noteCard), dayCount: D.dayNotes.length,
+        related: D.rel.map((r) => this.relView(r[0], r[1], r[2])).filter(Boolean)
+      };
+      const keys = ['hero', 'emotions', 'done', 'events', 'goals', 'advice', 'grateful', 'ideas', 'keywords'];
+      keys.forEach((k) => {
+        const on = !!s.shareSel[k];
+        out.sc[k] = s.shareMode ? (on ? 'card secard selectable selected' : 'card secard selectable') : 'card secard';
+        out.tg[k] = () => this.toggleSel(k);
+        out.mk[k] = on ? 'selmark on' : 'selmark';
+      });
+      const blk = {
+        hero: ['Myśl dnia', D.dominant],
+        emotions: ['Emocje', D.emotions.map((m) => m.n).join(' · ')],
+        done: ['Zrobione', D.done.join(' · ')],
+        events: ['Ważne wydarzenia', D.events.join(' · ')],
+        goals: ['Wpływ na cele', D.goal.text],
+        advice: ['Rada · ' + this.pname(), adv],
+        grateful: ['Za to jestem wdzięczny', D.grateful.join(' · ')],
+        ideas: ['Pomysły', D.ideas.length ? D.ideas.map((n) => n.title).join(' · ') : 'Tego dnia bez nowych pomysłów'],
+        keywords: ['Najważniejsze słowa', '#' + D.keywords.join('  #')]
+      };
+      out.story = keys.filter((k) => s.shareSel[k]).map((k) => ({ label: blk[k][0], text: blk[k][1], cls: k === 'hero' ? 'sb-t big' : 'sb-t' }));
+      if (s.mdOpen) out.mdText = this.markdown(D);
+    }
+    out.showMd = scr.entry && s.mdOpen;
+    out.showStory = scr.entry && s.storyOpen;
+
+    // note detail
+    out.Nv = {};
+    if (scr.note) {
+      const n = s.notes.find((x) => x.id === top.params.id) || s.notes[0];
+      const e = E[n.day];
+      const related = this.noteRelated(n).map((r) => this.relView(r[0], r[1], r[2])).filter(Boolean);
+      out.Nv = Object.assign(noteCard(n), {
+        dateLong: e.long + ' · ' + n.time,
+        srcText: n.source === 'zegarek' ? 'Nagrane na Apple Watch' : 'Nagrane na iPhonie',
+        dayTitle: e.dominant, dayLong: e.long,
+        openEntry: () => this.openEntry(e.id),
+        related, noRelated: related.length === 0
+      });
+    }
+
+    // analytics
+    out.A = scr.analytics ? this.analytics(s.aRange) : {};
+    out.r7 = s.aRange === 7 ? 'on' : '';
+    out.r30 = s.aRange === 30 ? 'on' : '';
+    out.setR7 = () => this.setState({ aRange: 7 });
+    out.setR30 = () => this.setState({ aRange: 30 });
+
+    // achievements
+    const B = this.badges();
+    const nextB = B.find((b) => !s.unlocked[b.k]);
+    const left = nextB ? Math.max(1, nextB.th - s.streak) : 0;
+    const dots = [];
+    for (let i = 0; i < 7; i++) dots.push({ cls: i < Math.min(7, s.streak) ? 'wd on' : 'wd' });
+    out.ach = {
+      streak: s.streak,
+      unit: this.plDays(s.streak) + ' z rzędu',
+      dots,
+      next: nextB ? ('Do odznaki „' + nextB.name + '” brakuje ' + left + ' ' + this.plDays(left) + ' serii.') : 'Wszystkie odznaki zdobyte – brawo!',
+      badges: B.map((b) => {
+        const u = !!s.unlocked[b.k];
+        return { name: b.name, desc: b.desc, req: u ? 'Zdobyta' : b.req, cls: u ? 'card badge' : 'card badge locked', u, l: !u, k1: b.k === 'first', k2: b.k === 'three', k3: b.k === 'week' };
+      })
+    };
+
+    // settings
+    out.goalChips = s.goals.map((t) => ({ t }));
+    const PL = this.personalities();
+    out.pers = PL.map((p, i) => ({ name: p.name, desc: p.desc, on: s.personality === p.k, cls: 'opt' + (s.personality === p.k ? ' on' : '') + (i === PL.length - 1 ? ' last' : ''), pick: () => this.setState({ personality: p.k }) }));
+    out.advicePreview = this.advice('Zaplanuj jutro jeden mały krok w stronę swojego najważniejszego celu.', s.personality);
+    out.themes = [['dark', 'Dark', '#000000', '#A78BFA'], ['light', 'Light', '#FFFFFF', '#007AFF'], ['sepia', 'Sepia', '#F4ECD8', '#D97757']].map((t) => ({ label: t[1], a: t[2], b: t[3], cls: s.theme === t[0] ? 'thm on' : 'thm', pick: () => this.setState({ theme: t[0] }) }));
+    out.askReset = () => this.setState({ confirm: 'reset' });
+    out.askLogout = () => this.setState({ confirm: 'logout' });
+
+    // graph
+    out.G = {}; out.gTip = {}; out.hasTip = false;
+    out.gSheet = scr.graph && s.gSheet;
+    out.openGSheet = () => this.setState({ gSheet: true, gSel: null });
+    out.closeGSheet = () => this.setState({ gSheet: false });
+    out.gDown = (e) => this.boxDown(e);
+    out.gMove = (e) => this.boxMove(e);
+    out.gUp = (e) => this.boxUp(e);
+    out.gWheel = (e) => this.wheel(e);
+    out.zoomIn = () => this.zoomBy(1.25);
+    out.zoomOut = () => this.zoomBy(0.8);
+    out.zoomReset = () => this.setState({ gZoom: 1, gPanX: 0, gPanY: 0 });
+    out.clearG = () => this.setGraph({ gRange: 'all', gTypes: { pomysl: true, zadanie: true, refleksja: true, wydarzenie: true }, gStrength: 0 });
+    out.gf = {
+      ranges: [[7, '7 dni'], [30, '30 dni'], [90, '90 dni'], ['all', 'Wszystkie']].map((o) => ({ label: o[1], cls: s.gRange === o[0] ? 'chip on' : 'chip', pick: () => this.setGraph({ gRange: o[0] }) })),
+      types: Object.keys(T).map((k) => ({ label: T[k].label, color: T[k].color, cls: s.gTypes[k] ? 'chip on' : 'chip', pick: () => this.setGraph({ gTypes: Object.assign({}, s.gTypes, { [k]: !s.gTypes[k] }) }) })),
+      strengths: [[0, 'Wszystkie'], [0.5, 'Średnie (≥ 0.5)'], [0.7, 'Mocne (≥ 0.7)']].map((o) => ({ label: o[1], cls: s.gStrength === o[0] ? 'chip on' : 'chip', pick: () => this.setGraph({ gStrength: o[0] }) }))
+    };
+    if (scr.graph) {
+      const g = this.visibleGraph();
+      this.ensurePos(g.all);
+      const P = this.pos;
+      const nv = (n) => {
+        const p = P[n.id];
+        return { x: p.x.toFixed(1), y: p.y.toFixed(1), color: n.color, label: n.label, aria: n.kindLabel + ': ' + n.title, cls: 'gnode ' + (n.kind === 'entry' ? 'ent' : 'nt') + (s.gSel === n.id ? ' sel' : ''), down: (ev) => this.nodeDown(n.id, ev) };
+      };
+      const links = g.links.map((l) => {
+        const a = P[l.a], b = P[l.b];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        return { x: a.x.toFixed(1), y: a.y.toFixed(1), len: Math.sqrt(dx * dx + dy * dy).toFixed(1), ang: (Math.atan2(dy, dx) * 180 / Math.PI).toFixed(2), op: (0.15 + l.w * 0.6).toFixed(2) };
+      });
+      const filterOn = s.gRange !== 'all' || s.gStrength > 0 || Object.keys(s.gTypes).some((k) => !s.gTypes[k]);
+      out.G = {
+        links,
+        entries: g.nodes.filter((n) => n.kind === 'entry').map(nv),
+        notes: g.nodes.filter((n) => n.kind !== 'entry').map(nv),
+        world: 'translate(' + s.gPanX.toFixed(1) + 'px, ' + s.gPanY.toFixed(1) + 'px) scale(' + s.gZoom.toFixed(3) + ')',
+        count: g.nodes.length + ' ' + this.pl(g.nodes.length, 'węzeł', 'węzły', 'węzłów') + ' · ' + g.links.length + ' ' + this.pl(g.links.length, 'powiązanie', 'powiązania', 'powiązań'),
+        zoomPct: Math.round(s.gZoom * 100) + '%',
+        empty: g.nodes.length === 0,
+        filterOn
+      };
+      const sel = g.nodes.find((n) => n.id === s.gSel);
+      if (sel) {
+        const p = P[sel.id];
+        const tx = p.x * s.gZoom + s.gPanX, ty = p.y * s.gZoom + s.gPanY;
+        const leftX = Math.max(8, Math.min(this.GW - 208, tx - 100));
+        const topY = ty < 160 ? ty + 24 : ty - 136;
+        out.hasTip = true;
+        out.gTip = {
+          left: leftX.toFixed(0), top: Math.max(8, Math.min(this.GH - 130, topY)).toFixed(0),
+          kind: sel.kindLabel, title: sel.title, color: sel.color,
+          open: () => this.openRef(sel.kind === 'entry' ? 'entry' : 'note', sel.id),
+          close: () => this.setState({ gSel: null })
+        };
+      }
+    }
+
+    // chat
+    out.quick = ['Jakie miałem wczoraj pomysły?', 'Co zapisałem w tym tygodniu?', 'Podsumuj moje ostatnie refleksje', 'Jakie mam cele i postępy?'].map((q) => ({ t: q, ask: () => this.ask(q) }));
+    out.chatEmpty = s.chat.length === 0 && !s.chatTyping;
+    out.chatTyping = s.chatTyping;
+    out.chatInput = s.chatInput;
+    out.onChatInput = (e) => this.setState({ chatInput: e.target.value });
+    out.onChatKey = (e) => { if (e.key === 'Enter') this.ask(this.state.chatInput); };
+    out.sendChat = () => this.ask(this.state.chatInput);
+    out.chatMsgs = s.chat.map((m) => {
+      const isAi = m.role === 'ai';
+      const done = isAi && m.shown >= m.words.length;
+      return {
+        isUser: !isAi, isAi,
+        text: isAi ? m.words.slice(0, m.shown).join(' ') : m.text,
+        showSrc: done && (m.sources || []).length > 0,
+        sources: (m.sources || []).map((sr) => ({ label: sr.label, open: () => this.openRef(sr.kind, sr.id) }))
+      };
+    });
+
+    // watch
+    out.W = {
+      rec: s.watchRec, idle: !s.watchRec,
+      micCls: s.watchRec ? 'w-mic live' : 'w-mic',
+      timer: this.mmss(s.watchSec),
+      empty: s.watchItems.length === 0,
+      items: s.watchItems.slice(0, 6).map((w) => ({ time: w.time, stText: w.sent ? 'wysłano' : 'oczekuje', stCls: w.sent ? 'wst sent' : 'wst', done: !!w.done, pending: !w.done }))
+    };
+    out.watchToggle = () => this.watchToggle();
+
+    // overlays
+    const mq = s.modalQueue[0];
+    const mb = mq ? B.find((b) => b.k === mq) : null;
+    out.hasModal = !!mb && s.authed;
+    out.modal = mb ? { name: mb.name, desc: mb.desc } : {};
+    out.closeModal = () => this.setState((st) => ({ modalQueue: st.modalQueue.slice(1) }));
+    const CF = {
+      reset: { title: 'Zresetować cele życiowe?', msg: 'Twoje obecne cele zostaną usunięte i ponownie przejdziesz przez wprowadzenie.', action: 'Resetuj' },
+      logout: { title: 'Wylogować się?', msg: 'Twoje wpisy pozostaną bezpiecznie zapisane w pamiętniku.', action: 'Wyloguj' }
+    };
+    out.hasConfirm = !!s.confirm;
+    out.cf = s.confirm ? CF[s.confirm] : {};
+    out.cancelConfirm = () => this.setState({ confirm: null });
+    out.doConfirm = () => this.doConfirm();
+    out.hasToast = !!s.toast;
+    out.toast = s.toast || '';
+    return out;
+  }
+}
+</script>
+</body>
+</html>

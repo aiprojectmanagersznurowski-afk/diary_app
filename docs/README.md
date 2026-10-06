@@ -13,6 +13,7 @@ Punkt wejścia dla ludzi i agentów AI pracujących nad projektem. Przeczytaj te
 | [05-decyzje.md](05-decyzje.md) | Podjęte decyzje architektoniczne (ADR) i otwarte kwestie |
 | [06-zasady-pracy.md](06-zasady-pracy.md) | Jak pracujemy: kod, dokumentacja, definicja ukończenia |
 | [07-instalacja-na-urzadzeniach.md](07-instalacja-na-urzadzeniach.md) | Instalacja aplikacji na iPhonie i Apple Watch (TestFlight, kabel) |
+| [08-design-ui.md](08-design-ui.md) | Brief nowego designu UI (Faza 8), decyzje wdrożeniowe i prototyp w `design/` |
 
 ## Stan projektu (2026-09-23)
 

@@ -1,0 +1,40 @@
+id: F8-03
+title: Szczegóły wpisu dnia i notatki: udostępnianie i podgląd .md
+phase: 8
+role: mobile
+branch: feat/F8-03-detail-screens
+depends_on: [F8-01]
+roadmap: "Szczegóły wpisu dnia i notatki w nowym wyglądzie: tryb udostępniania i podgląd pliku `.md`"
+read_first:
+  - docs/08-design-ui.md
+  - docs/design/Main.dc.html
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/presentation/screens/DetailScreen.tsx
+    - src/presentation/components/detail/**
+    - src/presentation/i18n/**
+    - src/application/useCases/document/**
+    - src/application/store/useRelatedThoughtsStore.ts
+    - src/application/store/__tests__/**
+    - src/application/useCases/document/__tests__/**
+context: |
+  docs/08-design-ui.md §2.6–§2.7. Wpis dnia: sekcje w kolejności z briefu (Myśl dnia, Emocje, Zrobione, Ważne
+  wydarzenia, Wpływ na cele, Rada z podpisem „Głos: {osobowość}”, Za to jestem wdzięczny, Pomysły → notatka,
+  Najważniejsze słowa, Notatki z tego dnia, POWIĄZANE MYŚLI z tagiem relacji); dane z documents.data. Tryb
+  udostępniania: zaznaczalne karty, górny pasek, podgląd story 9:16 renderowany do obrazu
+  (react-native-view-shot) i expo-sharing (istniejące); zapis obrazu przez expo-media-library tylko jeśli
+  pakiet już jest w projekcie, w przeciwnym razie pomiń (decyzja 1). Szuflada „Podgląd pliku .md” pokazuje
+  prawdziwe documents.body_md (monospace) i przycisk „Gotowe” (Modal). Szczegóły notatki: chip typu, tytuł
+  (gradient), pełny tekst, data i czas, źródło (iPhone/Apple Watch z recordings.source), link do wpisu dnia,
+  POWIĄZANE MYŚLI. Zmiana osobowości w Ustawieniach nie przepisuje rady po stronie klienta (rada pochodzi z
+  serwera) — pole „Głos” pokazuje osobowość użytą przy generowaniu wpisu, jeśli serwer ją zwraca, w przeciwnym
+  razie bieżącą.
+acceptance:
+  - "wpis dnia i notatka mają wygląd z briefu §2.6–§2.7 na danych z documents; wszystkie sekcje z briefu są obecne w tej kolejności"
+  - "tryb udostępniania zaznacza karty, „Gotowe” renderuje obraz 9:16 i otwiera arkusz udostępniania systemu"
+  - "szuflada „Podgląd pliku .md” pokazuje body_md bieżącego dokumentu"
+  - "powiązane myśli otwierają wpis dnia lub notatkę; „Nie znaleziono wpisu.” przy braku dokumentu"
+  - "tsc, lint i jest przechodzą; brak nowych zależności"
+human_steps:
+  - "CP-DEVICE: udostępnienie karty i podgląd .md na iPhonie w trzech motywach"
