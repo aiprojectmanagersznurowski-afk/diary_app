@@ -76,3 +76,26 @@ export function getRecordingStatusBadgeColor(status: RecordingStatus): string {
 export function isRecordingRetryable(status: RecordingStatus): boolean {
   return status === 'failed';
 }
+
+/** Nagranie jest w toku, dopóki nie jest gotowe ani nie zakończyło się błędem. */
+export function isRecordingInProgress(status: RecordingStatus): boolean {
+  return status !== 'done' && status !== 'failed';
+}
+
+/** Postęp przetwarzania w procentach (pasek pod wierszem: 20/40/60/80/100). */
+export function getRecordingProgress(status: RecordingStatus): number {
+  switch (status) {
+    case 'queued':
+      return 20;
+    case 'uploaded':
+      return 40;
+    case 'transcribed':
+      return 60;
+    case 'segmented':
+      return 80;
+    case 'done':
+      return 100;
+    default:
+      return 0;
+  }
+}

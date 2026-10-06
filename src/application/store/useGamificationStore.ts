@@ -38,9 +38,13 @@ interface GamificationState {
   lastEntryDate: string | null;
   unlockedBadges: string[];
   newlyUnlockedBadge: BadgeDef | null;
+  /** Kolejne odznaki do pokazania w modalu po zamknięciu bieżącego. */
+  pendingBadges: BadgeDef[];
 
   // Actions
   processNewEntry: (dateIso: string) => void;
+  /** Przyznaje odznaki wynikające z serii i obecności wpisów (serwer ich nie przyznaje) i kolejkuje modale. */
+  evaluateBadges: (streak: number, hasEntry: boolean) => void;
   clearGamification: () => void;
   resetGamification: () => void;
   syncFromCloud: (targetUserId?: string) => Promise<void>;
@@ -94,9 +98,40 @@ export const useGamificationStore = create<GamificationState>()(
       lastEntryDate: null,
       unlockedBadges: [],
       newlyUnlockedBadge: null,
+      pendingBadges: [],
 
       dismissBadgeAlert: () => {
-        set({ newlyUnlockedBadge: null });
+        set((state) => ({
+          newlyUnlockedBadge: state.pendingBadges[0] ?? null,
+          pendingBadges: state.pendingBadges.slice(1),
+        }));
+      },
+
+      evaluateBadges: (streak: number, hasEntry: boolean) => {
+        const state = get();
+        const earned: string[] = [];
+        if (hasEntry || streak >= 1) earned.push('first_step');
+        if (streak >= 3) earned.push('streak_3');
+        if (streak >= 7) earned.push('streak_7');
+
+        const missing = earned.filter((id) => !state.unlockedBadges.includes(id));
+        if (missing.length === 0) return;
+
+        const defs = missing.map((id) => BADGES_DICTIONARY.find((b) => b.id === id)).filter((b): b is BadgeDef => !!b);
+        const unlocked = [...state.unlockedBadges, ...missing];
+        const queue = [
+          ...(state.newlyUnlockedBadge ? [state.newlyUnlockedBadge] : []),
+          ...state.pendingBadges,
+          ...defs,
+        ];
+
+        set({
+          unlockedBadges: unlocked,
+          newlyUnlockedBadge: queue[0] ?? null,
+          pendingBadges: queue.slice(1),
+        });
+
+        syncGamificationToCloud({ badges: unlocked });
       },
 
       clearGamification: () => {
@@ -105,6 +140,7 @@ export const useGamificationStore = create<GamificationState>()(
           lastEntryDate: null,
           unlockedBadges: [],
           newlyUnlockedBadge: null,
+          pendingBadges: [],
         });
         AsyncStorage.removeItem('gamification-storage').catch(() => {});
       },
@@ -115,6 +151,7 @@ export const useGamificationStore = create<GamificationState>()(
           lastEntryDate: null,
           unlockedBadges: [],
           newlyUnlockedBadge: null,
+          pendingBadges: [],
         });
         AsyncStorage.removeItem('gamification-storage').catch(() => {});
       },

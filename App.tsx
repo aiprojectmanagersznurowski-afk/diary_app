@@ -20,8 +20,12 @@ import { InsightsScreen } from './src/presentation/screens/InsightsScreen';
 import { BadgesScreen } from './src/presentation/screens/BadgesScreen';
 import { GraphScreen } from './src/presentation/screens/GraphScreen';
 import { ChatScreen } from './src/presentation/screens/ChatScreen';
+import { RecordingsScreen } from './src/presentation/screens/RecordingsScreen';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+// Trasa „Recordings” (F8-02) jest dopisana lokalnie, bo `src/navigation/types.ts` leży poza zakresem tego zadania.
+type AppStackParamList = RootStackParamList & { Recordings: undefined };
+
+const Stack = createNativeStackNavigator<AppStackParamList>();
 
 export default function App() {
   const [initializing, setInitializing] = useState(true);
@@ -92,6 +96,7 @@ export default function App() {
               <Stack.Screen name="Badges" component={BadgesScreen} />
               <Stack.Screen name="Graph" component={GraphScreen} />
               <Stack.Screen name="Chat" component={ChatScreen} />
+              <Stack.Screen name="Recordings" component={RecordingsScreen} />
             </>
           )}
         </Stack.Navigator>

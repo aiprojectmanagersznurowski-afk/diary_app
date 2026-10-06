@@ -1,112 +1,80 @@
 import React from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useGamificationStore } from '../../application/store/useGamificationStore';
-import { useSettingsStore, THEMES } from '../../application/store/useSettingsStore';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ACCENTS, PrimaryButton, SHADOW, WHITE, useTheme } from './ui';
+import { pl } from '../i18n/pl';
 
+/** Modal „Nowe Osiągnięcie!”: odznaki z kolejki pokazują się po kolei (docs/08-design-ui.md §2.4). */
 export const BadgeAlertModal = () => {
-  const { newlyUnlockedBadge, dismissBadgeAlert } = useGamificationStore();
-  const { theme } = useSettingsStore();
-  const colors = THEMES[theme];
+  const badge = useGamificationStore((s) => s.newlyUnlockedBadge);
+  const dismiss = useGamificationStore((s) => s.dismissBadgeAlert);
+  const { colors } = useTheme();
 
-  if (!newlyUnlockedBadge) return null;
+  if (!badge) return null;
 
   return (
-    <Modal
-      transparent
-      animationType="fade"
-      visible={!!newlyUnlockedBadge}
-      onRequestClose={dismissBadgeAlert}
-    >
-      <View style={styles.overlay}>
-        <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.tileBorder }]}>
-          <Text style={[styles.headerText, { color: colors.textSecondary }]}>Nowe Osiągnięcie!</Text>
-          
+    <Modal transparent animationType="fade" visible onRequestClose={dismiss}>
+      <View style={[styles.overlay, { backgroundColor: colors.veil }]}>
+        <View style={[styles.card, { backgroundColor: colors.sheet, borderColor: colors.border }]}>
+          <Text style={[styles.header, { color: colors.textSecondary }]}>{pl.badge.header}</Text>
+
           <LinearGradient
-            colors={colors.gradientColors as unknown as [string, string, ...string[]]}
-            style={styles.iconCircle}
+            colors={[ACCENTS.amber, ACCENTS.pink]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.badge, { shadowColor: ACCENTS.amber }]}
           >
-            <Feather name={newlyUnlockedBadge.icon as any} size={40} color="#FFF" />
+            <Feather name={badge.icon as React.ComponentProps<typeof Feather>['name']} size={44} color={WHITE} />
           </LinearGradient>
 
-          <Text style={[styles.title, { color: colors.text }]}>{newlyUnlockedBadge.title}</Text>
-          <Text style={[styles.description, { color: colors.textSecondary }]}>{newlyUnlockedBadge.description}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{badge.title}</Text>
+          <Text style={[styles.description, { color: colors.textSecondary }]}>{badge.description}</Text>
 
-          <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={dismissBadgeAlert}>
-            <Text style={styles.buttonText}>Świetnie!</Text>
-          </TouchableOpacity>
+          <View style={styles.button}>
+            <PrimaryButton label={pl.badge.dismiss} onPress={dismiss} />
+          </View>
         </View>
 
-        <ConfettiCannon 
-          count={150} 
-          origin={{ x: -10, y: 0 }} 
-          colors={colors.gradientColors as unknown as string[]} 
-          fadeOut 
-        />
+        <ConfettiCannon count={150} origin={{ x: -10, y: 0 }} colors={[...colors.gradientColors]} fadeOut />
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
+  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 34 },
   card: {
     width: '100%',
-    padding: 30,
-    borderRadius: 24,
-    alignItems: 'center',
+    borderRadius: 28,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 10,
+    paddingTop: 28,
+    paddingHorizontal: 22,
+    paddingBottom: 22,
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: SHADOW,
+    shadowOffset: { width: 0, height: 30 },
+    shadowOpacity: 0.35,
+    shadowRadius: 60,
+    elevation: 12,
   },
-  headerText: {
-    fontSize: 14,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 20,
-  },
-  iconCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+  header: { fontSize: 14, fontWeight: '700' },
+  badge: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
+    marginTop: 8,
     marginBottom: 10,
-    textAlign: 'center',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 40,
   },
-  description: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
-    lineHeight: 22,
-  },
-  button: {
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 30,
-    width: '100%',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '700',
-  }
+  title: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5, textAlign: 'center' },
+  description: { fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  button: { alignSelf: 'stretch', marginTop: 12 },
 });
