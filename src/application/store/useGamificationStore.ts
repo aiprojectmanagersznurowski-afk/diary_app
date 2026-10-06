@@ -175,7 +175,8 @@ export const useGamificationStore = create<GamificationState>()(
             set((state) => ({
               currentStreak: profile.currentStreak ?? state.currentStreak,
               lastEntryDate: profile.lastEntryDay ?? state.lastEntryDate,
-              unlockedBadges: profile.badges ?? state.unlockedBadges,
+              // Łączymy odznaki lokalne z profilem: świeżo przyznana odznaka nie znika, zanim jej zapis dotrze do chmury.
+              unlockedBadges: Array.from(new Set([...state.unlockedBadges, ...(profile.badges ?? [])])),
             }));
           }
         } catch (error) {

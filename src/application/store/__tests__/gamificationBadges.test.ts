@@ -83,3 +83,35 @@ describe('useGamificationStore.evaluateBadges', () => {
     expect(state.pendingBadges.map((b) => b.id)).toEqual(['streak_3']);
   });
 });
+
+describe('useGamificationStore.syncFromCloud: łączenie odznak', () => {
+  afterEach(() => {
+    setGamificationProfileRepository(null);
+  });
+
+  it('nie gubi lokalnie przyznanej odznaki, gdy profil w chmurze jest starszy', async () => {
+    const getProfile = jest
+      .fn()
+      .mockResolvedValue({ userId: 'user-1', currentStreak: 4, lastEntryDay: '2026-10-06', badges: ['first_step'] });
+    setGamificationProfileRepository({ getProfile, upsertProfile: jest.fn() } as unknown as IProfileRepository);
+    useGamificationStore.setState({ ...baseState, unlockedBadges: ['first_step', 'streak_3'] });
+
+    await useGamificationStore.getState().syncFromCloud('user-1');
+
+    const state = useGamificationStore.getState();
+    expect(state.currentStreak).toBe(4);
+    expect(state.unlockedBadges.sort()).toEqual(['first_step', 'streak_3']);
+  });
+
+  it('dodaje odznaki z chmury, których nie ma lokalnie', async () => {
+    const getProfile = jest
+      .fn()
+      .mockResolvedValue({ userId: 'user-1', currentStreak: 7, badges: ['first_step', 'streak_3', 'streak_7'] });
+    setGamificationProfileRepository({ getProfile, upsertProfile: jest.fn() } as unknown as IProfileRepository);
+    useGamificationStore.setState({ ...baseState, unlockedBadges: ['first_step'] });
+
+    await useGamificationStore.getState().syncFromCloud('user-1');
+
+    expect(useGamificationStore.getState().unlockedBadges.sort()).toEqual(['first_step', 'streak_3', 'streak_7']);
+  });
+});
