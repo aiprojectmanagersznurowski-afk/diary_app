@@ -17,7 +17,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, today, onPress }) => {
     <GlassCard onPress={onPress} accessibilityLabel={note.title}>
       <View style={styles.header}>
         <NoteTypeChip type={note.noteType} />
-        <Text style={[styles.when, { color: colors.textSecondary }]}>{formatNoteWhen(note.createdAt, today)}</Text>
+        <Text style={[styles.when, { color: colors.textSecondary }]}>{formatNoteWhen(note, today)}</Text>
       </View>
       <Text style={[styles.title, { color: colors.text }]}>{note.title}</Text>
       {note.content ? (

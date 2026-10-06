@@ -71,6 +71,8 @@ export const HomeScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [highlightToday, setHighlightToday] = useState(false);
   const previousStatuses = useRef<Record<string, string>>({});
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syncStreak = useGamificationStore((s) => s.syncFromCloud);
 
   const today = localDay(new Date());
 
@@ -87,16 +89,25 @@ export const HomeScreen = () => {
     evaluateBadges(streak, dailyDocuments.length > 0);
   }, [streak, dailyDocuments.length, evaluateBadges]);
 
-  // Nagranie, które właśnie przeszło w „Gotowe”: odśwież wpisy i podświetl dzisiejszy.
+  // Nagranie, które właśnie przeszło w „Gotowe”: odśwież wpisy i serię, podświetl dzisiejszy wpis.
   useEffect(() => {
     const finished = hasNewlyFinished(previousStatuses.current, recordings);
     previousStatuses.current = snapshotStatuses(recordings);
-    if (!finished) return undefined;
+    if (!finished) return;
     void fetchDailyDocuments();
+    void syncStreak();
     setHighlightToday(true);
-    const timer = setTimeout(() => setHighlightToday(false), HIGHLIGHT_MS);
-    return () => clearTimeout(timer);
-  }, [recordings, fetchDailyDocuments]);
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => setHighlightToday(false), HIGHLIGHT_MS);
+  }, [recordings, fetchDailyDocuments, syncStreak]);
+
+  // Timer podświetlenia czyścimy tylko przy odmontowaniu ekranu (kolejne zmiany listy go nie zerują).
+  useEffect(
+    () => () => {
+      if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    },
+    [],
+  );
 
   const refresh = useCallback(async () => {
     setRefreshing(true);

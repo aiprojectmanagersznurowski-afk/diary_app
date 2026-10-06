@@ -54,10 +54,10 @@ describe('formatowanie dat i podpisów', () => {
     expect(formatLongDate('2026-01-01')).toBe('Czwartek, 1 stycznia');
   });
 
-  it('formatNoteWhen: dziś, wczoraj i data skrócona', () => {
-    expect(formatNoteWhen(at(2026, 10, 6, 9, 5), TODAY)).toBe('dziś 09:05');
-    expect(formatNoteWhen(at(2026, 10, 5, 19, 40), TODAY)).toBe('wczoraj 19:40');
-    expect(formatNoteWhen(at(2026, 10, 4, 8, 0), TODAY)).toBe('4 paź');
+  it('formatNoteWhen: „Dziś, 09:10” albo „5 paź, 19:40” (prototyp), dzień z note.day', () => {
+    expect(formatNoteWhen({ day: '2026-10-06', createdAt: at(2026, 10, 6, 9, 10) }, TODAY)).toBe('Dziś, 09:10');
+    expect(formatNoteWhen({ day: '2026-10-05', createdAt: at(2026, 10, 5, 19, 40) }, TODAY)).toBe('5 paź, 19:40');
+    expect(formatNoteWhen({ day: '2026-10-01', createdAt: at(2026, 10, 1, 8, 0) }, TODAY)).toBe('1 paź, 08:00');
   });
 
   it('formatRecordingSub: źródło i liczba notatek', () => {

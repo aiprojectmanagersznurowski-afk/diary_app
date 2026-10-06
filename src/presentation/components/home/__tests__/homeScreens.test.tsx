@@ -36,7 +36,11 @@ jest.mock('react-native-safe-area-context', () => ({
 
 const NOW = new Date();
 const TODAY = localDay(NOW);
-const iso = (hoursAgo: number) => new Date(NOW.getTime() - hoursAgo * 3_600_000).toISOString();
+/** Dziś o danej godzinie lokalnej (niezależnie od pory uruchomienia testu). */
+const todayAt = (hour: number, minute = 0) =>
+  new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate(), hour, minute).toISOString();
+const yesterdayAt = (hour: number) =>
+  new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate() - 1, hour).toISOString();
 
 const daily = (id: string, day: string, extra: Partial<DailyDocument> = {}): DailyDocument =>
   ({
@@ -56,7 +60,7 @@ const daily = (id: string, day: string, extra: Partial<DailyDocument> = {}): Dai
 const noteDoc = (
   id: string,
   noteType: NoteDocument['noteType'],
-  hoursAgo: number,
+  createdAt: string,
   recordingId?: string,
 ): NoteDocument => ({
   id,
@@ -70,19 +74,19 @@ const noteDoc = (
   content: `Treść ${id}`,
   tags: [],
   recordingId,
-  createdAt: iso(hoursAgo),
+  createdAt,
 });
 
 const recording = (
   id: string,
   status: Recording['status'],
-  hoursAgo: number,
+  recordedAt: string,
   source: Recording['source'] = 'phone',
 ): Recording => ({
   id,
   userId: 'u',
   source,
-  recordedAt: iso(hoursAgo),
+  recordedAt,
   status,
   attempts: 0,
 });
@@ -110,11 +114,15 @@ const pressable = (tree: any, label: string) =>
 beforeEach(() => {
   jest.clearAllMocks();
   dailyDocs = [daily('d-today', TODAY), daily('d-old', '2026-09-29', { emotions: ['Stres', 'Zmęczenie'] })];
-  notes = [noteDoc('n1', 'idea', 3, 'r-done'), noteDoc('n2', 'task', 2, 'r-done'), noteDoc('n3', 'reflection', 30)];
+  notes = [
+    noteDoc('n1', 'idea', todayAt(9, 5), 'r-done'),
+    noteDoc('n2', 'task', todayAt(9, 6), 'r-done'),
+    noteDoc('n3', 'reflection', yesterdayAt(19)),
+  ];
   recordings = [
-    recording('r-done', 'done', 5),
-    recording('r-up', 'uploaded', 0.2),
-    recording('r-fail', 'failed', 1, 'watch'),
+    recording('r-done', 'done', todayAt(8, 0)),
+    recording('r-up', 'uploaded', todayAt(9, 10)),
+    recording('r-fail', 'failed', todayAt(8, 35), 'watch'),
   ];
 
   setDiaryDependencies({
@@ -210,7 +218,7 @@ describe('HomeScreen: ekran główny z briefu §2.3', () => {
   });
 
   it('bez nagrań w toku pasek statusu nie jest widoczny', async () => {
-    recordings = [recording('r-done', 'done', 5)];
+    recordings = [recording('r-done', 'done', todayAt(8, 0))];
     const tree = await mountAsync(<HomeScreen />);
     const t = texts(tree);
     expect(t.some((x) => x.includes('w przetwarzaniu'))).toBe(false);

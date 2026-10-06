@@ -56,13 +56,15 @@ export function formatRelativeDay(day: string, today: string): string {
   return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
 }
 
-/** Czas notatki na liście: „dziś 09:10”, „wczoraj 19:40” albo „4 paź”. */
-export function formatNoteWhen(createdAtIso: string, today: string): string {
-  const day = localDay(createdAtIso);
-  const diff = dayDiff(day, today);
-  if (diff === 0) return `dziś ${formatClock(createdAtIso)}`;
-  if (diff === 1) return `wczoraj ${formatClock(createdAtIso)}`;
-  return formatRelativeDay(day, today);
+/** Podpis notatki na liście (prototyp): „Dziś, 09:10” albo „5 paź, 19:40”; dzień z `note.day`. */
+export function formatNoteWhen(note: Pick<NoteDocument, 'day' | 'createdAt'>, today: string): string {
+  const day = formatRelativeDay(note.day, today);
+  return `${day === 'Wczoraj' ? shortDate(note.day) : day}, ${formatClock(note.createdAt)}`;
+}
+
+function shortDate(day: string): string {
+  const d = parseDay(day);
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
 }
 
 export function formatSource(source: string): string {
@@ -160,10 +162,13 @@ export function countNotesByRecording(notes: NoteDocument[]): Record<string, num
   return counts;
 }
 
-/** Wpis dnia, do którego należy nagranie (po lokalnym dniu nagrania). */
+/**
+ * Wpis dnia, do którego należy nagranie. Serwer przypisuje dzień po UTC (`recorded_at`), a telefon liczy dzień
+ * lokalnie, więc najpierw szukamy dnia lokalnego, a potem dnia UTC nagrania.
+ */
 export function findDailyForRecording(recording: Recording, dailyDocs: DailyDocument[]): DailyDocument | undefined {
-  const day = localDay(recording.recordedAt);
-  return dailyDocs.find((d) => d.day === day);
+  const localMatch = dailyDocs.find((d) => d.day === localDay(recording.recordedAt));
+  return localMatch ?? dailyDocs.find((d) => d.day === recording.recordedAt.slice(0, 10));
 }
 
 /** Komunikat pod pierścieniem zgodności z celami (te same progi co ekran Analiz). */
