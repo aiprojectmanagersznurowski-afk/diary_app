@@ -11,6 +11,10 @@ flowchart LR
   F3 --> F6[6. Czat RAG]
   F5 --> F7[7. Web i eksport]
   F6 --> F7
+  F3 --> F8[8. Nowy interfejs]
+  F4 --> F8
+  F5 --> F8
+  F6 --> F8
 ```
 
 ## Faza 1: Fundament Supabase
@@ -93,6 +97,20 @@ flowchart LR
 - [ ] Układ dla komputera: graf i czat obok siebie, lista dokumentów
 - [ ] Eksport `.zip` z plikami `.md` (sejf Obsidiana)
 - [ ] Edge Function `delete-account` + opcja w ustawieniach
+
+## Faza 8: Nowy interfejs (design z Figma Make)
+
+Źródło: [08-design-ui.md](08-design-ui.md) (brief + decyzje wdrożeniowe), prototyp w [design/Main.dc.html](design/Main.dc.html). Zadania 2–6 zależą tylko od pierwszego i mogą iść równolegle.
+
+- [ ] Tokeny motywów, prymitywy UI, teksty PL i przejścia ekranów; Logowanie i Onboarding w nowym wyglądzie
+- [ ] Ekran główny w nowym wyglądzie i nowy ekran „Twoje nagrania”
+- [ ] Szczegóły wpisu dnia i notatki w nowym wyglądzie: tryb udostępniania i podgląd pliku `.md`
+- [ ] Analizy, Osiągnięcia i Ustawienia w nowym wyglądzie
+- [ ] Graf wiedzy w nowym wyglądzie: węzły, filtry w szufladzie
+- [ ] Czat w nowym wyglądzie: szybkie pytania, źródła, strumieniowanie odpowiedzi
+- [ ] Aplikacja watchOS w nowym wyglądzie
+
+**Gotowe, gdy:** wszystkie ekrany z prototypu wyglądają i działają jak w briefie na prawdziwych danych, przełączenie motywu przemalowuje całą aplikację bez przeładowania, a w kodzie komponentów nie ma zahardkodowanych kolorów poza semantycznymi.
 
 ## Znane błędy obecnego kodu
 

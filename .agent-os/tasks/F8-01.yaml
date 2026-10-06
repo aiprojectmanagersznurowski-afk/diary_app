@@ -1,0 +1,50 @@
+id: F8-01
+title: Tokeny motywów, prymitywy UI i przejścia ekranów (Logowanie, Onboarding)
+phase: 8
+role: mobile
+branch: feat/F8-01-ui-foundation
+depends_on: [F3-06]
+roadmap: "Tokeny motywów, prymitywy UI, teksty PL i przejścia ekranów; Logowanie i Onboarding w nowym wyglądzie"
+read_first:
+  - docs/08-design-ui.md
+  - docs/design/Main.dc.html
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/application/store/useSettingsStore.ts
+    - src/application/store/__tests__/**
+    - src/presentation/components/UIPrimitives.tsx
+    - src/presentation/components/GradientText.tsx
+    - src/presentation/components/ui/**
+    - src/presentation/i18n/**
+    - src/presentation/screens/LoginScreen.tsx
+    - src/presentation/screens/OnboardingScreen.tsx
+    - App.tsx
+context: |
+  Fundament Fazy 8 (docs/08-design-ui.md §0–§1, §2.1–§2.2, §1.3). Rozszerz `ThemeColors` i `THEMES`
+  w useSettingsStore.ts o tokeny z briefu: card, card2, track, sheet, onPrimary, border, aurora (3 plamy),
+  gradient (3 stopy) oraz stałe kolory akcentów i semantyczne (emocje, typy notatek, statusy nagrań,
+  wpływ na cele) w jednym miejscu; zachowaj istniejące klucze (kompatybilność, pozostałe ekrany
+  przechodzą na nowe tokeny w kolejnych zadaniach). Nazwy motywów i pole w profilu bez zmian
+  (AppleDark / AppleLight / Sepia); etykiety UI Dark / Light / Sepia.
+  Prymitywy w src/presentation/components/ui/: AuroraBackground (3 rozmyte koła, wolny dryf przez
+  Animated), GlassCard (blur + obramowanie 1 px + promień 22 + cień wg briefu), GradientText (tytuły waga 800,
+  letter-spacing -0.5), SectionLabel (UPPERCASE 12 px, waga 700, spacing 1.5), Chip, EmotionPill,
+  NoteTypeChip, StatusChip (pulsowanie w toku), RoundIconButton (40 px + hitSlop do 44 pt),
+  BackButton (chevron w szklanym kółku), PrimaryButton, RecordButton wizualnie wg briefu §1.3
+  (gradient, wersja nagrywania czerwona z trzema pulsującymi pierścieniami), ScreenContainer
+  (tło motywu + Aurora). Teksty PL w src/presentation/i18n/pl.ts. W App.tsx: przejście ekranów
+  fade + translateY ~46 px, 400 ms, StatusBar zależny od motywu.
+  Logowanie i Onboarding: nowy wygląd wg §2.1/§2.2; logika bez zmian (prawdziwe logowanie, nagrywanie i ekstrakcja
+  celów z transkrypcji; brak elementów „Tylko prototyp”, w tym przełącznika demo i stałych chipów).
+  UIPrimitives.tsx i GradientText.tsx: zachowaj dotychczasowe eksporty (re-export z ui/), żeby ekrany
+  jeszcze nieprzepisane działały.
+  Bez nowych zależności (docs/08-design-ui.md, decyzja 1).
+acceptance:
+  - "ThemeColors i THEMES zawierają wszystkie tokeny z tabeli w docs/08-design-ui.md §1 dla trzech motywów (test jest sprawdza komplet kluczy)"
+  - "komponenty w components/ui/ czytają kolory wyłącznie z motywu i stałych semantycznych (brak zahardkodowanych hexów poza semantycznymi)"
+  - "Logowanie i Onboarding mają wygląd z briefu §2.1–§2.2 i działają jak dotychczas; zmiana motywu przemalowuje je natychmiast"
+  - "przejście między ekranami to fade + translateY ~46 px, 400 ms"
+  - "tsc, lint i jest przechodzą; brak nowych zależności"
+human_steps:
+  - "CP-DEVICE: wizualna weryfikacja Logowania i Onboardingu w trzech motywach na iPhonie"

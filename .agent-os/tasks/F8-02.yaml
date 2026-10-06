@@ -1,0 +1,52 @@
+id: F8-02
+title: Ekran główny i nowy ekran „Twoje nagrania”
+phase: 8
+role: mobile
+branch: feat/F8-02-home-and-recordings
+depends_on: [F8-01]
+roadmap: "Ekran główny w nowym wyglądzie i nowy ekran „Twoje nagrania”"
+read_first:
+  - docs/08-design-ui.md
+  - docs/design/Main.dc.html
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/presentation/screens/HomeScreen.tsx
+    - src/presentation/screens/RecordingsScreen.tsx
+    - src/presentation/components/NotesList.tsx
+    - src/presentation/components/RecordingStatusList.tsx
+    - src/presentation/components/RecordingOverlay.tsx
+    - src/presentation/components/RecordButton.tsx
+    - src/presentation/components/BadgeAlertModal.tsx
+    - src/presentation/components/DiaryEntryCard.tsx
+    - src/presentation/components/home/**
+    - src/presentation/i18n/**
+    - src/application/store/useNotesStore.ts
+    - src/application/store/useGamificationStore.ts
+    - src/application/store/__tests__/**
+    - src/domain/models/Recording.ts
+    - src/domain/models/__tests__/**
+    - App.tsx
+context: |
+  docs/08-design-ui.md §2.3–§2.5 na prawdziwych danych (decyzja 4). Ekran główny: nagłówek (licznik serii
+  z profiles.current_streak → Osiągnięcia; przyciski: Graf, Czat, Nagrania z licznikiem w toku/czerwony przy
+  błędzie, Osiągnięcia, Ustawienia), data i tytuł, pasek statusu przetwarzania (tylko gdy coś w toku/błąd),
+  karta „Podsumowanie tygodnia” (pierścień zgodności z celami z getDailyAnalyticsData/goalImpactType,
+  komunikat, link do Analiz; paski per cel pominięte — decyzja w docs/08), przełącznik „Wpisy dnia” /
+  „Notatki (N)”; karty wpisów dnia z plakietką „Dziś”; notatki z działającymi filtrami typu i klikalne
+  (→ Detail z id dokumentu); pusty stan filtrów. Lista „Status nagrań na żywo” przenosi się z ekranu głównego
+  do nowego ekranu Nagrania (trasa w App.tsx): kafelki Wszystkie / W toku / Błędy, „Status nagrań na żywo”
+  (tylko w toku/błąd, ikona źródła iPhone/zegarek, pasek postępu wg etapu, ponowienie przy błędzie),
+  „Lista nagrań” (gotowe, liczba notatek, tap → wpis dnia), FAB nagrywania. Nagrywanie: overlay z falami,
+  timerem i equalizerem, pigułka „Przetwarzam nagranie...” (zamiast „Sztuczna Inteligencja analizuje...”),
+  statusy z Supabase Realtime (istniejący subscribeToRealtime), podświetlenie dzisiejszego wpisu po
+  przetworzeniu; modal „Nowe Osiągnięcie!” z kolejką odznak. Stałe etapów, losowe notatki i „błąd przy 4.
+  nagraniu” z prototypu NIE są wdrażane. Wymaga ekranu odświeżania listy po nagraniu (pull-to-refresh).
+acceptance:
+  - "ekran główny i ekran Nagrania mają wygląd i zachowanie z briefu §2.3–§2.5 na danych z Supabase (RLS)"
+  - "filtry notatek faktycznie filtrują; tap w notatkę i wpis dnia otwiera Detail z UUID dokumentu"
+  - "status nagrania z telefonu i z zegarka przechodzi etapy wg recordings.status; błąd pokazuje „Ponów przetwarzanie”"
+  - "testy jest: mapowanie statusu na etap/postęp, liczniki w toku/błędy, filtrowanie notatek"
+  - "tsc, lint i jest przechodzą; brak nowych zależności"
+human_steps:
+  - "CP-DEVICE: nagranie na iPhonie i z zegarka przechodzi etapy na ekranie Nagrania; ekran główny w trzech motywach"

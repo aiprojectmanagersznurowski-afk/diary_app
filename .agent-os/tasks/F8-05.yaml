@@ -1,0 +1,33 @@
+id: F8-05
+title: Graf wiedzy w nowym wyglądzie
+phase: 8
+role: mobile
+branch: feat/F8-05-graph-ui
+depends_on: [F8-01]
+roadmap: "Graf wiedzy w nowym wyglądzie: węzły, filtry w szufladzie"
+read_first:
+  - docs/08-design-ui.md
+  - docs/design/Main.dc.html
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/presentation/screens/GraphScreen.tsx
+    - src/presentation/components/graph/**
+    - src/presentation/i18n/**
+    - src/application/store/useGraphStore.ts
+    - src/application/store/__tests__/**
+context: |
+  docs/08-design-ui.md §2.11. Renderer zostaje na react-force-graph-2d w Expo DOM Component (docs/08, decyzja 3):
+  duże węzły = wpisy dnia (gradient, obwódka), małe = notatki w kolorze typu, krawędzie ~ siła powiązania; przeciąganie,
+  pan, zoom (przyciski ±, reset), tap w węzeł → dymek z rodzajem, tytułem i „Otwórz” / „Zamknij”. Filtry w
+  szufladzie „Filtry grafu” (Modal): „ZAKRES DAT” (7 / 30 / 90 dni / Wszystkie), „TYPY NOTATEK” (4 przełączniki),
+  „POWIĄZANIA SEMANTYCZNE” (Wszystkie / Średnie (≥ 0.5) / Mocne (≥ 0.7)), „Wyczyść”; filtr faktycznie ukrywa
+  węzły i krawędzie; licznik „N węzłów · M powiązań · zoom”. Stany: ładowanie, pusty graf, brak wyników dla filtrów,
+  błąd z „Spróbuj ponownie”. Dane z RPC get_graph (istniejące).
+acceptance:
+  - "graf ma wygląd i interakcje z briefu §2.11 na danych z get_graph; filtry w szufladzie ukrywają węzły i krawędzie"
+  - "tap w węzeł pokazuje dymek, „Otwórz” przechodzi do Detail z UUID"
+  - "stany ładowania, pusty, brak wyników i błąd są obsłużone"
+  - "tsc, lint i jest przechodzą; brak nowych zależności"
+human_steps:
+  - "CP-DEVICE: graf na iPhonie (przeciąganie, zoom, filtry) w trzech motywach"

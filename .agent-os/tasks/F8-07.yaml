@@ -1,0 +1,24 @@
+id: F8-07
+title: Aplikacja watchOS w nowym wyglądzie
+phase: 8
+role: native
+branch: feat/F8-07-watch-ui
+depends_on: [F4-02, F8-01]
+roadmap: "Aplikacja watchOS w nowym wyglądzie"
+read_first:
+  - docs/08-design-ui.md
+  - docs/design/Main.dc.html
+  - .agent-os/roles/native.md
+scope:
+  write:
+    - targets/watch/**
+context: |
+  docs/08-design-ui.md §2.13, w ramach istniejącej logiki F4-02/F4-05 (bez zmian w nagrywaniu i transferze):
+  ekran „Vocaly” z dużym mikrofonem (po dotknięciu czerwony stop z timerem), sekcje „Transfer” (godzina +
+  „oczekuje” → „wysłano”) i „Status” (zegar szary → zielony checkmark po „Gotowe”), kolory akcentów z briefu
+  (czarne tło watchOS). Bez nowych zależności i bez zmian w modułach natywnych iPhone'a.
+acceptance:
+  - "ekran zegarka ma wygląd z briefu §2.13; logika nagrywania, kolejki i transferu bez zmian"
+  - "prebuild generuje target zegarka bez błędów"
+human_steps:
+  - "CP-DEVICE: build i test na fizycznym zegarku (wygląd, nagranie, transfer)"

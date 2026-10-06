@@ -1,0 +1,40 @@
+id: F8-04
+title: Analizy, Osiągnięcia i Ustawienia w nowym wyglądzie
+phase: 8
+role: mobile
+branch: feat/F8-04-insights-badges-settings
+depends_on: [F8-01]
+roadmap: "Analizy, Osiągnięcia i Ustawienia w nowym wyglądzie"
+read_first:
+  - docs/08-design-ui.md
+  - docs/design/Main.dc.html
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/presentation/screens/InsightsScreen.tsx
+    - src/presentation/screens/BadgesScreen.tsx
+    - src/presentation/screens/SettingsScreen.tsx
+    - src/presentation/components/insights/**
+    - src/presentation/components/settings/**
+    - src/presentation/i18n/**
+    - src/application/useCases/statsUseCase.ts
+    - src/application/useCases/__tests__/**
+    - src/application/store/useGamificationStore.ts
+    - src/application/store/__tests__/**
+context: |
+  docs/08-design-ui.md §2.8–§2.10. Analizy: przełącznik 7/30 dni, wykres liniowy „Stres vs. Spokój”
+  (wygładzone krzywe, wypełnienie pod Spokojem, kropki na ostatnim punkcie), kafelki średnich, wykres słupkowy
+  energii, pierścień zgodności z celami z komunikatem, wszystko z getDailyAnalyticsData (react-native-svg).
+  Paski per cel poza zakresem (decyzja w docs/08). Osiągnięcia: duża liczba serii z płomieniem, 7 kropek
+  tygodnia, tekst „Do odznaki … brakuje N dni serii.”, gablota odznak z zablokowanymi (opacity ~.45, kłódka,
+  wymaganie); progi odznak zostają obecne (docs/08, otwarte pytania). Ustawienia: cele (chipy), osobowość AI
+  (radio, 4 opcje), wybór motywu (Dark / Light / Sepia, natychmiast), „Zresetuj Cele Życiowe” i „Wyloguj się” z
+  alertami potwierdzenia w stylu iOS (Anuluj + czerwona akcja). Reset celów wraca do Onboardingu.
+acceptance:
+  - "Analizy, Osiągnięcia i Ustawienia mają wygląd i zachowanie z briefu §2.8–§2.10 na danych z Supabase"
+  - "przełącznik 7/30 dni zmienia wykresy; zmiana motywu w Ustawieniach przemalowuje wszystkie ekrany bez przeładowania"
+  - "reset celów i wylogowanie wymagają potwierdzenia"
+  - "testy jest dla nowej logiki obliczeń wykresów/statystyk i odznak"
+  - "tsc, lint i jest przechodzą; brak nowych zależności"
+human_steps:
+  - "CP-DEVICE: Analizy, Osiągnięcia i Ustawienia w trzech motywach na iPhonie"

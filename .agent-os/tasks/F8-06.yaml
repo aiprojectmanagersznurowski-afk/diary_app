@@ -1,0 +1,31 @@
+id: F8-06
+title: Czat w nowym wyglądzie
+phase: 8
+role: mobile
+branch: feat/F8-06-chat-ui
+depends_on: [F8-01]
+roadmap: "Czat w nowym wyglądzie: szybkie pytania, źródła, strumieniowanie odpowiedzi"
+read_first:
+  - docs/08-design-ui.md
+  - docs/design/Main.dc.html
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/presentation/screens/ChatScreen.tsx
+    - src/presentation/components/chat/**
+    - src/presentation/i18n/**
+    - src/application/store/useChatStore.ts
+    - src/application/store/__tests__/**
+context: |
+  docs/08-design-ui.md §2.12. Stan pusty: „Szybkie pytania do pamiętnika” z czterema chipami; pole „Zadaj pytanie
+  swojemu pamiętnikowi...” + wyślij; bąbel użytkownika (gradient), „Odpowiadam...”, odpowiedź asystenta (szkło)
+  strumieniowana przez istniejącą Edge Function `chat` (SSE) i chipy „Źródła:” (np. „Pomysł · 4 paź”) otwierające
+  cytowaną notatkę lub wpis (Detail z UUID). Stan „Ładowanie rozmowy...”. Szablonowe odpowiedzi z prototypu NIE
+  są wdrażane.
+acceptance:
+  - "czat ma wygląd i zachowanie z briefu §2.12; odpowiedzi pochodzą z Edge Function chat, a chipy źródeł otwierają właściwy dokument"
+  - "szybkie pytania wysyłają pytanie jak ręcznie wpisane"
+  - "stany ładowania, pisania odpowiedzi i błędu sieci są obsłużone"
+  - "tsc, lint i jest przechodzą; brak nowych zależności"
+human_steps:
+  - "CP-DEVICE: rozmowa z czatem na iPhonie w trzech motywach"
