@@ -128,6 +128,9 @@ flowchart LR
 
 - [x] Walidacja konfiguracji w aplikacji: ekran „Błąd konfiguracji” zamiast cichych wartości zastępczych, `ErrorBoundary` i globalny handler błędów
 - [x] Kontrola konfiguracji przed buildem (`preflight` w prebuildzie EAS i skrypt `npm run preflight`), polskie teksty uprawnień i `userInterfaceStyle` zgodny z motywami
+- [ ] Preflight tylko przy prebuildzie i buildzie EAS (bez blokowania `expo start`) oraz poprawki z recenzji F9-02
+- [ ] Raportowanie awarii i błędów JS (Sentry) bez treści nagrań i notatek
+- [ ] Android: build preview (APK), logowanie Google i nagrywanie sprawdzone na telefonie
 
 **Gotowe, gdy:** build z błędną konfiguracją (tekst zastępczy, zły klucz, brakujące zmienne) przerywa się przed kolejką EAS z czytelnym komunikatem, a aplikacja przy błędzie konfiguracji pokazuje ekran z listą problemów zamiast zachowywać się losowo.
 

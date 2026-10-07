@@ -65,10 +65,14 @@ Poprzednie błędne buildy mają tę samą klasę przyczyn: EAS buduje z dysku i
 5. **App Store Connect:** nazwa aplikacji „Vocaly”.
 6. **Vault:** `select name from vault.secrets order by name;` zwraca `build_daily_auth`, `build_daily_url`, `process_recording_auth`, `process_recording_url`.
 
-## 5. Decyzje do podjęcia
+## 5. Decyzje
 
-- **Raportowanie awarii (Sentry).** Zalecane, ale to nowa zależność natywna i konto z DSN (CP-DEP). Bez niego crash jest widoczny tylko w TestFlight/Xcode.
-- **Zakres Androida w pierwszej wersji.** Kod i konfiguracja Androida istnieją, ale nie były budowane ani testowane. Zalecenie: build `preview` (APK) po kroku 3 z §4, test logowania Google i nagrywania, dopiero potem decyzja o Google Play.
+Podjęte 2026-10-07 (rekomendacje audytu zatwierdzone przez człowieka):
+
+- **Raportowanie awarii (Sentry):** wdrażamy. ADR-010 (proponowana, do formalnego przyjęcia), zadanie F9-04 (CP-DEP).
+- **Zakres Androida w pierwszej wersji:** tylko APK z profilu `preview`, test logowania Google i nagrywania, bez Google Play. Zadanie F9-05; kroki w [07-instalacja-na-urzadzeniach.md](07-instalacja-na-urzadzeniach.md).
+- **Preflight (recenzja F9-02, N1):** walidacja tylko przy prebuildzie i buildzie EAS, bez blokowania `expo start`. Zadanie F9-03.
+- **Gałąź F2-09:** odtworzona na aktualnym `main`, bez merge'y z `main` w historii.
 
 ## 6. Zapobieganie powtórkom (Faza 9)
 

@@ -1,0 +1,41 @@
+id: F9-04
+title: Raportowanie awarii (Sentry) bez danych osobowych
+phase: 9
+role: mobile
+branch: feat/F9-04-crash-reporting
+depends_on: [F9-01]
+roadmap: "Raportowanie awarii i błędów JS (Sentry) bez treści nagrań i notatek"
+read_first:
+  - docs/05-decyzje.md
+  - docs/09-audyt-gotowosci.md
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - package.json
+    - package-lock.json
+    - app.json
+    - App.tsx
+    - src/infrastructure/observability/**
+    - src/infrastructure/config/**
+    - .env.example
+context: |
+  Wymaga przyjętego ADR-010 (CP-ADR) i zgody człowieka na nową zależność natywną (CP-DEP).
+  Cel: o crashu i niezłapanym błędzie JS dowiadujemy się z raportu, a nie ze zrzutu ekranu (docs/09 #9).
+  1. `npx expo install @sentry/react-native` i wtyczka w `app.json` (bez przesyłania map źródeł z aplikacji:
+     token do map to krok człowieka na EAS).
+  2. `src/infrastructure/observability/sentry.ts`: inicjalizacja tylko, gdy ustawiono `EXPO_PUBLIC_SENTRY_DSN`
+     (DSN jest wartością publiczną; brak DSN = brak raportowania, bez błędu); `sendDefaultPii: false`,
+     `beforeSend`/`beforeBreadcrumb` usuwają treści (transkrypcje, notatki, odpowiedzi LLM, teksty z pól),
+     zostają typ błędu, stos i wersja aplikacji. Dane o emocjach to dane o zdrowiu (RODO art. 9): nigdy w raporcie.
+  3. Podpięcie do istniejących punktów: `globalErrorHandler`, `ErrorBoundary`, `ConfigErrorScreen` (lista
+     problemów konfiguracji bez wartości). Port w `application`/`domain` nie jest potrzebny: tylko infrastruktura.
+  4. `.env.example`: opis `EXPO_PUBLIC_SENTRY_DSN`. Preflight (plugins/) pozostaje bez zmian: DSN jest opcjonalny.
+acceptance:
+  - "test jest: `beforeSend` usuwa pola z treścią (transkrypcja, notatka, odpowiedź LLM) i zostawia typ błędu i stos"
+  - "test jest: bez `EXPO_PUBLIC_SENTRY_DSN` inicjalizacja nic nie robi i nie rzuca"
+  - "test jest: niezłapany błąd JS i błąd z `ErrorBoundary` trafiają do raportera (mock), bez treści użytkownika"
+  - "tsc, lint i jest przechodzą; nowa zależność tylko `@sentry/react-native`"
+human_steps:
+  - "Założyć projekt w Sentry (region UE), wziąć DSN i dodać go w EAS: `eas env:create --force --name EXPO_PUBLIC_SENTRY_DSN --visibility plaintext` dla trzech środowisk"
+  - "Opcjonalnie: token `SENTRY_AUTH_TOKEN` (secret w EAS) do wysyłki map źródeł przy buildzie"
+  - "Zaakceptować ADR-010 i zależność (CP-ADR, CP-DEP)"
