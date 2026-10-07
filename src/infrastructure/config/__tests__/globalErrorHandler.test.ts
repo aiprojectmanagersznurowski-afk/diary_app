@@ -1,4 +1,4 @@
-import { describeError, installGlobalErrorHandler } from '../globalErrorHandler';
+import { describeError, installGlobalErrorHandler, installUnhandledRejectionTracker } from '../globalErrorHandler';
 
 function fakeErrorUtils() {
   const previous = jest.fn();
@@ -53,5 +53,23 @@ describe('describeError', () => {
   it('obsługuje wartości, które nie są błędami', () => {
     expect(describeError('tekst')).toBe('Nieznany błąd: tekst');
     expect(describeError(undefined)).toBe('Nieznany błąd: undefined');
+  });
+});
+
+describe('installUnhandledRejectionTracker', () => {
+  it('włącza śledzenie Hermesa dla wszystkich odrzuceń i loguje je bez stosu', () => {
+    const enable = jest.fn();
+    const log = jest.fn();
+    expect(installUnhandledRejectionTracker({ enablePromiseRejectionTracker: enable }, log)).toBe(true);
+
+    const options = enable.mock.calls[0][0];
+    expect(options.allRejections).toBe(true);
+    options.onUnhandled(7, new RangeError('poza zakresem'));
+    expect(log).toHaveBeenCalledWith('[UnhandledRejection] RangeError: poza zakresem');
+  });
+
+  it('zwraca false, gdy silnik nie udostępnia śledzenia (np. Jest, web)', () => {
+    expect(installUnhandledRejectionTracker(null, jest.fn())).toBe(false);
+    expect(installUnhandledRejectionTracker({}, jest.fn())).toBe(false);
   });
 });

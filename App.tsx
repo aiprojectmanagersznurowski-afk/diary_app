@@ -13,6 +13,7 @@ import { RootStackParamList } from './src/navigation/types';
 import { useSettingsStore, THEMES } from './src/application/store/useSettingsStore';
 import { useGamificationStore } from './src/application/store/useGamificationStore';
 import { User } from './src/domain/models/User';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { appConfigResult, authService, DependenciesProvider } from './src/composition';
 import { ErrorBoundary } from './src/presentation/components/ErrorBoundary';
 import { ConfigGate } from './src/presentation/screens/ConfigErrorScreen';
@@ -120,11 +121,17 @@ const styles = StyleSheet.create({
  * Supabase, nawigacji), gdy konfiguracja builda jest błędna (docs/09-audyt-gotowosci.md).
  */
 export default function App() {
+  // SafeAreaProvider musi stać nad ConfigGate i ErrorBoundary: ekran błędu konfiguracji i fallback używają
+  // ScreenContainer (useSafeAreaInsets), a bez providera biblioteka rzuca wyjątek zamiast pokazać komunikat.
   return (
-    <ErrorBoundary onError={(error) => console.error(`[ErrorBoundary] ${error.name}: ${error.message.slice(0, 200)}`)}>
-      <ConfigGate result={appConfigResult}>
-        <AppContent />
-      </ConfigGate>
-    </ErrorBoundary>
+    <SafeAreaProvider>
+      <ErrorBoundary
+        onError={(error) => console.error(`[ErrorBoundary] ${error.name}: ${error.message.slice(0, 200)}`)}
+      >
+        <ConfigGate result={appConfigResult}>
+          <AppContent />
+        </ConfigGate>
+      </ErrorBoundary>
+    </SafeAreaProvider>
   );
 }

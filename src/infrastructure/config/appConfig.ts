@@ -94,7 +94,11 @@ export function decodeJwtPayload(token: string): JwtPayload | null {
 }
 
 function checkAnonKey(key: string, projectRef: string | null, nowSeconds: number): string | null {
-  if (key.startsWith('sb_publishable_')) return null;
+  if (key.startsWith('sb_publishable_')) {
+    return key.length > 'sb_publishable_'.length + 8
+      ? null
+      : 'klucz sb_publishable_ jest za krótki (brak właściwej części klucza)';
+  }
   if (key.startsWith('sb_secret_'))
     return 'to klucz sekretny (sb_secret_…); w aplikacji wolno używać tylko klucza publicznego';
   const payload = decodeJwtPayload(key);
@@ -159,7 +163,7 @@ export function validateAppConfig(env: RawEnv, nowSeconds = Math.floor(Date.now(
   }
   return {
     config: {
-      supabaseUrl: url,
+      supabaseUrl: url.replace(/\/+$/, ''),
       supabaseAnonKey: anonKey,
       googleWebClientId: webId,
       googleIosClientId: iosId,

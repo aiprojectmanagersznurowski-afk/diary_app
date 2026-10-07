@@ -30,3 +30,27 @@ export function installGlobalErrorHandler(
   });
   return true;
 }
+
+interface HermesLike {
+  enablePromiseRejectionTracker?: (options: {
+    allRejections: boolean;
+    onUnhandled: (id: number, error: unknown) => void;
+    onHandled?: (id: number) => void;
+  }) => void;
+}
+
+/**
+ * Nieobsłużone odrzucenia obietnic: React Native śledzi je tylko w trybie dev, a w buildzie produkcyjnym
+ * przepadają bez śladu. Włączamy śledzenie Hermesa i logujemy takie odrzucenia (nie kończą aplikacji).
+ */
+export function installUnhandledRejectionTracker(
+  hermes: HermesLike | null = (globalThis as { HermesInternal?: HermesLike }).HermesInternal ?? null,
+  log: (message: string) => void = (message) => console.error(message),
+): boolean {
+  if (!hermes?.enablePromiseRejectionTracker) return false;
+  hermes.enablePromiseRejectionTracker({
+    allRejections: true,
+    onUnhandled: (_id, error) => log(`[UnhandledRejection] ${describeError(error)}`),
+  });
+  return true;
+}

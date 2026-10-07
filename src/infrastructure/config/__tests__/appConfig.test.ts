@@ -47,6 +47,19 @@ describe('validateAppConfig: poprawna konfiguracja', () => {
     expect(issuesFor(env)).toEqual([]);
   });
 
+  it('odrzuca pusty lub zbyt krótki klucz sb_publishable_', () => {
+    for (const key of ['sb_publishable_', 'sb_publishable_abc']) {
+      const result = validateAppConfig({ ...validEnv(), [ENV.supabaseAnonKey]: key }, NOW);
+      expect(result.config).toBeNull();
+      expect(result.issues[0].message).toContain('za krótki');
+    }
+  });
+
+  it('usuwa końcowy ukośnik z adresu w zwróconej konfiguracji (endpointy funkcji nie dostają „//”)', () => {
+    const result = validateAppConfig({ ...validEnv(), [ENV.supabaseUrl]: `https://${REF}.supabase.co/` }, NOW);
+    expect(result.config?.supabaseUrl).toBe(`https://${REF}.supabase.co`);
+  });
+
   it('klucz bez pola exp lub ref jest akceptowany (starsze klucze)', () => {
     const env = { ...validEnv(), [ENV.supabaseAnonKey]: jwt({ role: 'anon' }) };
     expect(issuesFor(env)).toEqual([]);
