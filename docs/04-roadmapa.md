@@ -114,7 +114,7 @@ flowchart LR
 
 - [x] Tokeny motywów, prymitywy UI, teksty PL i przejścia ekranów; Logowanie i Onboarding w nowym wyglądzie
 - [x] Ekran główny w nowym wyglądzie i nowy ekran „Twoje nagrania”
-- [ ] Szczegóły wpisu dnia i notatki w nowym wyglądzie: tryb udostępniania i podgląd pliku `.md`
+- [x] Szczegóły wpisu dnia i notatki w nowym wyglądzie: tryb udostępniania i podgląd pliku `.md`
 - [ ] Analizy, Osiągnięcia i Ustawienia w nowym wyglądzie
 - [ ] Graf wiedzy w nowym wyglądzie: węzły, filtry w szufladzie
 - [ ] Czat w nowym wyglądzie: szybkie pytania, źródła, strumieniowanie odpowiedzi
