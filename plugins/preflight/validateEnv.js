@@ -3,7 +3,7 @@
  * Walidacja zmiennych `EXPO_PUBLIC_*` przed buildem (docs/09-audyt-gotowosci.md §6).
  * Te same reguły i komunikaty co `src/infrastructure/config/appConfig.ts` (walidacja w aplikacji):
  * Metro nie zbundluje modułu z `plugins/` (Node), a plugin nie wczyta TypeScriptu, więc są to dwie
- * implementacje; test zgodności (`__tests__/parity.test.js`) pilnuje, żeby się nie rozjechały.
+ * implementacje; test zgodności (`__tests__/parity.test.ts`) pilnuje, żeby się nie rozjechały.
  * Moduł używa tylko wbudowanych API Node.js, bo działa też w hooku `eas-build-pre-install`
  * (przed instalacją zależności).
  */
