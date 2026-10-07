@@ -1,3 +1,4 @@
+import { ConfigError, loadAppConfig } from '../config/appConfig';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { IChatRepository, StreamChatCallbacks } from '../../domain/repositories/IChatRepository';
 import { ChatMessage, ChatThread, Citation } from '../../domain/models/Chat';
@@ -84,10 +85,15 @@ export class SupabaseChatRepository implements IChatRepository {
     const { data: sessionData } = await this.client.auth.getSession();
     const token = sessionData?.session?.access_token;
 
-    const supabaseUrl =
-      (this.client as any).supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-    const supabaseKey =
-      (this.client as any).supabaseKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+    // Klient Supabase zna własny adres i klucz; konfiguracja z środowiska to tylko rezerwa (bez wartości zastępczych).
+    let supabaseUrl: string | undefined = (this.client as any).supabaseUrl;
+    let supabaseKey: string | undefined = (this.client as any).supabaseKey;
+    if (!supabaseUrl || !supabaseKey) {
+      const { config, issues } = loadAppConfig();
+      if (!config) throw new ConfigError(issues);
+      supabaseUrl = supabaseUrl || config.supabaseUrl;
+      supabaseKey = supabaseKey || config.supabaseAnonKey;
+    }
 
     const endpoint = `${supabaseUrl}/functions/v1/chat`;
 

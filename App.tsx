@@ -13,7 +13,9 @@ import { RootStackParamList } from './src/navigation/types';
 import { useSettingsStore, THEMES } from './src/application/store/useSettingsStore';
 import { useGamificationStore } from './src/application/store/useGamificationStore';
 import { User } from './src/domain/models/User';
-import { authService, DependenciesProvider } from './src/composition';
+import { appConfigResult, authService, DependenciesProvider } from './src/composition';
+import { ErrorBoundary } from './src/presentation/components/ErrorBoundary';
+import { ConfigGate } from './src/presentation/screens/ConfigErrorScreen';
 import { useAuthStore } from './src/application/store/useAuthStore';
 
 import { InsightsScreen } from './src/presentation/screens/InsightsScreen';
@@ -27,7 +29,7 @@ type AppStackParamList = RootStackParamList & { Recordings: undefined };
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
-export default function App() {
+function AppContent() {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const { hasHydrated, lifeGoals, theme } = useSettingsStore();
@@ -112,3 +114,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+/**
+ * Korzeń aplikacji: ErrorBoundary łapie wyjątki w renderze, a ConfigGate nie uruchamia reszty (logowania, klienta
+ * Supabase, nawigacji), gdy konfiguracja builda jest błędna (docs/09-audyt-gotowosci.md).
+ */
+export default function App() {
+  return (
+    <ErrorBoundary onError={(error) => console.error(`[ErrorBoundary] ${error.name}: ${error.message.slice(0, 200)}`)}>
+      <ConfigGate result={appConfigResult}>
+        <AppContent />
+      </ConfigGate>
+    </ErrorBoundary>
+  );
+}

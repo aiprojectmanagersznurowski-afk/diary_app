@@ -1,3 +1,4 @@
+import './src/infrastructure/config/registerGlobalErrorHandler';
 import { registerRootComponent } from 'expo';
 
 import App from './App';
