@@ -1,0 +1,48 @@
+id: F9-02
+title: Preflight konfiguracji przed buildem, polskie uprawnienia i styl interfejsu
+phase: 9
+role: mobile
+branch: feat/F9-02-build-preflight
+depends_on: []
+roadmap: "Kontrola konfiguracji przed buildem (`preflight` w prebuildzie EAS i skrypt `npm run preflight`), polskie teksty uprawnień i `userInterfaceStyle` zgodny z motywami"
+read_first:
+  - docs/09-audyt-gotowosci.md
+  - docs/07-instalacja-na-urzadzeniach.md
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - plugins/**
+    - app.json
+    - package.json
+    - .env.example
+context: |
+  Cel (docs/09 §6): zły build ma przerywać się po kilku minutach z czytelnym komunikatem, a nie po godzinie
+  kolejki EAS i dopiero na telefonie.
+  1. `plugins/preflight/validateEnv.js` (czysty moduł, testowalny w jest): sprawdza zmienne
+     `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`,
+     `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (wymagane) i `EXPO_PUBLIC_GROQ_API_KEY` (ostrzeżenie): brak, tekst
+     zastępczy (`<…>`, „placeholder”, „z .env”), format adresu Supabase, klucz JWT `anon` z `ref` zgodnym z adresem
+     (albo `sb_publishable_`), format identyfikatorów Google, różne identyfikatory web i iOS, zgodność
+     identyfikatora iOS z `iosUrlScheme` w app.json. Komunikaty po polsku, bez wypisywania wartości sekretów
+     (ucinanie do kilku znaków).
+  2. `plugins/preflight/cli.js`: `npm run preflight` czyta `.env` i zmienne procesu; `--eas` pobiera wartości z
+     `eas env:list --environment production` (wymaga zalogowania do EAS); `--live` sprawdza `GET
+     {url}/auth/v1/settings` z kluczem (odpowiedź 200 i włączeni dostawcy Apple i Google). Kod wyjścia ≠ 0 przy
+     błędach, 0 przy samych ostrzeżeniach.
+  3. `plugins/withEnvValidation.js` (plugin konfiguracyjny) dopisany do `app.json`: uruchamia walidator przy
+     `expo prebuild` (także na EAS) i rzuca błąd z listą problemów; pomijany przy `SKIP_PREFLIGHT=1`.
+     Skrypty `package.json`: `preflight`, `preflight:eas`, `preflight:live` oraz `eas-build-pre-install`
+     (uruchamia `cli.js` na zmiennych środowiska buildu EAS).
+  4. `app.json`: polski tekst `NSMicrophoneUsageDescription` z nazwą Vocaly (opcja `microphonePermission` wtyczki
+     `expo-audio`) i `userInterfaceStyle: "automatic"`.
+  5. `.env.example`: opis wszystkich zmiennych `EXPO_PUBLIC_*` z przykładami formatu (bez prawdziwych wartości).
+  Bez nowych zależności; `eas.json` jest poza uprawnieniami agentów (docs/09 §4, krok człowieka).
+acceptance:
+  - "testy jest walidatora: odrzuca brak zmiennej, `<anon key z .env>`, adres inny niż supabase.co, JWT z rolą inną niż anon albo innym `ref`, zły format identyfikatora Google, ten sam identyfikator web i iOS, niezgodność z iosUrlScheme; akceptuje poprawny komplet; ostrzega o braku klucza Groq"
+  - "`npm run preflight` na błędnym `.env` kończy się kodem ≠ 0 z listą problemów po polsku, a na poprawnym kodem 0"
+  - "`expo prebuild` z błędną zmienną kończy się błędem z listą problemów; z `SKIP_PREFLIGHT=1` przechodzi"
+  - "prebuild na czystej kopii generuje Info.plist z polskim `NSMicrophoneUsageDescription` i `UIUserInterfaceStyle = Automatic`"
+  - "tsc, lint i jest przechodzą; brak nowych zależności"
+human_steps:
+  - "Poprawić zmienne EAS wg docs/09 §4 (komenda `eas env:create --force`) i uruchomić `npm run preflight:eas`"
+  - "Dopisać do eas.json profil preview na Androidzie: `\"android\": { \"buildType\": \"apk\" }` (poza uprawnieniami agentów)"

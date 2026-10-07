@@ -2,6 +2,15 @@
 
 Fazy są uporządkowane według zależności. Faza 4 (Apple Watch) zależy tylko od fazy 2 i może iść równolegle z fazą 3. Po ukończeniu zadania zaznacz pole `[x]` w tym pliku (patrz [06-zasady-pracy.md](06-zasady-pracy.md)).
 
+## Śledzenie i stan (2026-10-07)
+
+- **Backlog w Trello:** https://trello.com/b/hdHfuhyw/vocaly (listy: Backlog, Do zrobienia, W trakcie, Review / CP-DEVICE, Gotowe; karty `[Fx-yy]`, `[AUDYT-n]`, `[BEZP-n]`, `[DLUG-n]`).
+- **Status projektu:** plik `status-vocaly.md` na Dysku Google (folder „Status wdrożeń”).
+- **Postęp:** 45 z 58 pozycji roadmapy zaznaczonych (78%), licząc nową fazę 9.
+- **Gotowe, czekają na test na urządzeniu (CP-DEVICE):** F1-10, F1-11, F1-12, F2-10, F3-06, F4-07, F8-01, F8-02.
+- **W toku:** F8-03. **Plan Fazy 9 (audyt):** F9-01, F9-02.
+- **Najpilniejszy krok człowieka:** poprawić zmienne EAS z tekstami zastępczymi ([09-audyt-gotowosci.md](09-audyt-gotowosci.md) §4.1), bo do tego czasu logowanie w buildzie nie działa.
+
 ```mermaid
 flowchart LR
   F1[1. Fundament Supabase] --> F2[2. Przetwarzanie nagrań]
@@ -112,6 +121,15 @@ flowchart LR
 - [ ] Aplikacja watchOS w nowym wyglądzie
 
 **Gotowe, gdy:** wszystkie ekrany z prototypu wyglądają i działają jak w briefie na prawdziwych danych, przełączenie motywu przemalowuje całą aplikację bez przeładowania, a w kodzie komponentów nie ma zahardkodowanych kolorów poza semantycznymi.
+
+## Faza 9: Stabilność i gotowość do wydania
+
+Źródło: [09-audyt-gotowosci.md](09-audyt-gotowosci.md). Zadania są niezależne i mogą iść równolegle.
+
+- [ ] Walidacja konfiguracji w aplikacji: ekran „Błąd konfiguracji” zamiast cichych wartości zastępczych, `ErrorBoundary` i globalny handler błędów
+- [ ] Kontrola konfiguracji przed buildem (`preflight` w prebuildzie EAS i skrypt `npm run preflight`), polskie teksty uprawnień i `userInterfaceStyle` zgodny z motywami
+
+**Gotowe, gdy:** build z błędną konfiguracją (tekst zastępczy, zły klucz, brakujące zmienne) przerywa się przed kolejką EAS z czytelnym komunikatem, a aplikacja przy błędzie konfiguracji pokazuje ekran z listą problemów zamiast zachowywać się losowo.
 
 ## Znane błędy obecnego kodu
 
