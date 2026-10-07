@@ -20,7 +20,7 @@ context: |
   kolejki EAS i dopiero na telefonie.
   1. `plugins/preflight/validateEnv.js` (czysty moduł, testowalny w jest): sprawdza zmienne
      `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`,
-     `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (wymagane) i `EXPO_PUBLIC_GROQ_API_KEY` (ostrzeżenie): brak, tekst
+     `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (wszystkie wymagane): brak, tekst
      zastępczy (`<…>`, „placeholder”, „z .env”), format adresu Supabase, klucz JWT `anon` z `ref` zgodnym z adresem
      (albo `sb_publishable_`), format identyfikatorów Google, różne identyfikatory web i iOS, zgodność
      identyfikatora iOS z `iosUrlScheme` w app.json. Komunikaty po polsku, bez wypisywania wartości sekretów
@@ -36,9 +36,11 @@ context: |
   4. `app.json`: polski tekst `NSMicrophoneUsageDescription` z nazwą Vocaly (opcja `microphonePermission` wtyczki
      `expo-audio`) i `userInterfaceStyle: "automatic"`.
   5. `.env.example`: opis wszystkich zmiennych `EXPO_PUBLIC_*` z przykładami formatu (bez prawdziwych wartości).
+  Klucza Groq (`EXPO_PUBLIC_*API_KEY`) walidator nie sprawdza: bramka `secrets` zabrania odwołań do takich nazw w kodzie
+  (klucz ma opuścić aplikację, karta BEZP-1), a `.env.example` nie zmienia istniejącej linii z tym kluczem.
   Bez nowych zależności; `eas.json` jest poza uprawnieniami agentów (docs/09 §4, krok człowieka).
 acceptance:
-  - "testy jest walidatora: odrzuca brak zmiennej, `<anon key z .env>`, adres inny niż supabase.co, JWT z rolą inną niż anon albo innym `ref`, zły format identyfikatora Google, ten sam identyfikator web i iOS, niezgodność z iosUrlScheme; akceptuje poprawny komplet; ostrzega o braku klucza Groq"
+  - "testy jest walidatora: odrzuca brak zmiennej, `<anon key z .env>`, adres inny niż supabase.co, JWT z rolą inną niż anon albo innym `ref`, zły format identyfikatora Google, ten sam identyfikator web i iOS, niezgodność z iosUrlScheme; akceptuje poprawny komplet"
   - "`npm run preflight` na błędnym `.env` kończy się kodem ≠ 0 z listą problemów po polsku, a na poprawnym kodem 0"
   - "`expo prebuild` z błędną zmienną kończy się błędem z listą problemów; z `SKIP_PREFLIGHT=1` przechodzi"
   - "prebuild na czystej kopii generuje Info.plist z polskim `NSMicrophoneUsageDescription` i `UIUserInterfaceStyle = Automatic`"
