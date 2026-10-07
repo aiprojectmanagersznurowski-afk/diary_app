@@ -1,333 +1,117 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Feather, Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSettingsStore, THEMES, ThemeName, AIPersonality } from '../../application/store/useSettingsStore';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { BackButton, Chip, GlassCard, ScreenContainer, SectionLabel, useTheme } from '../components/ui';
+import { ManagementCard, PersonalityRadio, ThemeSelector } from '../components/settings';
+import { useSettingsStore } from '../../application/store/useSettingsStore';
 import { useAuthService } from '../../composition';
-import { GlassCard, GradientText } from '../components/UIPrimitives';
+import { RootStackParamList } from '../../navigation/types';
+import { pl } from '../i18n/pl';
 
+type SettingsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
+
+/** Ekran „Ustawienia” (docs/08-design-ui.md §2.10). */
 export const SettingsScreen = () => {
+  const { colors } = useTheme();
+  const navigation = useNavigation<SettingsNavigationProp>();
   const authService = useAuthService();
-  const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
+
   const { theme, setTheme, clearGoals, lifeGoals, aiPersonality, setAIPersonality } = useSettingsStore();
 
-  const colors = THEMES[theme];
+  const handleResetGoals = () => {
+    clearGoals();
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Onboarding' }],
+    });
+  };
 
   const handleLogout = async () => {
     try {
       await authService.signOut();
     } catch (e) {
-      console.error(e);
+      console.warn('Błąd wylogowania:', e);
     }
   };
 
-  const handleClearGoals = () => {
-    clearGoals();
-    navigation.goBack();
-  };
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={[
-            styles.backButton,
-            {
-              borderColor: colors.tileBorder,
-              backgroundColor:
-                theme === 'AppleLight' || theme === 'Sepia' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
-            },
-          ]}
-        >
-          <Feather name="chevron-left" size={20} color={colors.text} />
-        </TouchableOpacity>
-        <GradientText text="Ustawienia" style={styles.headerTitle} colors={['#A78BFA', '#F472B6', '#60A5FA']} />
-        <View style={{ width: 40 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* We keep the theme selection purely functional but style it as glass cards */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Wybór Motywu Akcentów</Text>
-          <View style={styles.themeRow}>
-            {(Object.keys(THEMES) as ThemeName[]).map((themeName) => {
-              const themeColors = THEMES[themeName];
-              const isSelected = themeName === theme;
-              const displayName = themeName === 'AppleDark' ? 'Dark' : themeName === 'Sepia' ? 'Sepia' : 'Light';
-              return (
-                <TouchableOpacity
-                  key={themeName}
-                  activeOpacity={0.7}
-                  onPress={() => setTheme(themeName)}
-                  style={{ flex: 1 }}
-                >
-                  <GlassCard
-                    intensity={isSelected ? 20 : 10}
-                    style={[
-                      styles.themeButton,
-                      isSelected && {
-                        borderColor: themeColors.primary,
-                        borderWidth: 1,
-                      },
-                    ]}
-                  >
-                    <View style={[styles.themeColorCircle, { backgroundColor: themeColors.primary }]} />
-                    <Text
-                      style={[
-                        styles.themeText,
-                        {
-                          color: isSelected ? colors.text : colors.textSecondary,
-                        },
-                      ]}
-                    >
-                      {displayName}
-                    </Text>
-                    {isSelected && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={20}
-                        color={themeColors.primary}
-                        style={styles.checkIcon}
-                      />
-                    )}
-                  </GlassCard>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+    <ScreenContainer>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        {/* TopBar */}
+        <View style={styles.topBar}>
+          <BackButton />
+          <Text style={[styles.barTitle, { color: colors.text }]}>{pl.settings.barTitle}</Text>
+          <View style={styles.barSpacer} />
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Osobowość AI</Text>
-          <View style={styles.personalityContainer}>
-            {(['Po prostu przyjaciel', 'Buddha', 'Józef Piłsudski', 'Stefan Banach'] as AIPersonality[]).map(
-              (persona) => {
-                const isSelected = persona === aiPersonality;
-                return (
-                  <TouchableOpacity
-                    key={persona}
-                    activeOpacity={0.7}
-                    onPress={() => setAIPersonality(persona)}
-                    style={{ marginBottom: 12 }}
-                  >
-                    <GlassCard
-                      intensity={isSelected ? 20 : 10}
-                      style={[
-                        styles.personalityButton,
-                        isSelected && {
-                          borderColor: colors.primary,
-                          borderWidth: 1,
-                        },
-                      ]}
-                    >
-                      <View style={styles.personalityButtonInner}>
-                        <Text
-                          style={[
-                            styles.personalityText,
-                            {
-                              color: isSelected ? colors.text : colors.textSecondary,
-                            },
-                          ]}
-                        >
-                          {persona}
-                        </Text>
-                        {isSelected && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
-                      </View>
-                    </GlassCard>
-                  </TouchableOpacity>
-                );
-              },
-            )}
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Twoje Aktualne Cele Życiowe</Text>
-          <GlassCard intensity={10} style={styles.goalsCard}>
-            <View style={styles.tagsContainer}>
-              {lifeGoals.map((goal, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.goalTag,
-                    {
-                      backgroundColor:
-                        theme === 'AppleLight' || theme === 'Sepia' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)',
-                      borderColor: colors.tileBorder,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.goalTagText, { color: colors.text }]}>{goal}</Text>
-                </View>
+        {/* Twoje Aktualne Cele Życiowe */}
+        <SectionLabel style={styles.sectionLabel}>{pl.settings.goalsTitle}</SectionLabel>
+        <GlassCard padding={16}>
+          {lifeGoals.length > 0 ? (
+            <View style={styles.chipsRow}>
+              {lifeGoals.map((goal, idx) => (
+                <Chip key={`${goal}-${idx}`} label={goal} />
               ))}
             </View>
-          </GlassCard>
-        </View>
+          ) : (
+            <Text style={[styles.emptyGoalsText, { color: colors.textSecondary }]}>{pl.settings.noGoals}</Text>
+          )}
+        </GlassCard>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Zarządzanie</Text>
+        {/* Osobowość AI */}
+        <SectionLabel style={styles.sectionLabel}>{pl.settings.personalityTitle}</SectionLabel>
+        <PersonalityRadio selected={aiPersonality} onSelect={setAIPersonality} />
 
-          <TouchableOpacity activeOpacity={0.7} onPress={handleClearGoals}>
-            <GlassCard
-              intensity={15}
-              style={[styles.dangerButton, { borderColor: 'rgba(248, 113, 113, 0.3)', borderWidth: 1 }]}
-            >
-              <View style={styles.buttonInner}>
-                <Feather name="trash-2" size={20} color="#F87171" style={{ marginRight: 12 }} />
-                <Text style={styles.dangerButtonText}>Zresetuj Cele Życiowe</Text>
-              </View>
-            </GlassCard>
-          </TouchableOpacity>
-          <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-            Wymazanie celów spowoduje ponowne przejście przez proces wprowadzający na ekranie głównym.
-          </Text>
-        </View>
+        {/* Wybór Motywu Akcentów */}
+        <SectionLabel style={styles.sectionLabel}>{pl.settings.themeTitle}</SectionLabel>
+        <ThemeSelector selected={theme} onSelect={setTheme} />
 
-        <View style={[styles.section, { marginTop: 20 }]}>
-          <TouchableOpacity activeOpacity={0.7} onPress={handleLogout}>
-            <GlassCard intensity={15} style={[styles.dangerButton, { borderColor: colors.tileBorder, borderWidth: 1 }]}>
-              <View style={styles.buttonInner}>
-                <Feather name="log-out" size={20} color={colors.textSecondary} style={{ marginRight: 12 }} />
-                <Text style={[styles.dangerButtonText, { color: colors.textSecondary }]}>Wyloguj się</Text>
-              </View>
-            </GlassCard>
-          </TouchableOpacity>
-        </View>
+        {/* Zarządzanie */}
+        <SectionLabel style={styles.sectionLabel}>{pl.settings.managementTitle}</SectionLabel>
+        <ManagementCard onResetGoals={handleResetGoals} onLogout={handleLogout} />
+
+        {/* Stopka */}
+        <Text style={[styles.footerText, { color: colors.textSecondary }]}>{pl.settings.footer}</Text>
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  content: {
+    paddingBottom: 40,
   },
-  header: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    marginBottom: 16,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 22,
+  barTitle: {
+    fontSize: 16,
     fontWeight: '700',
-    letterSpacing: -0.5,
   },
-  content: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    gap: 40,
+  barSpacer: {
+    width: 40,
   },
-  section: {
-    gap: 16,
+  sectionLabel: {
+    marginTop: 20,
+    marginBottom: 10,
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: 'rgba(255,255,255,0.5)',
-    paddingLeft: 4,
-  },
-  themeRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  themeButton: {
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  themeColorCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  themeText: {
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  checkIcon: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-  },
-  goalsCard: {
-    padding: 20,
-    borderRadius: 24,
-  },
-  tagsContainer: {
+  chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 8,
   },
-  goalTag: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  goalTagText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#ffffff',
-  },
-  dangerButton: {
-    borderRadius: 20,
-  },
-  buttonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dangerButtonText: {
-    color: '#F87171',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  personalityContainer: {
-    flexDirection: 'column',
-  },
-  personalityButton: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  personalityButtonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  personalityText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  helperText: {
+  emptyGoalsText: {
     fontSize: 13,
-    lineHeight: 20,
-    color: 'rgba(255,255,255,0.4)',
+    fontStyle: 'italic',
+  },
+  footerText: {
+    fontSize: 12,
+    fontWeight: '600',
     textAlign: 'center',
-    paddingHorizontal: 20,
+    marginTop: 28,
   },
 });

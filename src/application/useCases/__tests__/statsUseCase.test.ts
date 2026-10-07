@@ -3,6 +3,8 @@ import {
   getDailyAnalyticsData,
   getDailyCalmPercentage,
   dayStringOffsetFromToday,
+  getEnergyNote,
+  getGoalAlignmentMessage,
 } from '../statsUseCase';
 import { DiaryEntry } from '../../../domain/models/DiaryEntry';
 import { DailyDocument } from '../../../domain/models/DailyDocument';
@@ -126,6 +128,45 @@ describe('getDailyAnalyticsData (DailyDocument, server-computed model used by In
     const { goalAlignment } = getDailyAnalyticsData(docs, 7);
 
     expect(goalAlignment).toBe(75); // (100 + 50) / 2
+  });
+
+  it('oblicza średnie wartości stresu, spokoju i energii z istniejących dokumentów', () => {
+    const today = dayStringOffsetFromToday(0);
+    const yesterday = dayStringOffsetFromToday(-1);
+    const docs = [
+      makeDailyDoc(today, { stressVsCalm: 'stress', fatigueLevel: 2 }), // stress 50, energy 80
+      makeDailyDoc(yesterday, { stressVsCalm: 'calm', fatigueLevel: 6 }), // calm 50, energy 40
+    ];
+
+    const data = getDailyAnalyticsData(docs, 7);
+    expect(data.avgStress).toBe(25); // (50 + 0) / 2
+    expect(data.avgCalm).toBe(25); // (0 + 50) / 2
+    expect(data.avgEnergy).toBe(60); // (80 + 40) / 2
+  });
+
+  it('zwraca 0 dla średnich przy braku dokumentów', () => {
+    const data = getDailyAnalyticsData([], 7);
+    expect(data.avgStress).toBe(0);
+    expect(data.avgCalm).toBe(0);
+    expect(data.avgEnergy).toBe(0);
+  });
+});
+
+describe('getEnergyNote & getGoalAlignmentMessage', () => {
+  it('getEnergyNote zwraca dzień o najwyższej energii lub Stabilna', () => {
+    const energy = [
+      { value: 40, label: 'Pon' },
+      { value: 90, label: 'Wto' },
+      { value: 60, label: 'Śro' },
+    ];
+    expect(getEnergyNote(energy)).toBe('Najwyższa w Wto');
+    expect(getEnergyNote([])).toBe('Stabilna');
+  });
+
+  it('getGoalAlignmentMessage dobiera właściwy komunikat w zależności od progu', () => {
+    expect(getGoalAlignmentMessage(80)).toBe('Ostatnie dni świetnie przybliżyły Cię do celów.');
+    expect(getGoalAlignmentMessage(55)).toBe('Dobra równowaga i stały postęp w realizacji celów.');
+    expect(getGoalAlignmentMessage(20)).toBe('Warto przyjrzeć się priorytetom na najbliższe dni.');
   });
 });
 

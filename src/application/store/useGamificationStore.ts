@@ -33,6 +33,37 @@ export const BADGES_DICTIONARY: BadgeDef[] = [
   },
 ];
 
+export interface NextBadgeInfo {
+  targetBadge: BadgeDef | null;
+  daysRemaining: number;
+}
+
+export function getNextBadgeInfo(streak: number): NextBadgeInfo {
+  if (streak < 1) {
+    const badge = BADGES_DICTIONARY.find((b) => b.id === 'first_step') || null;
+    return { targetBadge: badge, daysRemaining: 1 };
+  }
+  if (streak < 3) {
+    const badge = BADGES_DICTIONARY.find((b) => b.id === 'streak_3') || null;
+    return { targetBadge: badge, daysRemaining: 3 - streak };
+  }
+  if (streak < 7) {
+    const badge = BADGES_DICTIONARY.find((b) => b.id === 'streak_7') || null;
+    return { targetBadge: badge, daysRemaining: 7 - streak };
+  }
+  return { targetBadge: null, daysRemaining: 0 };
+}
+
+/** Zwraca 7 flag oznaczających dni tygodnia (ostatni to dzisiaj). */
+export function getStreakWeekDots(streak: number): boolean[] {
+  const dots: boolean[] = [];
+  const activeCount = Math.min(7, Math.max(0, streak));
+  for (let i = 0; i < 7; i++) {
+    dots.push(i >= 7 - activeCount);
+  }
+  return dots;
+}
+
 interface GamificationState {
   currentStreak: number;
   lastEntryDate: string | null;
