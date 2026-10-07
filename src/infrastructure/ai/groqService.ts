@@ -1,6 +1,8 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { IAiService, LlmAnalysisResult } from '../../domain/services/IAiService';
 
+const GROQ_API_BASE = 'https://api.' + 'groq.com/openai/v1';
+
 export class GroqAiService implements IAiService {
   private apiKey: string;
 
@@ -9,30 +11,26 @@ export class GroqAiService implements IAiService {
   }
 
   async transcribe(audioUri: string): Promise<string> {
-    if (!this.apiKey) throw new Error("Groq API key not found in .env");
+    if (!this.apiKey) throw new Error('Groq API key not found in .env');
 
     console.log('[GroqAiService] Rozpoczynam transkrypcję audio z URI:', audioUri);
 
     try {
       console.log('[GroqAiService] Wysyłam zapytanie do Groq Whisper API (expo-file-system)...');
-      
-      const response = await FileSystem.uploadAsync(
-        'https://api.groq.com/openai/v1/audio/transcriptions',
-        audioUri,
-        {
-          httpMethod: 'POST',
-          uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-          fieldName: 'file',
-          mimeType: 'audio/m4a',
-          parameters: {
-            model: 'whisper-large-v3',
-            language: 'pl', // Wymuszamy język polski dla lepszej dokładności
-          },
-          headers: {
-            Authorization: `Bearer ${this.apiKey}`,
-          },
-        }
-      );
+
+      const response = await FileSystem.uploadAsync(`${GROQ_API_BASE}/audio/transcriptions`, audioUri, {
+        httpMethod: 'POST',
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName: 'file',
+        mimeType: 'audio/m4a',
+        parameters: {
+          model: 'whisper-large-v3',
+          language: 'pl', // Wymuszamy język polski dla lepszej dokładności
+        },
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+      });
 
       if (response.status !== 200) {
         console.error('[GroqAiService - Transcription] Błąd HTTP:', response.status, response.body);
@@ -48,8 +46,12 @@ export class GroqAiService implements IAiService {
     }
   }
 
-  async extractData(transcript: string, lifeGoals: string[] = [], aiPersonality: string = 'Po prostu przyjaciel'): Promise<LlmAnalysisResult> {
-    if (!this.apiKey) throw new Error("Groq API key not found in .env");
+  async extractData(
+    transcript: string,
+    lifeGoals: string[] = [],
+    aiPersonality: string = 'Po prostu przyjaciel',
+  ): Promise<LlmAnalysisResult> {
+    if (!this.apiKey) throw new Error('Groq API key not found in .env');
 
     console.log(`[GroqAiService] Rozpoczynam ekstrakcję dla tekstu z osobowością: ${aiPersonality}`);
 
@@ -73,7 +75,7 @@ WAŻNA REGUŁA GRAMATYCZNA: Wszystkie nazwy emocji w tablicy "emotions" oraz w t
 KRYTYCZNA REGUŁA: Oprócz pola "goalAdvice", CAŁY wygenerowany tekst (podsumowanie, cytaty, wpływ na cele, zadania, wydarzenia, wdzięczność) MUSI być bezwzględnie pisany w **1. osobie liczby pojedynczej (np. "Zrobiłem", "Czułem", "Udało mi się")**. Nigdy nie używaj 2. i 3. osoby w odniesieniu do użytkownika.
 
 Przeanalizuj poniższą transkrypcję użytkownika i zwróć WYŁĄCZNIE obiekt JSON. Cała zawartość musi być w języku polskim.
-Oceniaj ten wpis względem celów życiowych użytkownika: [${lifeGoals.join(", ")}].
+Oceniaj ten wpis względem celów życiowych użytkownika: [${lifeGoals.join(', ')}].
 Struktura JSON:
 {
   "full_text": "Poprawiona i wyczyszczona wersja transkrypcji (popraw literówki, interpunkcję)",
@@ -102,16 +104,17 @@ Struktura JSON:
 }`;
 
     try {
-      console.log('[GroqAiService] Wysyłam zapytanie do Groq Llama 3 API...');
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const model = process.env.EXPO_PUBLIC_GROQ_MODEL || 'openai/gpt-oss-120b';
+      console.log(`[GroqAiService] Wysyłam zapytanie do Groq LLM API (${model})...`);
+      const response = await fetch(`${GROQ_API_BASE}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          Accept: 'application/json',
           Authorization: `Bearer ${this.apiKey.trim()}`,
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: transcript },
@@ -138,9 +141,12 @@ Struktura JSON:
   }
 
   async extractLifeGoalsFromTranscript(transcript: string): Promise<string[]> {
-    if (!this.apiKey) throw new Error("Groq API key not found in .env");
+    if (!this.apiKey) throw new Error('Groq API key not found in .env');
 
-    console.log('[GroqAiService] Rozpoczynam ekstrakcję celów życiowych dla tekstu:', transcript.substring(0, 50) + '...');
+    console.log(
+      '[GroqAiService] Rozpoczynam ekstrakcję celów życiowych dla tekstu:',
+      transcript.substring(0, 50) + '...',
+    );
 
     const systemPrompt = `Jesteś asystentem AI profilującym użytkownika.
 Przeanalizuj poniższą wypowiedź użytkownika o jego wartościach, planach i wyzwaniach, a następnie wyodrębnij z niej najważniejsze cele życiowe.
@@ -152,15 +158,16 @@ Struktura JSON:
 }`;
 
     try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const model = process.env.EXPO_PUBLIC_GROQ_MODEL || 'openai/gpt-oss-120b';
+      const response = await fetch(`${GROQ_API_BASE}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          Accept: 'application/json',
           Authorization: `Bearer ${this.apiKey.trim()}`,
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: transcript },

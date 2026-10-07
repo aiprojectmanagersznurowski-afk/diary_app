@@ -131,7 +131,7 @@ flowchart LR
 - [x] Preflight tylko przy prebuildzie i buildzie EAS (bez blokowania `expo start`) oraz poprawki z recenzji F9-02
 - [ ] Raportowanie awarii i błędów JS (Sentry) bez treści nagrań i notatek
 - [ ] Android: build preview (APK), logowanie Google i nagrywanie sprawdzone na telefonie
-- [ ] Domyślny model Groq w aplikacji mobilnej i konfiguracja submit w eas.json
+- [x] Domyślny model Groq w aplikacji mobilnej i konfiguracja submit w eas.json
 
 **Gotowe, gdy:** build z błędną konfiguracją (tekst zastępczy, zły klucz, brakujące zmienne) przerywa się przed kolejką EAS z czytelnym komunikatem, a aplikacja przy błędzie konfiguracji pokazuje ekran z listą problemów zamiast zachowywać się losowo.
 
