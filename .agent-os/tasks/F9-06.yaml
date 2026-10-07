@@ -1,0 +1,24 @@
+id: F9-06
+title: Domyślny model Groq w aplikacji mobilnej i submit w eas.json
+phase: 9
+role: mobile
+branch: fix/F9-06-groq-model-and-eas-submit
+depends_on: [F9-01]
+roadmap: "Domyślny model Groq w aplikacji mobilnej i konfiguracja submit w eas.json"
+read_first:
+  - docs/03-stos-technologiczny.md
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/infrastructure/ai/groqService.ts
+    - eas.json
+context: |
+  W OnboardingScreen i groqService.ts model Groq był ustawiony na llama-3.3-70b-versatile,
+  który w API Groq zwraca 404 (model_not_found). Zmieniamy go na openai/gpt-oss-120b
+  (dostępny, obsługiwany i przetestowany z sukcesem na kluczu Groq).
+  Dodatkowo konfigurujemy ascAppId: "6818603714" w eas.json dla profilu produkcyjnego iOS,
+  co umożliwia w pełni zautomatyzowany submit na TestFlight.
+acceptance:
+  - "groqService.ts używa openai/gpt-oss-120b dla zapytań LLM"
+  - "eas.json zawiera ascAppId dla submit.production.ios"
+  - "tsc, lint i testy przechodzą"
