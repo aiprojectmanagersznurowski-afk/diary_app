@@ -159,7 +159,10 @@ describe('main: tryb domyślny czyta .env i .env.local z katalogu projektu', () 
         .join('\n'),
     );
 
+  const saved = {};
+
   beforeEach(() => {
+    for (const name of Object.values(VARS)) saved[name] = process.env[name];
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'preflight-'));
     fs.copyFileSync(path.join(__dirname, '..', '..', '..', 'app.json'), path.join(dir, 'app.json'));
     logs = [];
@@ -172,6 +175,10 @@ describe('main: tryb domyślny czyta .env i .env.local z katalogu projektu', () 
   afterEach(() => {
     jest.restoreAllMocks();
     fs.rmSync(dir, { recursive: true, force: true });
+    for (const name of Object.values(VARS)) {
+      if (saved[name] === undefined) delete process.env[name];
+      else process.env[name] = saved[name];
+    }
   });
 
   it('poprawny .env → kod 0', async () => {
@@ -196,5 +203,28 @@ describe('main: tryb domyślny czyta .env i .env.local z katalogu projektu', () 
   it('brak plików .env → kod 1 i informacja o braku pliku', async () => {
     expect(await main([], dir)).toBe(1);
     expect(logs.join('\n')).toContain('brak pliku .env');
+  });
+});
+
+describe('hak eas-build-pre-install: CLI musi działać bez node_modules', () => {
+  it('kopia plugins/ i app.json poza repozytorium (bez expo w ścieżce) ładuje się i zwraca listę problemów', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'preflight-eas-'));
+    try {
+      fs.cpSync(path.join(__dirname, '..', '..'), path.join(dir, 'plugins'), {
+        recursive: true,
+        filter: (src) => !src.includes('__tests__'),
+      });
+      fs.copyFileSync(path.join(__dirname, '..', '..', '..', 'app.json'), path.join(dir, 'app.json'));
+      const result = spawnSync(process.execPath, [path.join(dir, 'plugins', 'preflight', 'cli.js'), '--process-env'], {
+        env: { PATH: process.env.PATH },
+        encoding: 'utf8',
+        cwd: dir,
+      });
+      expect(result.stderr).not.toContain('Cannot find module');
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('EXPO_PUBLIC_SUPABASE_URL');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

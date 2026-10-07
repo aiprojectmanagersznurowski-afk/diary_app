@@ -12,7 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { validateEnv, formatIssues, VARS } = require('./validateEnv');
-const { findIosUrlScheme } = require('../withEnvValidation');
+const { findIosUrlScheme } = require('./iosUrlScheme');
 
 const ROOT = path.join(__dirname, '..', '..');
 

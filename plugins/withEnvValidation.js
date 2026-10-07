@@ -1,14 +1,6 @@
 const { withDangerousMod } = require('expo/config-plugins');
 const { validateEnv, formatIssues } = require('./preflight/validateEnv');
-
-/** Wyszukuje `iosUrlScheme` w konfiguracji wtyczki Google Sign-In (undefined, gdy wtyczki nie ma). */
-function findIosUrlScheme(config) {
-  const entry = (config.plugins || []).find(
-    (p) => (Array.isArray(p) ? p[0] : p) === '@react-native-google-signin/google-signin',
-  );
-  if (!entry) return undefined;
-  return Array.isArray(entry) ? (entry[1] && entry[1].iosUrlScheme) || null : null;
-}
+const { findIosUrlScheme } = require('./preflight/iosUrlScheme');
 
 /** Rzuca błąd z listą problemów, gdy zmienne `EXPO_PUBLIC_*` są brakujące albo błędne. */
 function assertEnv(iosUrlScheme) {

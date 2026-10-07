@@ -35,7 +35,7 @@ function decodeJwtPayload(token) {
   if (parts.length !== 3) return null;
   try {
     // Jak w appConfig.ts: znak spoza alfabetu base64url to błąd, a payload niebędący obiektem nie ma pól (role itd.).
-    if (!/^[A-Za-z0-9_-]*={0,2}$/.test(parts[1])) return null;
+    if (!/^[A-Za-z0-9+/_-]*=*$/.test(parts[1])) return null;
     const parsed = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
     return parsed || null;
   } catch {

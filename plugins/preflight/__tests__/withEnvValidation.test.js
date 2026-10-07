@@ -1,6 +1,6 @@
 /* global describe, it, expect, beforeEach, afterEach, Buffer */
 const withEnvValidation = require('../../withEnvValidation');
-const { findIosUrlScheme } = withEnvValidation;
+const { findIosUrlScheme } = require('../iosUrlScheme');
 const { VARS } = require('../validateEnv');
 
 const REF = 'abcdefghijklmnopqrst';
