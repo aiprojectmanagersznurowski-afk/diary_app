@@ -83,6 +83,16 @@ export const pl = {
     rowLabel: (time: string) => `Nagranie z ${time}`,
     retry: 'Ponów przetwarzanie',
   },
+  errors: {
+    configTitle: 'Błąd konfiguracji',
+    configIntro:
+      'Ta wersja aplikacji została zbudowana z niepoprawnymi ustawieniami, więc nie może się połączyć z serwerem.',
+    configHint:
+      'Popraw zmienne środowiskowe (npm run preflight pokazuje, co jest nie tak) i zbuduj aplikację ponownie.',
+    boundaryTitle: 'Coś poszło nie tak',
+    boundaryBody: 'Wystąpił nieoczekiwany błąd. Możesz spróbować ponownie.',
+    retry: 'Spróbuj ponownie',
+  },
   overlay: {
     recording: 'Nagrywam',
     hint: 'Opowiedz o swoim dniu, pomysłach, zadaniach i emocjach. Dotknij, aby zakończyć.',

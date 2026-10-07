@@ -4,14 +4,21 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as Crypto from 'expo-crypto';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthService } from '../../composition';
+import { appConfigResult, useAuthService } from '../../composition';
 import { ScreenContainer, GradientText, useTheme, ACCENTS, WHITE_BUTTON, SHADOW } from '../components/ui';
 import { pl } from '../i18n/pl';
 
-GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-});
+let googleConfigured = false;
+
+/** Konfiguruje natywny SDK Google dopiero przy poprawnych identyfikatorach (nie na poziomie modułu). */
+function ensureGoogleConfigured(): boolean {
+  if (googleConfigured) return true;
+  const config = appConfigResult.config;
+  if (!config) return false;
+  GoogleSignin.configure({ webClientId: config.googleWebClientId, iosClientId: config.googleIosClientId });
+  googleConfigured = true;
+  return true;
+}
 
 export const LoginScreen = () => {
   const authService = useAuthService();
@@ -58,6 +65,7 @@ export const LoginScreen = () => {
       setLoading(true);
       setErrorMessage(null);
 
+      if (!ensureGoogleConfigured()) throw new Error(pl.login.googleError);
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const response = await GoogleSignin.signIn();
 

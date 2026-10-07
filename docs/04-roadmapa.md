@@ -126,7 +126,7 @@ flowchart LR
 
 Źródło: [09-audyt-gotowosci.md](09-audyt-gotowosci.md). Zadania są niezależne i mogą iść równolegle.
 
-- [ ] Walidacja konfiguracji w aplikacji: ekran „Błąd konfiguracji” zamiast cichych wartości zastępczych, `ErrorBoundary` i globalny handler błędów
+- [x] Walidacja konfiguracji w aplikacji: ekran „Błąd konfiguracji” zamiast cichych wartości zastępczych, `ErrorBoundary` i globalny handler błędów
 - [ ] Kontrola konfiguracji przed buildem (`preflight` w prebuildzie EAS i skrypt `npm run preflight`), polskie teksty uprawnień i `userInterfaceStyle` zgodny z motywami
 
 **Gotowe, gdy:** build z błędną konfiguracją (tekst zastępczy, zły klucz, brakujące zmienne) przerywa się przed kolejką EAS z czytelnym komunikatem, a aplikacja przy błędzie konfiguracji pokazuje ekran z listą problemów zamiast zachowywać się losowo.
