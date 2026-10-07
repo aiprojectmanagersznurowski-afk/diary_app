@@ -1,4 +1,9 @@
-import { useGamificationStore, setGamificationProfileRepository } from '../useGamificationStore';
+import {
+  useGamificationStore,
+  setGamificationProfileRepository,
+  getNextBadgeInfo,
+  getStreakWeekDots,
+} from '../useGamificationStore';
 import { useAuthStore } from '../useAuthStore';
 import { IProfileRepository } from '../../../domain/repositories/IProfileRepository';
 
@@ -113,5 +118,38 @@ describe('useGamificationStore.syncFromCloud: łączenie odznak', () => {
     await useGamificationStore.getState().syncFromCloud('user-1');
 
     expect(useGamificationStore.getState().unlockedBadges.sort()).toEqual(['first_step', 'streak_3', 'streak_7']);
+  });
+});
+
+describe('getNextBadgeInfo & getStreakWeekDots', () => {
+  it('getNextBadgeInfo oblicza brakujące dni do kolejnej odznaki', () => {
+    expect(getNextBadgeInfo(0)).toEqual({
+      targetBadge: expect.objectContaining({ id: 'first_step' }),
+      daysRemaining: 1,
+    });
+    expect(getNextBadgeInfo(1)).toEqual({
+      targetBadge: expect.objectContaining({ id: 'streak_3' }),
+      daysRemaining: 2,
+    });
+    expect(getNextBadgeInfo(2)).toEqual({
+      targetBadge: expect.objectContaining({ id: 'streak_3' }),
+      daysRemaining: 1,
+    });
+    expect(getNextBadgeInfo(4)).toEqual({
+      targetBadge: expect.objectContaining({ id: 'streak_7' }),
+      daysRemaining: 3,
+    });
+    expect(getNextBadgeInfo(7)).toEqual({
+      targetBadge: null,
+      daysRemaining: 0,
+    });
+  });
+
+  it('getStreakWeekDots zwraca 7 kropek z właściwą liczbą aktywnych dni', () => {
+    expect(getStreakWeekDots(0)).toEqual([false, false, false, false, false, false, false]);
+    expect(getStreakWeekDots(1)).toEqual([false, false, false, false, false, false, true]);
+    expect(getStreakWeekDots(3)).toEqual([false, false, false, false, true, true, true]);
+    expect(getStreakWeekDots(7)).toEqual([true, true, true, true, true, true, true]);
+    expect(getStreakWeekDots(10)).toEqual([true, true, true, true, true, true, true]);
   });
 });

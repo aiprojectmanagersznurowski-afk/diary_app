@@ -39,6 +39,9 @@ export interface AnalyticsData {
   calm: LineChartPoint[];
   energy: LineChartPoint[];
   goalAlignment: number;
+  avgStress: number;
+  avgCalm: number;
+  avgEnergy: number;
 }
 
 const DAYS_PL = ['Nie', 'Pon', 'Wto', 'Śro', 'Czw', 'Pią', 'Sob'];
@@ -59,13 +62,39 @@ export function dayStringOffsetFromToday(deltaDays: number): string {
   return `${y}-${m}-${d}`;
 }
 
+/** Tekst podsumowujący poziom energii (brief §2.8). */
+export function getEnergyNote(energy: LineChartPoint[]): string {
+  if (energy.length === 0) return 'Stabilna';
+  let maxIdx = -1;
+  let maxVal = 0;
+  for (let i = 0; i < energy.length; i++) {
+    if (energy[i].value > maxVal) {
+      maxVal = energy[i].value;
+      maxIdx = i;
+    }
+  }
+  if (maxIdx >= 0 && maxVal > 0 && energy[maxIdx].label) {
+    return `Najwyższa w ${energy[maxIdx].label}`;
+  }
+  return 'Stabilna';
+}
+
+/** Komunikat obok pierścienia zgodności z celami w zależności od procentu (brief §2.8). */
+export function getGoalAlignmentMessage(percentage: number): string {
+  if (percentage >= 70) {
+    return 'Ostatnie dni świetnie przybliżyły Cię do celów.';
+  }
+  if (percentage >= 40) {
+    return 'Dobra równowaga i stały postęp w realizacji celów.';
+  }
+  return 'Warto przyjrzeć się priorytetom na najbliższe dni.';
+}
+
 /**
  * Wylicza dane analityczne z wpisów dnia (kind='daily') policzonych po stronie serwera przez
  * build-daily (docs/02-architektura.md §6.3). Dzień bez wpisu zostaje po prostu pusty (brak
  * wpisu w mapie), zgodność z celami liczona jest wyłącznie z pola goalImpactType każdego wpisu —
- * bez heurystyk klienta. Używane przez InsightsScreen; HomeScreen wciąż korzysta ze starszego
- * getAnalyticsData poniżej (operuje na DiaryEntry ze starego, wciąż istniejącego modelu), poza
- * zakresem tego zadania.
+ * bez heurystyk klienta.
  */
 export function getDailyAnalyticsData(dailyDocs: DailyDocument[], days: 7 | 30): AnalyticsData {
   const byDay = new Map(dailyDocs.map((doc) => [doc.day, doc]));
@@ -75,6 +104,10 @@ export function getDailyAnalyticsData(dailyDocs: DailyDocument[], days: 7 | 30):
   const energy: LineChartPoint[] = [];
   let goalAlignmentSum = 0;
   let goalAlignmentCount = 0;
+  let stressSum = 0;
+  let calmSum = 0;
+  let energySum = 0;
+  let entriesCount = 0;
 
   for (let i = 0; i < days; i++) {
     const day = dayStringOffsetFromToday(i - (days - 1));
@@ -114,13 +147,22 @@ export function getDailyAnalyticsData(dailyDocs: DailyDocument[], days: 7 | 30):
     });
 
     const fatigue = doc.fatigueLevel || 5;
-    energy.push({ value: Math.max(0, 100 - fatigue * 10), label });
+    const energyValue = Math.max(0, 100 - fatigue * 10);
+    energy.push({ value: energyValue, label });
+
+    stressSum += stressValue;
+    calmSum += calmValue;
+    energySum += energyValue;
+    entriesCount++;
 
     goalAlignmentSum += GOAL_IMPACT_SCORE[doc.goalImpactType];
     goalAlignmentCount++;
   }
 
   const goalAlignment = goalAlignmentCount > 0 ? Math.round(goalAlignmentSum / goalAlignmentCount) : 0;
+  const avgStress = entriesCount > 0 ? Math.round(stressSum / entriesCount) : 0;
+  const avgCalm = entriesCount > 0 ? Math.round(calmSum / entriesCount) : 0;
+  const avgEnergy = entriesCount > 0 ? Math.round(energySum / entriesCount) : 0;
 
   // Wygładzenie wykresu energii, żeby dni bez wpisu nie spadały ostro do zera
   for (let i = 1; i < days; i++) {
@@ -129,7 +171,7 @@ export function getDailyAnalyticsData(dailyDocs: DailyDocument[], days: 7 | 30):
     }
   }
 
-  return { stress, calm, energy, goalAlignment };
+  return { stress, calm, energy, goalAlignment, avgStress, avgCalm, avgEnergy };
 }
 
 /**
@@ -199,7 +241,13 @@ export function getAnalyticsData(entries: DiaryEntry[], days: 7 | 30): Analytics
     }
   }
 
-  return { stress, calm, energy, goalAlignment };
+  const avgStress =
+    goalAlignmentCount > 0 ? Math.round(stress.reduce((a, b) => a + b.value, 0) / goalAlignmentCount) : 0;
+  const avgCalm = goalAlignmentCount > 0 ? Math.round(calm.reduce((a, b) => a + b.value, 0) / goalAlignmentCount) : 0;
+  const avgEnergy =
+    goalAlignmentCount > 0 ? Math.round(energy.reduce((a, b) => a + b.value, 0) / goalAlignmentCount) : 0;
+
+  return { stress, calm, energy, goalAlignment, avgStress, avgCalm, avgEnergy };
 }
 
 // Keep this for backward compatibility if used elsewhere
