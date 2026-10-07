@@ -1,0 +1,48 @@
+id: F9-01
+title: Walidacja konfiguracji w aplikacji, ErrorBoundary i globalny handler błędów
+phase: 9
+role: mobile
+branch: feat/F9-01-runtime-config-validation
+depends_on: [F8-01]
+roadmap: "Walidacja konfiguracji w aplikacji: ekran „Błąd konfiguracji” zamiast cichych wartości zastępczych, `ErrorBoundary` i globalny handler błędów"
+read_first:
+  - docs/09-audyt-gotowosci.md
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/infrastructure/config/**
+    - src/infrastructure/supabase/supabaseClient.ts
+    - src/infrastructure/supabase/supabaseChatRepository.ts
+    - src/composition/**
+    - src/presentation/screens/LoginScreen.tsx
+    - src/presentation/screens/ConfigErrorScreen.tsx
+    - src/presentation/components/ErrorBoundary.tsx
+    - src/presentation/components/__tests__/**
+    - src/presentation/i18n/**
+    - App.tsx
+    - index.ts
+context: |
+  Przyczyna zgłoszonych błędów logowania (docs/09 §1): zmienne EAS miały teksty zastępcze, a aplikacja
+  przyjmowała każdą wartość i podstawiała `placeholder.supabase.co` / `placeholder-anon-key`.
+  1. `src/infrastructure/config/appConfig.ts`: czysta funkcja `validateAppConfig(env)` zwracająca konfigurację
+     (Supabase URL i klucz, identyfikatory Google, opcjonalnie klucz Groq) albo listę problemów: brak wartości,
+     tekst zastępczy (`<…>`, „placeholder”, „z .env”), zły format adresu Supabase (`https://<ref>.supabase.co`),
+     klucz inny niż JWT `anon`/`sb_publishable_`, identyfikatory Google w złym formacie
+     (`<numer>-<id>.apps.googleusercontent.com`). Dla klucza JWT sprawdź też, że pole `ref` zgadza się z adresem.
+  2. Usuń wartości zastępcze z `supabaseClient.ts` i `supabaseChatRepository.ts` (klient tworzony tylko z
+     poprawnej konfiguracji; przy błędnej klient nie wykonuje żądań sieciowych — rzuca czytelny błąd przy użyciu).
+  3. `LoginScreen.tsx`: `GoogleSignin.configure` wywoływane tylko przy poprawnych identyfikatorach (nie na poziomie
+     modułu z `undefined`/tekstem zastępczym).
+  4. `ConfigErrorScreen.tsx`: pełnoekranowy ekran „Błąd konfiguracji” z listą problemów (bez wartości sekretów),
+     pokazywany w `App.tsx` zamiast nawigacji, gdy konfiguracja jest niepoprawna.
+  5. `ErrorBoundary.tsx` na korzeniu aplikacji (komunikat po polsku i przycisk „Spróbuj ponownie”) oraz globalny
+     handler błędów JS i nieobsłużonych odrzuceń obietnic w `index.ts` (log bez treści notatek i transkrypcji).
+  Bez nowych zależności (Sentry to osobna decyzja produktowa, docs/09 §5).
+acceptance:
+  - "validateAppConfig odrzuca: brak zmiennej, `<anon key z .env>`, `placeholder-anon-key`, adres inny niż https://<ref>.supabase.co, klucz JWT z rolą inną niż anon albo z innym `ref`, identyfikator Google w złym formacie; akceptuje poprawny komplet (testy jest)"
+  - "w kodzie nie ma `placeholder.supabase.co` ani `placeholder-anon-key`"
+  - "przy niepoprawnej konfiguracji App pokazuje ekran „Błąd konfiguracji” z listą problemów i nie wywołuje GoogleSignin.configure ani nie inicjuje klienta Supabase do żądań"
+  - "ErrorBoundary pokazuje komunikat i pozwala spróbować ponownie po wyjątku w renderze (test jest)"
+  - "tsc, lint i jest przechodzą; brak nowych zależności"
+human_steps:
+  - "CP-DEVICE: build z celowo błędną zmienną (np. tekst zastępczy) pokazuje ekran „Błąd konfiguracji”; build z poprawną konfiguracją loguje przez Apple i Google"

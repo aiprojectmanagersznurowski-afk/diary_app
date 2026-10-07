@@ -113,6 +113,15 @@ flowchart LR
 
 **Gotowe, gdy:** wszystkie ekrany z prototypu wyglądają i działają jak w briefie na prawdziwych danych, przełączenie motywu przemalowuje całą aplikację bez przeładowania, a w kodzie komponentów nie ma zahardkodowanych kolorów poza semantycznymi.
 
+## Faza 9: Stabilność i gotowość do wydania
+
+Źródło: [09-audyt-gotowosci.md](09-audyt-gotowosci.md). Zadania są niezależne i mogą iść równolegle.
+
+- [ ] Walidacja konfiguracji w aplikacji: ekran „Błąd konfiguracji” zamiast cichych wartości zastępczych, `ErrorBoundary` i globalny handler błędów
+- [ ] Kontrola konfiguracji przed buildem (`preflight` w prebuildzie EAS i skrypt `npm run preflight`), polskie teksty uprawnień i `userInterfaceStyle` zgodny z motywami
+
+**Gotowe, gdy:** build z błędną konfiguracją (tekst zastępczy, zły klucz, brakujące zmienne) przerywa się przed kolejką EAS z czytelnym komunikatem, a aplikacja przy błędzie konfiguracji pokazuje ekran z listą problemów zamiast zachowywać się losowo.
+
 ## Znane błędy obecnego kodu
 
 Pochodzą z audytu z 2026-09-23. Błędy związane z Firestore znikną razem z nim w fazie 1.
