@@ -58,6 +58,10 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest",
+    "preflight": "node plugins/preflight/cli.js",
+    "preflight:eas": "node plugins/preflight/cli.js --eas",
+    "preflight:live": "node plugins/preflight/cli.js --live",
+    "eas-build-pre-install": "node plugins/preflight/cli.js --process-env",
     "prepare": "husky"
   },
   "private": true,

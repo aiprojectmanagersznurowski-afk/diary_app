@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.michal.sznurowski.diary-app",
@@ -34,7 +34,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Voice-to-Diary needs to record your voice to transcribe and save your entries."
+          "microphonePermission": "Vocaly nagrywa Twój głos, aby zamienić nagrania w notatki i wpisy pamiętnika."
         }
       ],
       "expo-sqlite",
@@ -48,7 +48,8 @@
       "expo-asset",
       "expo-font",
       "@bacons/apple-targets",
-      "./plugins/withModularHeaders"
+      "./plugins/withModularHeaders",
+      "./plugins/withEnvValidation"
     ],
     "extra": {
       "eas": {
