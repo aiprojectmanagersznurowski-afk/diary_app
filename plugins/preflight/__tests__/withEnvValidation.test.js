@@ -1,6 +1,6 @@
 /* global describe, it, expect, beforeEach, afterEach, Buffer */
 const withEnvValidation = require('../../withEnvValidation');
-const { findIosUrlScheme } = withEnvValidation;
+const { findIosUrlScheme } = require('../iosUrlScheme');
 const { VARS } = require('../validateEnv');
 
 const REF = 'abcdefghijklmnopqrst';
@@ -51,33 +51,52 @@ describe('findIosUrlScheme', () => {
   });
 });
 
+const runIosMod = (config) => config.mods.ios.dangerous({ modRequest: {}, modResults: {} });
+const runAndroidMod = (config) => config.mods.android.dangerous({ modRequest: {}, modResults: {} });
+
 describe('withEnvValidation (plugin prebuildu)', () => {
-  it('przy poprawnych zmiennych zwraca konfigurację bez zmian', () => {
-    setEnv(validEnv());
-    const config = configWithScheme(SCHEME);
-    expect(withEnvValidation(config)).toBe(config);
+  it('samo wyliczenie konfiguracji (expo start, expo config) nie rzuca nawet bez zmiennych', () => {
+    setEnv({});
+    expect(() => withEnvValidation(configWithScheme(SCHEME))).not.toThrow();
   });
 
-  it('przy tekstach zastępczych przerywa z listą problemów po polsku', () => {
+  it('przy poprawnych zmiennych mody prebuildu przechodzą na obu platformach', async () => {
+    setEnv(validEnv());
+    const config = withEnvValidation(configWithScheme(SCHEME));
+    await expect(runIosMod(config)).resolves.toBeDefined();
+    await expect(runAndroidMod(config)).resolves.toBeDefined();
+  });
+
+  it('przy tekstach zastępczych prebuild przerywa z listą problemów po polsku', async () => {
     setEnv({ ...validEnv(), [VARS.supabaseAnonKey]: '<anon key z .env>' });
-    expect(() => withEnvValidation(configWithScheme(SCHEME))).toThrow(
+    const config = withEnvValidation(configWithScheme(SCHEME));
+    await expect(runIosMod(config)).rejects.toThrow(
       /preflight\) nie przeszła[\s\S]*EXPO_PUBLIC_SUPABASE_ANON_KEY[\s\S]*tekst zastępczy/,
     );
+    await expect(runAndroidMod(config)).rejects.toThrow(/EXPO_PUBLIC_SUPABASE_ANON_KEY/);
   });
 
-  it('przy braku zmiennych przerywa i podpowiada SKIP_PREFLIGHT', () => {
+  it('przy braku zmiennych prebuild przerywa i podpowiada SKIP_PREFLIGHT', async () => {
     setEnv({});
-    expect(() => withEnvValidation(configWithScheme(SCHEME))).toThrow(/SKIP_PREFLIGHT=1/);
+    await expect(runIosMod(withEnvValidation(configWithScheme(SCHEME)))).rejects.toThrow(/SKIP_PREFLIGHT=1/);
   });
 
-  it('przy niezgodnym iosUrlScheme przerywa', () => {
+  it('przy niezgodnym iosUrlScheme prebuild przerywa', async () => {
     setEnv(validEnv());
-    expect(() => withEnvValidation(configWithScheme('com.googleusercontent.apps.999-inny'))).toThrow(/iosUrlScheme/);
+    const config = withEnvValidation(configWithScheme('com.googleusercontent.apps.999-inny'));
+    await expect(runIosMod(config)).rejects.toThrow(/iosUrlScheme/);
   });
 
   it('SKIP_PREFLIGHT=1 pomija kontrolę nawet przy błędnych zmiennych', () => {
     setEnv({ SKIP_PREFLIGHT: '1' });
     const config = configWithScheme(SCHEME);
     expect(withEnvValidation(config)).toBe(config);
+  });
+
+  it('SKIP_PREFLIGHT=1 ustawione dopiero po wyliczeniu konfiguracji też pomija kontrolę w modzie', async () => {
+    setEnv({});
+    const config = withEnvValidation(configWithScheme(SCHEME));
+    process.env.SKIP_PREFLIGHT = '1';
+    await expect(runIosMod(config)).resolves.toBeDefined();
   });
 });

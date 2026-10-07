@@ -1,7 +1,9 @@
-/* global describe, it, expect, Buffer, __dirname */
+/* global describe, it, expect, Buffer, __dirname, beforeEach, afterEach, jest */
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { parseEnvFile, parseEasEnvList, checkLive } = require('../cli');
+const fs = require('fs');
+const os = require('os');
+const { parseEnvFile, parseEasEnvList, checkLive, main } = require('../cli');
 const { VARS } = require('../validateEnv');
 
 const CLI = path.join(__dirname, '..', 'cli.js');
@@ -38,6 +40,10 @@ describe('parseEnvFile', () => {
     );
     expect(parsed).toEqual({ A: '1', B: 'dwa', C: 'trzy', D: 'cztery', E: 'a=b' });
   });
+
+  it('zdejmuje cudzysłowy także przed komentarzem końcowym i zachowuje # wewnątrz cudzysłowu', () => {
+    expect(parseEnvFile('A="abc" # komentarz\nB=\'x # y\' # z\nC="a#b"')).toEqual({ A: 'abc', B: 'x # y', C: 'a#b' });
+  });
 });
 
 describe('parseEasEnvList', () => {
@@ -71,6 +77,22 @@ describe('checkLive', () => {
   it('zgłasza odrzucony klucz (HTTP 401)', async () => {
     const issues = await checkLive(env, respond(401, { message: 'Invalid API key' }));
     expect(issues[0].message).toContain('HTTP 401');
+    expect(issues[0].message).toContain('odrzucił klucz');
+  });
+
+  it('inny status (404, 503) to nieoczekiwana odpowiedź przypisana do adresu, nie do klucza', async () => {
+    for (const status of [404, 503]) {
+      const issues = await checkLive(env, respond(status, {}));
+      expect(issues[0].variable).toBe(VARS.supabaseUrl);
+      expect(issues[0].message).toContain(`nieoczekiwana odpowiedź Supabase (HTTP ${status})`);
+    }
+  });
+
+  it('dołącza kod przyczyny błędu sieci', async () => {
+    const issues = await checkLive(env, async () => {
+      throw Object.assign(new Error('fetch failed'), { cause: { code: 'ENOTFOUND' } });
+    });
+    expect(issues[0].message).toContain('fetch failed, ENOTFOUND');
   });
 
   it('zgłasza wyłączonych dostawców Google i Apple', async () => {
@@ -122,5 +144,87 @@ describe('npm run preflight jako proces (kod wyjścia i komunikaty)', () => {
     });
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('iosUrlScheme');
+  });
+});
+
+describe('main: tryb domyślny czyta .env i .env.local z katalogu projektu', () => {
+  let dir;
+  let logs;
+  let errors;
+  const write = (name, values) =>
+    fs.writeFileSync(
+      path.join(dir, name),
+      Object.entries(values)
+        .map(([k, v]) => `${k}=${v}`)
+        .join('\n'),
+    );
+
+  const saved = {};
+
+  beforeEach(() => {
+    for (const name of Object.values(VARS)) saved[name] = process.env[name];
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'preflight-'));
+    fs.copyFileSync(path.join(__dirname, '..', '..', '..', 'app.json'), path.join(dir, 'app.json'));
+    logs = [];
+    errors = [];
+    jest.spyOn(console, 'log').mockImplementation((m) => logs.push(String(m)));
+    jest.spyOn(console, 'error').mockImplementation((m) => errors.push(String(m)));
+    for (const name of Object.values(VARS)) delete process.env[name];
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    fs.rmSync(dir, { recursive: true, force: true });
+    for (const name of Object.values(VARS)) {
+      if (saved[name] === undefined) delete process.env[name];
+      else process.env[name] = saved[name];
+    }
+  });
+
+  it('poprawny .env → kod 0', async () => {
+    write('.env', validEnv());
+    expect(await main([], dir)).toBe(0);
+    expect(logs.join('\n')).toContain('.env + zmienne środowiska');
+  });
+
+  it('.env.local nadpisuje .env', async () => {
+    write('.env', { ...validEnv(), [VARS.supabaseAnonKey]: '<anon key z .env>' });
+    write('.env.local', { [VARS.supabaseAnonKey]: validEnv()[VARS.supabaseAnonKey] });
+    expect(await main([], dir)).toBe(0);
+    expect(logs.join('\n')).toContain('.env + .env.local');
+  });
+
+  it('błędny .env bez .env.local → kod 1', async () => {
+    write('.env', { ...validEnv(), [VARS.supabaseAnonKey]: '<anon key z .env>' });
+    expect(await main([], dir)).toBe(1);
+    expect(errors.join('\n')).toContain('EXPO_PUBLIC_SUPABASE_ANON_KEY');
+  });
+
+  it('brak plików .env → kod 1 i informacja o braku pliku', async () => {
+    expect(await main([], dir)).toBe(1);
+    expect(logs.join('\n')).toContain('brak pliku .env');
+  });
+});
+
+describe('hak eas-build-pre-install: CLI musi działać bez node_modules', () => {
+  it('kopia plugins/ i app.json poza repozytorium (bez expo w ścieżce) ładuje się i zwraca listę problemów', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'preflight-eas-'));
+    try {
+      fs.cpSync(path.join(__dirname, '..', '..'), path.join(dir, 'plugins'), {
+        recursive: true,
+        filter: (src) => !src.includes('__tests__'),
+      });
+      fs.copyFileSync(path.join(__dirname, '..', '..', '..', 'app.json'), path.join(dir, 'app.json'));
+      const result = spawnSync(process.execPath, [path.join(dir, 'plugins', 'preflight', 'cli.js'), '--process-env'], {
+        env: { PATH: process.env.PATH },
+        encoding: 'utf8',
+        cwd: dir,
+      });
+      expect(result.stderr).not.toContain('Cannot find module');
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('EXPO_PUBLIC_SUPABASE_URL');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
