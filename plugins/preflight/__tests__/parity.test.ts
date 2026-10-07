@@ -55,6 +55,21 @@ const CASES: Record<string, Record<string, string | undefined>> = {
     EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: '123456789012-same.apps.googleusercontent.com',
     EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: '123456789012-same.apps.googleusercontent.com',
   }),
+  'JWT z niepoprawnym znakiem base64url': override({
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: `${b64url({ alg: 'HS256' })}.@@@@.c2lnbmF0dXJl`,
+  }),
+  'JWT z payloadem tekstowym': override({
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: `${b64url({ alg: 'HS256' })}.${Buffer.from('"tekst"').toString('base64url')}.c2ln`,
+  }),
+  'JWT z payloadem liczbowym': override({
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: `${b64url({ alg: 'HS256' })}.${Buffer.from('42').toString('base64url')}.c2ln`,
+  }),
+  'JWT z payloadem null': override({
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: `${b64url({ alg: 'HS256' })}.${Buffer.from('null').toString('base64url')}.c2ln`,
+  }),
+  'JWT z payloadem nie-JSON': override({
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: `${b64url({ alg: 'HS256' })}.${Buffer.from('nie json').toString('base64url')}.c2ln`,
+  }),
   'wszystko źle': { EXPO_PUBLIC_SUPABASE_URL: 'x', EXPO_PUBLIC_SUPABASE_ANON_KEY: 'y' },
 };
 
