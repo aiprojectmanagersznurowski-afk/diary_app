@@ -62,6 +62,21 @@ Aplikacja nie ma użytkowników produkcyjnych. Firebase jest usuwany w całości
 
 Pliki należy zaktualizować albo usunąć w fazie 1.
 
+### ADR-010: Raportowanie awarii przez Sentry (bez danych osobowych)
+**Status:** proponowana, 2026-10-07 (kierunek zatwierdzony przez człowieka w rozmowie; wymaga formalnego przyjęcia)
+
+Aplikacja dostaje `@sentry/react-native` do raportowania awarii natywnych i niezłapanych błędów JS. Raport nigdy nie zawiera treści użytkownika.
+
+**Dlaczego:** o awarii z TestFlight wiedzieliśmy tylko ze zrzutu ekranu (audyt, docs/09 #9). Bez raportu naprawa jest zgadywaniem.
+
+**Zasady:**
+- Inicjalizacja tylko przy ustawionym `EXPO_PUBLIC_SENTRY_DSN` (DSN jest wartością publiczną). Brak DSN = brak raportowania.
+- `sendDefaultPii: false`; `beforeSend` i `beforeBreadcrumb` usuwają transkrypcje, notatki, odpowiedzi LLM i teksty z pól. Dane o emocjach to dane o zdrowiu (RODO art. 9): nigdy w raporcie.
+- Region UE, projekt założony przez człowieka. Token do map źródeł (`SENTRY_AUTH_TOKEN`) jako secret w EAS, nie w repozytorium.
+- Nowa zależność natywna: CP-DEP. Realizacja w zadaniu F9-04.
+
+**Konsekwencje:** wymaga przebudowy natywnej (nowy build), wpis o Sentry w polityce prywatności.
+
 ---
 
 ## Otwarte kwestie

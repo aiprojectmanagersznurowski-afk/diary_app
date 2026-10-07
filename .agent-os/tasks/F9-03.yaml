@@ -1,0 +1,36 @@
+id: F9-03
+title: Preflight tylko przy prebuildzie i poprawki po recenzji F9-02
+phase: 9
+role: mobile
+branch: feat/F9-03-preflight-prebuild-only
+depends_on: [F9-02]
+roadmap: "Preflight tylko przy prebuildzie i buildzie EAS (bez blokowania `expo start`) oraz poprawki z recenzji F9-02"
+read_first:
+  - .agent-os/reviews/F9-02.md
+  - docs/09-audyt-gotowosci.md
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - plugins/**
+    - package.json
+context: |
+  Recenzja F9-02 (N1): `plugins/withEnvValidation.js` rzuca przy każdym wyliczeniu konfiguracji Expo, więc
+  świeży klon bez `.env` nie uruchomi `expo start`, a ekran „Błąd konfiguracji” (F9-01) nie ma jak się pokazać
+  w trybie deweloperskim. Walidacja ma działać tylko tam, gdzie powstaje artefakt: przy `expo prebuild`
+  (lokalnie i na EAS) oraz w `eas-build-pre-install`.
+  1. Przenieś wywołanie walidatora z ciała wtyczki do moda (np. `withDangerousMod` dla ios i android), który
+     wykonuje się wyłącznie przy prebuildzie. `expo config --type public` i `expo start` nie mogą rzucać.
+     `SKIP_PREFLIGHT=1` nadal pomija kontrolę.
+  2. N4: dopisz do `parity.test.ts` przypadki brzegowe dekodowania JWT (niepoprawne znaki base64url, payload
+     niebędący obiektem) i ujednolić zachowanie obu walidatorów (Node i TS mają zwracać ten sam komunikat).
+  3. N5/N6: `main()`/`loadEnv` przyjmują katalog projektu (testowalne); dodaj test trybu domyślnego (`.env`),
+     CLI czyta też `.env.local` (kolejność jak w Expo: `.env.local` nadpisuje `.env`).
+  4. N7: `KEY="abc" # komentarz` zdejmuje cudzysłowy poprawnie.
+  5. N8: `cli.js` używa `findIosUrlScheme` z wtyczki zamiast własnej kopii.
+  6. N9: przy błędzie sieci w `--live` dołącz `error.cause?.code`; status ≠ 200 poza 401/403 raportuj jako
+     „nieoczekiwana odpowiedź Supabase (HTTP n)”, nie jako odrzucony klucz.
+  Bez nowych zależności.
+acceptance:
+  - "`expo config --type public` i `expo start` bez `.env` nie rzucają błędu preflight; `expo prebuild` z błędną zmienną nadal przerywa się z polską listą problemów, a z `SKIP_PREFLIGHT=1` przechodzi"
+  - "testy jest: parytet na przypadkach brzegowych JWT, tryb domyślny CLI z `.env` i `.env.local`, cudzysłowy z komentarzem końcowym, rozróżnienie 401 i innych statusów w `--live`"
+  - "tsc, lint i jest przechodzą; brak nowych zależności"

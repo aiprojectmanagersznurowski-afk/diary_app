@@ -1,0 +1,33 @@
+id: F9-05
+title: Android: build preview (APK), logowanie Google i nagrywanie
+phase: 9
+role: mobile
+branch: feat/F9-05-android-preview
+depends_on: [F9-02]
+roadmap: "Android: build preview (APK), logowanie Google i nagrywanie sprawdzone na telefonie"
+read_first:
+  - docs/09-audyt-gotowosci.md
+  - docs/07-instalacja-na-urzadzeniach.md
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - app.json
+    - plugins/**
+context: |
+  Kod i konfiguracja Androida istnieją, ale nigdy nie były budowane ani testowane (docs/09 #10). Zakres
+  pierwszej wersji: tylko APK (profil `preview`), bez Google Play. Zadanie zaczyna się po krokach człowieka
+  (klient OAuth Android z SHA-1, `buildType: apk` w `eas.json`) i polega na poprawieniu tego, co wyjdzie z testu.
+  1. Po buildzie `preview` na Androidzie sprawdź na telefonie: start aplikacji, logowanie Google, uprawnienie
+     mikrofonu (tekst po polsku), nagranie i wysyłkę do kolejki, ekran „Błąd konfiguracji” przy świadomie złej zmiennej.
+  2. Napraw rozbieżności w zakresie `app.json` i `plugins/**` (np. uprawnienia, `expo-system-ui` jako brakująca
+     zależność dla `userInterfaceStyle` na Androidzie wymaga CP-DEP: zgłoś, nie dodawaj sam).
+  3. Wynik testu wpisz w handoff (urządzenie, wersja Androida, scenariusz, rezultat).
+  Poprawki w `src/**` wykraczające poza ten zakres: osobne zadanie po zgłoszeniu (CP-TASK).
+acceptance:
+  - "na telefonie z Androidem: logowanie Google kończy się sesją, nagranie trafia do kolejki, tekst uprawnienia mikrofonu jest po polsku (opis w handoff)"
+  - "build `preview` na Androidzie przechodzi preflight (`npm run preflight:eas`)"
+  - "tsc, lint i jest przechodzą"
+human_steps:
+  - "Google Cloud: klient OAuth typu Android (pakiet `com.michal.sznurowski.diaryapp`, SHA-1 z `eas credentials`)"
+  - "`eas.json`: profil preview `\"android\": { \"buildType\": \"apk\" }` (poza uprawnieniami agentów)"
+  - "`eas build -p android --profile preview` i instalacja APK na telefonie (CP-DEVICE)"

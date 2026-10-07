@@ -45,8 +45,12 @@ Ten sposób daje wersję taką jak w App Store i pozwala dać aplikację innym t
 
 ```bash
 cd ~/Developemnt/diary/diary-app
+git switch main && git pull
+npm run preflight -- --eas --live
 eas build -p ios --profile production --auto-submit
 ```
+
+Krok `preflight` sprawdza w kilka sekund zmienne z EAS (teksty zastępcze, format adresu i klucza Supabase, identyfikatory Google) i to, czy Supabase ma włączone logowanie Apple i Google. Przy błędzie nie uruchamiaj buildu: popraw zmienne komendą `eas env:create --force --environment production --environment preview --environment development ...`. Ta sama kontrola działa też automatycznie na serwerze EAS (`eas-build-pre-install` i `expo prebuild`) i przerywa build z listą problemów. Zmienne muszą być ustawione we wszystkich środowiskach, których używasz (production, preview, development). Pominięcie kontroli: `SKIP_PREFLIGHT=1` (tylko awaryjnie).
 
 1. Poczekaj na powiadomienie z TestFlight. Kolejka EAS w darmowym planie i przetwarzanie u Apple trwają razem 30–90 minut. Status sprawdzisz na expo.dev → projekt diary-app → Builds lub Submissions.
 2. W aplikacji TestFlight na iPhonie kliknij **Aktualizuj**.
@@ -82,6 +86,25 @@ Przy zwykłej zmianie kodu wystarczy ta jedna komenda. `prebuild --clean` i `pod
 
 Wygenerowany folder `targets/watch/Assets.xcassets/` pojawia się po każdym prebuildzie. Nie commituj go.
 
+## Android (APK do testów)
+
+Zakres pierwszej wersji: tylko APK z profilu `preview`, bez Google Play (zadanie F9-05).
+
+### Jednorazowo
+
+1. W Google Cloud Console → Credentials utwórz klienta OAuth typu **Android**: pakiet `com.michal.sznurowski.diaryapp`, SHA-1 z `eas credentials -p android`.
+2. W `eas.json` w profilu `preview` dodaj `"android": { "buildType": "apk" }`.
+3. W Supabase → Authentication → Providers włącz Google (te same identyfikatory klienta co na iOS).
+
+### Build i instalacja
+
+```bash
+npm run preflight -- --eas --live
+eas build -p android --profile preview
+```
+
+Po buildzie otwórz link z EAS na telefonie i zainstaluj APK. Sprawdź: logowanie Google, zgodę na mikrofon (tekst po polsku), nagranie i wysyłkę do kolejki.
+
 ## Zmienne środowiskowe
 
 | Sposób | Skąd biorą się `EXPO_PUBLIC_*` |
@@ -91,7 +114,7 @@ Wygenerowany folder `targets/watch/Assets.xcassets/` pojawia się po każdym pre
 
 Nową zmienną `EXPO_PUBLIC_*` dodaj w obu miejscach.
 
-Jeśli zmiennych brakuje, aplikacja łączy się z `placeholder.supabase.co`, a logowanie kończy się błędem „Network request failed”.
+Jeśli zmiennych brakuje albo mają tekst zastępczy, aplikacja pokazuje ekran „Błąd konfiguracji” z listą problemów (bez wartości), a build z taką konfiguracją przerywa kontrola preflight.
 
 ## Serwer Supabase (jednorazowo)
 
