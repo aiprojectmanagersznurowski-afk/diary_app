@@ -1,0 +1,39 @@
+id: F9-07
+title: Przebudowa ekranu Analiz (ring, historia celów, histogram emocji), kategoria Dylematy i dokumentacja procesowania
+phase: 9
+role: mobile
+branch: feat/F9-07-insights-redesign-and-dilemmas
+depends_on: [F9-01]
+roadmap: "Przebudowa ekranu Analiz (ring, historia celów, histogram emocji), kategoria Dylematy i dokumentacja procesowania"
+read_first:
+  - docs/08-design-ui.md
+  - .agent-os/roles/mobile.md
+scope:
+  write:
+    - src/presentation/screens/InsightsScreen.tsx
+    - src/presentation/components/insights/**
+    - src/presentation/components/detail/NoteDetail.tsx
+    - src/presentation/components/home/NoteCard.tsx
+    - src/presentation/i18n/**
+    - src/application/useCases/statsUseCase.ts
+    - src/application/useCases/__tests__/statsUseCase.test.ts
+    - src/domain/models/DailyDocument.ts
+    - docs/**
+context: |
+  1. Ekran Analiz:
+     - Usunięcie wykresów: Stres vs Spokój (StressCalmChart), Energia (EnergyBarChart) oraz kafelków średnich (AverageTiles).
+     - Usunięcie powiązanych wyliczeń (stress, calm, energy) ze statsUseCase.
+     - Nowy układ ekranu:
+       a) ZAWSZE na samej górze: Ring zgodności z celami życiowymi (GoalAlignmentRing) z opisem.
+       b) Pod spodem: Wykres ostatnich dni z wynikiem zgodności celów (GoalAlignmentHistoryChart) w ujęciu 7d / 30d.
+       c) Następnie: Dominujące emocje (DominantEmotionsHistogram) w ujęciu ostatnich 7 dni i 30 dni (rozkład / ranking najczęstszych emocji).
+  2. Kategoria "Dylematy":
+     - Wyświetlanie etykiety/chipu kategorii (w tym "Dylematy") na karcie notatki i szczegółach notatki (NoteDetail.tsx).
+  3. Dokumentacja procesowania notatek w docs/10-procesowanie-notatek-i-prompty.md:
+     - Dokładny opis architektury pipeline'u, sekwencja (diagram Mermaid) oraz pełne, dokładne prompty (Word-for-word).
+acceptance:
+  - "Ekran Analiz ma Ring u góry, wykres historii celów pod spodem i histogram emocji 7d/30d na dole"
+  - "Wykresy stres vs spokój i energia są usunięte z ekranu i statsUseCase"
+  - "NoteDetail prezentuje kategorię notatki (w tym Dylematy)"
+  - "docs/10-procesowanie-notatek-i-prompty.md zawiera sekwencję, diagram i dokładne prompty"
+  - "tsc, lint i testy jest przechodzą"
