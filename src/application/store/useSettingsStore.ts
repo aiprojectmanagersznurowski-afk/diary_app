@@ -6,7 +6,8 @@ import { IProfileRepository } from '../../domain/repositories/IProfileRepository
 import { useAuthStore } from './useAuthStore';
 
 export type ThemeName = 'AppleDark' | 'Sepia' | 'AppleLight';
-export type AIPersonality = 'Po prostu przyjaciel' | 'Buddha' | 'Józef Piłsudski' | 'Stefan Banach';
+export type AIPersonality =
+  'Po prostu przyjaciel' | 'Buddha' | 'Józef Piłsudski' | 'Stefan Banach' | 'David Deida' | 'Andrew Huberman';
 
 export interface ThemeColors {
   background: string;
@@ -98,6 +99,7 @@ interface SettingsState {
   lifeGoals: string[];
   theme: ThemeName;
   aiPersonality: AIPersonality;
+  roundTableMembers: string[];
   hasHydrated: boolean;
   setHasHydrated: (state: boolean) => void;
   setGoals: (goals: string[]) => void;
@@ -106,6 +108,8 @@ interface SettingsState {
   clearGoals: () => void;
   setTheme: (theme: ThemeName) => void;
   setAIPersonality: (personality: AIPersonality) => void;
+  setRoundTableMembers: (members: string[]) => void;
+  toggleRoundTableMember: (member: string) => void;
   applyProfile: (profile: Partial<Profile>) => void;
   syncGoalsFromCloud: (targetUserId?: string) => Promise<void>;
   resetSettings: () => void;
@@ -138,6 +142,7 @@ export const useSettingsStore = create<SettingsState>()(
       lifeGoals: [],
       theme: 'AppleDark',
       aiPersonality: 'Po prostu przyjaciel',
+      roundTableMembers: ['deida', 'huberman'],
       hasHydrated: false,
       setHasHydrated: (state) => set({ hasHydrated: state }),
       setGoals: (goals) => {
@@ -170,11 +175,26 @@ export const useSettingsStore = create<SettingsState>()(
         set({ aiPersonality });
         syncProfileToCloud({ aiPersonality });
       },
+      setRoundTableMembers: (roundTableMembers) => {
+        set({ roundTableMembers });
+        syncProfileToCloud({ roundTableMembers });
+      },
+      toggleRoundTableMember: (member) => {
+        set((state) => {
+          const exists = state.roundTableMembers.includes(member);
+          const next = exists
+            ? state.roundTableMembers.filter((m) => m !== member)
+            : [...state.roundTableMembers, member];
+          syncProfileToCloud({ roundTableMembers: next });
+          return { roundTableMembers: next };
+        });
+      },
       applyProfile: (profile) => {
         set((state) => ({
           lifeGoals: profile.lifeGoals !== undefined ? profile.lifeGoals : state.lifeGoals,
           theme: (profile.theme as ThemeName) || state.theme,
           aiPersonality: (profile.aiPersonality as AIPersonality) || state.aiPersonality,
+          roundTableMembers: profile.roundTableMembers || state.roundTableMembers,
         }));
       },
       syncGoalsFromCloud: async (targetUserId?: string) => {
@@ -189,6 +209,7 @@ export const useSettingsStore = create<SettingsState>()(
               lifeGoals: profile.lifeGoals ?? state.lifeGoals,
               theme: (profile.theme as ThemeName) || state.theme,
               aiPersonality: (profile.aiPersonality as AIPersonality) || state.aiPersonality,
+              roundTableMembers: profile.roundTableMembers || state.roundTableMembers,
             }));
           }
         } catch (error) {
@@ -200,6 +221,7 @@ export const useSettingsStore = create<SettingsState>()(
           lifeGoals: [],
           theme: 'AppleDark',
           aiPersonality: 'Po prostu przyjaciel',
+          roundTableMembers: ['deida', 'huberman'],
         });
         AsyncStorage.removeItem('settings-storage').catch(() => {});
       },

@@ -23,7 +23,7 @@ import { pl } from '../i18n/pl';
 const QUESTIONS = pl.onboarding.questions;
 
 export const OnboardingScreen = () => {
-  const { audioRecorder, aiService, profileService } = useOnboardingServices();
+  const { audioRecorder, aiService, profileService, userContextRepository } = useOnboardingServices();
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
   const [goals, setGoalsList] = useState<string[] | null>(null);
@@ -44,7 +44,7 @@ export const OnboardingScreen = () => {
   }, [isRecording]);
 
   const saveGoals = useCallback(
-    async (finalGoals: string[]) => {
+    async (finalGoals: string[], currentAnswers: string[] = answers) => {
       const user = useAuthStore.getState().user;
       const timezone =
         typeof Intl !== 'undefined' && Intl.DateTimeFormat
@@ -60,24 +60,58 @@ export const OnboardingScreen = () => {
             theme,
             timezone,
           });
+
+          // Inicjalizacja bazowych plików kontekstu użytkownika
+          const identityContent = currentAnswers[0]?.trim();
+          const valuesContent = currentAnswers[1]?.trim();
+          const relationsContent = currentAnswers[3]?.trim();
+          const goalsContent = finalGoals.map((g) => `- ${g}`).join('\n');
+
+          const contextSaves: Promise<void>[] = [
+            userContextRepository.saveContextFile(user.id, 'GOALS.md', `# Moje cele życiowe\n\n${goalsContent}`),
+          ];
+          if (identityContent) {
+            contextSaves.push(
+              userContextRepository.saveContextFile(user.id, 'IDENTITY.md', `# Kim jestem\n\n${identityContent}`),
+            );
+          }
+          if (valuesContent) {
+            contextSaves.push(
+              userContextRepository.saveContextFile(
+                user.id,
+                'VALUES.md',
+                `# Moje wartości i zasady\n\n${valuesContent}`,
+              ),
+            );
+          }
+          if (relationsContent) {
+            contextSaves.push(
+              userContextRepository.saveContextFile(
+                user.id,
+                'RELATIONS.md',
+                `# Relacje i rytm dnia\n\n${relationsContent}`,
+              ),
+            );
+          }
+          await Promise.allSettled(contextSaves);
         } catch (err) {
-          console.warn('Failed to save profile during onboarding', err);
+          console.warn('Failed to save profile or context files during onboarding', err);
         }
       }
       setGoals(finalGoals);
     },
-    [profileService, aiPersonality, theme, setGoals],
+    [profileService, userContextRepository, aiPersonality, theme, setGoals, answers],
   );
 
   const handleSkip = async () => {
     setIsSaving(true);
-    await saveGoals([pl.onboarding.defaultGoal]);
+    await saveGoals([pl.onboarding.defaultGoal], answers);
   };
 
   const handleStart = async () => {
     if (!goals) return;
     setIsSaving(true);
-    await saveGoals(goals);
+    await saveGoals(goals, answers);
   };
 
   const handleRecordPress = async () => {

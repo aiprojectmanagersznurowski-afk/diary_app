@@ -7,6 +7,7 @@ export interface Profile {
   currentStreak: number;
   lastEntryDay: string | null;
   badges: string[];
+  roundTableMembers?: string[];
   createdAt?: string;
   updatedAt?: string;
 }

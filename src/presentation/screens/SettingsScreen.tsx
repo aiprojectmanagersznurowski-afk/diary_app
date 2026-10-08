@@ -3,21 +3,36 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BackButton, Chip, GlassCard, ScreenContainer, SectionLabel, useTheme } from '../components/ui';
-import { ManagementCard, PersonalityRadio, ThemeSelector } from '../components/settings';
+import {
+  ManagementCard,
+  PersonalityRadio,
+  RoundTableMultiSelect,
+  ThemeSelector,
+  UserContextFilesCard,
+} from '../components/settings';
 import { useSettingsStore } from '../../application/store/useSettingsStore';
-import { useAuthService } from '../../composition';
+import { useAuthService, userContextRepository } from '../../composition';
 import { RootStackParamList } from '../../navigation/types';
 import { pl } from '../i18n/pl';
 
 type SettingsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
 
-/** Ekran „Ustawienia” (docs/08-design-ui.md §2.10). */
+/** Ekran „Ustawienia” (docs/08-design-ui.md §2.10, Faza 10 / ADR-011). */
 export const SettingsScreen = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<SettingsNavigationProp>();
   const authService = useAuthService();
 
-  const { theme, setTheme, clearGoals, lifeGoals, aiPersonality, setAIPersonality } = useSettingsStore();
+  const {
+    theme,
+    setTheme,
+    clearGoals,
+    lifeGoals,
+    aiPersonality,
+    setAIPersonality,
+    roundTableMembers,
+    toggleRoundTableMember,
+  } = useSettingsStore();
 
   const handleResetGoals = () => {
     clearGoals();
@@ -59,9 +74,17 @@ export const SettingsScreen = () => {
           )}
         </GlassCard>
 
-        {/* Osobowość AI */}
+        {/* Osobowość narratora */}
         <SectionLabel style={styles.sectionLabel}>{pl.settings.personalityTitle}</SectionLabel>
         <PersonalityRadio selected={aiPersonality} onSelect={setAIPersonality} />
+
+        {/* Okrągły stół (Dylematy) */}
+        <SectionLabel style={styles.sectionLabel}>{pl.settings.roundTableTitle}</SectionLabel>
+        <RoundTableMultiSelect selectedKeys={roundTableMembers} onToggle={toggleRoundTableMember} />
+
+        {/* Pliki o mnie (User Context Files) */}
+        <SectionLabel style={styles.sectionLabel}>{pl.settings.contextFilesTitle}</SectionLabel>
+        <UserContextFilesCard repository={userContextRepository} />
 
         {/* Wybór Motywu Akcentów */}
         <SectionLabel style={styles.sectionLabel}>{pl.settings.themeTitle}</SectionLabel>

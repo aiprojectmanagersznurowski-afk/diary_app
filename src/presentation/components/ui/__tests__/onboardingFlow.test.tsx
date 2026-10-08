@@ -22,6 +22,11 @@ const mockServices = {
     saveProfile: jest.fn(),
     completeOnboarding: jest.fn(),
   },
+  userContextRepository: {
+    getContextFiles: jest.fn().mockResolvedValue([]),
+    saveContextFile: jest.fn().mockResolvedValue(undefined),
+    deleteContextFile: jest.fn().mockResolvedValue(undefined),
+  },
 };
 
 jest.mock('../../../../composition/context', () => ({
@@ -93,41 +98,62 @@ describe('OnboardingScreen: przepływ z briefu §2.2', () => {
     jest.clearAllMocks();
     mockServices.audioRecorder.startRecording.mockResolvedValue(undefined);
     mockServices.audioRecorder.stopRecording.mockResolvedValue('file://answer.m4a');
-    mockServices.aiService.transcribe.mockResolvedValueOnce('Chcę biegać').mockResolvedValueOnce('Chcę awansu');
+    mockServices.aiService.transcribe
+      .mockResolvedValueOnce('Jestem programistą')
+      .mockResolvedValueOnce('Uczciwość i wolność')
+      .mockResolvedValueOnce('Biegać 3 razy w tygodniu i awansować')
+      .mockResolvedValueOnce('Rodzina i sport, wstaję o 6');
     mockServices.aiService.extractLifeGoalsFromTranscript.mockResolvedValue(['Biegać 3 razy w tygodniu', 'Awansować']);
     mockServices.profileService.completeOnboarding.mockResolvedValue(undefined);
+    mockServices.userContextRepository.saveContextFile.mockResolvedValue(undefined);
     act(() => {
       useSettingsStore.setState({ lifeGoals: [], theme: 'AppleDark', aiPersonality: 'Po prostu przyjaciel' });
       useAuthStore.getState().setUser({ id: 'user-1', email: 'a@b.pl', name: null, avatarUrl: null });
     });
   });
 
-  it('pokazuje powitanie, 2 kroki i pierwsze pytanie z briefu', () => {
+  it('pokazuje powitanie, 4 kroki i pierwsze pytanie z briefu', () => {
     const tree = render();
     const t = texts(tree);
     expect(t).toContain(pl.onboarding.hello);
-    expect(t).toContain(pl.onboarding.subtitle(2));
-    expect(t).toContain(pl.onboarding.stepLabel(1, 2));
+    expect(t).toContain(pl.onboarding.subtitle(4));
+    expect(t).toContain(pl.onboarding.stepLabel(1, 4));
     expect(t).toContain(pl.onboarding.questions[0]);
     expect(t).toContain(pl.onboarding.tapToRecord);
     expect(t).toContain(pl.onboarding.skip);
   });
 
-  it('nagranie → kolejne pytanie → cele → „Zaczynamy” zapisuje profil i ustawia cele', async () => {
+  it('nagranie → kolejne pytania (4 kroki) → cele → „Zaczynamy” zapisuje profil, pliki kontekstu i ustawia cele', async () => {
     const tree = render();
 
+    // Krok 1 (Tożsamość)
     await press(tree, 'Nagraj');
     expect(mockServices.audioRecorder.startRecording).toHaveBeenCalledTimes(1);
     expect(texts(tree)).toContain(pl.onboarding.tapToStop);
 
     await press(tree, 'Zatrzymaj nagrywanie');
     expect(mockServices.aiService.transcribe).toHaveBeenCalledWith('file://answer.m4a');
-    expect(texts(tree)).toContain(pl.onboarding.stepLabel(2, 2));
+    expect(texts(tree)).toContain(pl.onboarding.stepLabel(2, 4));
     expect(texts(tree)).toContain(pl.onboarding.questions[1]);
 
+    // Krok 2 (Wartości)
     await press(tree, 'Nagraj');
     await press(tree, 'Zatrzymaj nagrywanie');
-    expect(mockServices.aiService.extractLifeGoalsFromTranscript).toHaveBeenCalledWith('Chcę biegać\n\nChcę awansu');
+    expect(texts(tree)).toContain(pl.onboarding.stepLabel(3, 4));
+    expect(texts(tree)).toContain(pl.onboarding.questions[2]);
+
+    // Krok 3 (Cele)
+    await press(tree, 'Nagraj');
+    await press(tree, 'Zatrzymaj nagrywanie');
+    expect(texts(tree)).toContain(pl.onboarding.stepLabel(4, 4));
+    expect(texts(tree)).toContain(pl.onboarding.questions[3]);
+
+    // Krok 4 (Relacje i rytm)
+    await press(tree, 'Nagraj');
+    await press(tree, 'Zatrzymaj nagrywanie');
+    expect(mockServices.aiService.extractLifeGoalsFromTranscript).toHaveBeenCalledWith(
+      'Jestem programistą\n\nUczciwość i wolność\n\nBiegać 3 razy w tygodniu i awansować\n\nRodzina i sport, wstaję o 6',
+    );
 
     const t = texts(tree);
     expect(t).toContain(pl.onboarding.goalsSet);
@@ -141,6 +167,26 @@ describe('OnboardingScreen: przepływ z briefu §2.2', () => {
     expect(mockServices.profileService.completeOnboarding).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'user-1', lifeGoals: ['Biegać 3 razy w tygodniu', 'Awansować'] }),
     );
+    expect(mockServices.userContextRepository.saveContextFile).toHaveBeenCalledWith(
+      'user-1',
+      'GOALS.md',
+      expect.stringContaining('Biegać 3 razy w tygodniu'),
+    );
+    expect(mockServices.userContextRepository.saveContextFile).toHaveBeenCalledWith(
+      'user-1',
+      'IDENTITY.md',
+      expect.stringContaining('Jestem programistą'),
+    );
+    expect(mockServices.userContextRepository.saveContextFile).toHaveBeenCalledWith(
+      'user-1',
+      'VALUES.md',
+      expect.stringContaining('Uczciwość i wolność'),
+    );
+    expect(mockServices.userContextRepository.saveContextFile).toHaveBeenCalledWith(
+      'user-1',
+      'RELATIONS.md',
+      expect.stringContaining('Rodzina i sport, wstaję o 6'),
+    );
     expect(useSettingsStore.getState().lifeGoals).toEqual(['Biegać 3 razy w tygodniu', 'Awansować']);
   });
 
@@ -150,6 +196,11 @@ describe('OnboardingScreen: przepływ z briefu §2.2', () => {
 
     expect(mockServices.profileService.completeOnboarding).toHaveBeenCalledWith(
       expect.objectContaining({ lifeGoals: [pl.onboarding.defaultGoal] }),
+    );
+    expect(mockServices.userContextRepository.saveContextFile).toHaveBeenCalledWith(
+      'user-1',
+      'GOALS.md',
+      expect.stringContaining(pl.onboarding.defaultGoal),
     );
     expect(useSettingsStore.getState().lifeGoals).toEqual([pl.onboarding.defaultGoal]);
   });
@@ -163,7 +214,7 @@ describe('OnboardingScreen: przepływ z briefu §2.2', () => {
     await press(tree, 'Zatrzymaj nagrywanie');
 
     expect(texts(tree).some((x) => x.includes(pl.onboarding.errorNoSpeech))).toBe(true);
-    expect(texts(tree)).toContain(pl.onboarding.stepLabel(1, 2));
+    expect(texts(tree)).toContain(pl.onboarding.stepLabel(1, 4));
     expect(mockServices.profileService.completeOnboarding).not.toHaveBeenCalled();
   });
 });

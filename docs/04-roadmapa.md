@@ -136,6 +136,17 @@ flowchart LR
 
 **Gotowe, gdy:** build z błędną konfiguracją (tekst zastępczy, zły klucz, brakujące zmienne) przerywa się przed kolejką EAS z czytelnym komunikatem, a aplikacja przy błędzie konfiguracji pokazuje ekran z listą problemów zamiast zachowywać się losowo.
 
+## Faza 10: Kontekst użytkownika, Narrator i Okrągły stół
+
+- [x] F10-01: Migracja bazy danych Supabase: tabele `user_context_files`, `user_context_proposals`, `user_dilemma_advisories`, `profiles.round_table_members`, RLS
+- [x] F10-02: Profile osobowości Narratora w Edge Functions: `deida.v1.md`, `huberman.v1.md`, loader promptów, disclaimery i obsługa fallback
+- [x] F10-03: Ekran Ustawień: „Osobowość narratora”, multiselect „Okrągły stół” oraz przeglądarka i edytor „Pliki o mnie” z prawem do usunięcia
+- [x] F10-04: Edge Function `round-table`: równoległe wywołania doradców, synteza Narratora, filtr kryzysowy (116 123, 112)
+- [x] F10-05: Ekran notatki typu Dylemat: interaktywny panel Okrągłego stołu, karty doradców, zapis wybranej decyzji użytkownika
+- [x] F10-06: Onboarding 4 pytań i pipeline propozycji aktualizacji z dziennika
+
+**Gotowe, gdy:** użytkownik może w Ustawieniach wybrać Narratora i skład Okrągłego stołu, w notatkach z kategorii Dylematy uruchomić doradztwo stołu i zapisać podjętą decyzję, a w sekcji „Pliki o mnie” przeglądać i edytować wiedzę o sobie.
+
 ## Znane błędy obecnego kodu
 
 Pochodzą z audytu z 2026-09-23. Błędy związane z Firestore znikną razem z nim w fazie 1.

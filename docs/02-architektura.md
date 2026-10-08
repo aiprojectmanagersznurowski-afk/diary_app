@@ -122,6 +122,11 @@ categories (id uuid PK, user_id uuid, name text, color text, UNIQUE (user_id, na
 day_rebuild_queue (user_id uuid, day date, requested_at timestamptz, PRIMARY KEY (user_id, day))
 chat_threads (id, user_id, title, created_at)
 chat_messages (id, thread_id, user_id, role, content, citations jsonb, created_at)
+
+-- Kontekst użytkownika i Okrągły stół (ADR-011)
+user_context_files (id uuid PK, user_id uuid, filename text, content text, version int, created_at, updated_at, UNIQUE(user_id, filename))
+user_context_proposals (id uuid PK, user_id uuid, filename text, section text, action text, diff_content text, source_quote text, source_document_id uuid, confidence real, status text, created_at, resolved_at)
+user_dilemma_advisories (id uuid PK, user_id uuid, document_id uuid, problem_core text, root_causes text, recommendations jsonb, narrator_synthesis jsonb, user_decision text, created_at, updated_at)
 ```
 
 Indeksy: HNSW na `document_chunks.embedding` (`vector_cosine_ops`), GIN na `fts`, btree na `(user_id, day)` i `(user_id, kind)`.
@@ -268,6 +273,20 @@ Po MVP: zegarek wysyła nagrania bezpośrednio do Supabase (URLSession w tle). S
 ### 6.5 Graf
 
 Klient wywołuje `get_graph` z filtrami i renderuje wynik przez `react-force-graph-2d`. Na webie jest to zwykły komponent, a w aplikacji natywnej komponent DOM Expo (`'use dom'`). Filtrowanie wstępne robi SQL, a szybkie przełączanie filtrów odbywa się lokalnie na pobranych danych.
+
+### 6.6 Okrągły stół i kontekst użytkownika
+
+```
+1. Notatka z kategorią 'Dylematy' → użytkownik klika „Zapytaj Okrągły stół”
+2. Edge Function round-table:
+   a. weryfikacja filtra kryzysowego (samobójstwo / depresja / przemoc → 116 123, 112)
+   b. pobranie plików kontekstu (IDENTITY.md, VALUES.md, GOALS.md, DILEMMAS.md)
+   c. równoległe zapytania do LLM dla każdego członka stołu (zgodnie z profilem w round_table_members)
+   d. synteza Narratora (punkty wspólne, rozbieżności, kluczowe pytanie)
+   e. zapis rekordu w user_dilemma_advisories
+3. Aplikacja prezentuje karty doradców oraz podsumowanie Narratora
+4. Użytkownik może zapisać swoją decyzję → aktualizacja DILEMMAS.md w user_context_files
+```
 
 ## 7. Warstwa AI
 

@@ -7,6 +7,7 @@ import {
   ProfileRow,
   NoteRow,
   RecordingSummary,
+  ContextProposalInsert,
 } from '../_shared/db/types.ts';
 
 export class SupabaseBuildDailyClient implements IBuildDailyDatabaseClient {
@@ -140,6 +141,14 @@ export class SupabaseBuildDailyClient implements IBuildDailyDatabaseClient {
 
     if (error) {
       throw new Error(`Błąd zapisu pliku Markdown (${path}): ${error.message}`);
+    }
+  }
+
+  async insertContextProposals(proposals: ContextProposalInsert[]): Promise<void> {
+    if (proposals.length === 0) return;
+    const { error } = await this.client.from('user_context_proposals').insert(proposals);
+    if (error) {
+      console.warn(`[SupabaseBuildDailyClient] Błąd wstawiania propozycji kontekstu: ${error.message}`);
     }
   }
 }

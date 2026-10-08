@@ -43,6 +43,8 @@ import { GetChatThreadsUseCase } from '../application/useCases/chat/getChatThrea
 import { GetChatMessagesUseCase } from '../application/useCases/chat/getChatMessagesUseCase';
 import { SendChatMessageUseCase } from '../application/useCases/chat/sendChatMessageUseCase';
 import { setChatDependencies } from '../application/store/useChatStore';
+import { IDilemmaAdvisoryRepository } from '../domain/repositories/IDilemmaAdvisoryRepository';
+import { SupabaseDilemmaAdvisoryRepository } from '../infrastructure/supabase/SupabaseDilemmaAdvisoryRepository';
 
 export function createRecordAndProcessUseCase(
   recorder: IAudioRecorder,
@@ -86,6 +88,7 @@ export const getRelatedThoughtsUseCase = new GetRelatedThoughtsUseCase(relatedTh
 export const getChatThreadsUseCase = new GetChatThreadsUseCase(chatRepository);
 export const getChatMessagesUseCase = new GetChatMessagesUseCase(chatRepository);
 export const sendChatMessageUseCase = new SendChatMessageUseCase(chatRepository);
+export const dilemmaAdvisoryRepository: IDilemmaAdvisoryRepository = new SupabaseDilemmaAdvisoryRepository(supabase);
 
 // Inicjalizacja domyślnych zależności w store'ach
 setDiaryDependencies({

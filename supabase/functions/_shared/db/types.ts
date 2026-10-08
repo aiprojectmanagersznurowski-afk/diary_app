@@ -101,6 +101,18 @@ export interface RecordingSummary {
   recorded_at: string;
 }
 
+export interface ContextProposalInsert {
+  user_id: string;
+  filename: string;
+  section: string;
+  action: 'add' | 'update' | 'remove';
+  diff_content: string;
+  source_quote?: string | null;
+  source_document_id?: string | null;
+  confidence: number;
+  status: 'pending' | 'applied' | 'rejected';
+}
+
 export interface IBuildDailyDatabaseClient {
   /** User profile: goals, personality, streak. */
   getProfile(userId: string): Promise<ProfileRow | null>;
@@ -122,4 +134,6 @@ export interface IBuildDailyDatabaseClient {
   getRecordingsByIds(ids: string[]): Promise<RecordingSummary[]>;
   /** Upload markdown to Storage. */
   uploadMarkdown(path: string, content: string): Promise<void>;
+  /** Insert candidate updates into user_context_proposals (F10-06 / ADR-011). */
+  insertContextProposals?(proposals: ContextProposalInsert[]): Promise<void>;
 }

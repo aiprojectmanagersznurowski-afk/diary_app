@@ -2,6 +2,7 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { authService } from './auth';
 import { profileService } from './profile';
 import { audioRecorder, aiService } from './onboarding';
+import { userContextRepository } from './userContext';
 import {
   diaryRepository,
   recordUseCase,
@@ -18,6 +19,7 @@ import {
 import { IDiaryRepository } from '../domain/repositories/IDiaryRepository';
 import { IAudioRecorder } from '../domain/services/IAudioRecorder';
 import { IAiService } from '../domain/services/IAiService';
+import { IUserContextRepository } from '../domain/repositories/IUserContextRepository';
 import { IRecordingQueue } from '../domain/services/IRecordingQueue';
 import { IFileStorage } from '../domain/services/IFileStorage';
 import { IRecordingUploader } from '../domain/services/IRecordingUploader';
@@ -34,6 +36,7 @@ export interface AppDependencies {
   profileService: typeof profileService;
   audioRecorder: IAudioRecorder;
   aiService: IAiService;
+  userContextRepository: IUserContextRepository;
   diaryRepository: IDiaryRepository;
   recordUseCase: RecordAndProcessEntryUseCase;
   recordingQueue: IRecordingQueue;
@@ -52,6 +55,7 @@ export const defaultDependencies: AppDependencies = {
   profileService,
   audioRecorder,
   aiService,
+  userContextRepository,
   diaryRepository,
   recordUseCase,
   recordingQueue,
@@ -92,8 +96,8 @@ export const useDependencies = (): AppDependencies => {
 export const useAuthService = () => useDependencies().authService;
 export const useProfileService = () => useDependencies().profileService;
 export const useOnboardingServices = () => {
-  const { audioRecorder, aiService, profileService } = useDependencies();
-  return { audioRecorder, aiService, profileService };
+  const { audioRecorder, aiService, profileService, userContextRepository } = useDependencies();
+  return { audioRecorder, aiService, profileService, userContextRepository };
 };
 export const useDiaryServices = () => {
   const { diaryRepository, recordUseCase, audioRecorder, aiService } = useDependencies();

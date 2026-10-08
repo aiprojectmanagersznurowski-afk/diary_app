@@ -10,6 +10,8 @@ import { BackButton, GlassCard, GradientText, NoteTypeChip, ScreenContainer, Sec
 import { pl } from '../../i18n/pl';
 import { formatClock, formatLongDate } from '../home/homeLogic';
 import { RelatedThoughtsSection } from './RelatedThoughtsSection';
+import { RoundTableSection } from './RoundTableSection';
+import { dilemmaAdvisoryRepository } from '../../../composition';
 import { noteSource, sourceText } from './detailLogic';
 
 interface NoteDetailProps {
@@ -27,6 +29,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({ note, daily, recordings,
   const source = noteSource(note, recordings);
   const sourceLabel = sourceText(source);
   const longDate = formatLongDate(note.day);
+  const isDilemma = note.categoryName === 'Dylematy';
 
   return (
     <ScreenContainer>
@@ -63,6 +66,8 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({ note, daily, recordings,
             </View>
           ) : null}
         </GlassCard>
+
+        {isDilemma ? <RoundTableSection documentId={note.id} repository={dilemmaAdvisoryRepository} /> : null}
 
         <SectionLabel style={styles.label}>{pl.detail.dayEntry}</SectionLabel>
         <GlassCard

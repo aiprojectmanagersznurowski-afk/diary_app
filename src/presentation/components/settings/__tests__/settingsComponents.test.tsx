@@ -79,7 +79,7 @@ describe('komponenty ustawień i ekran osiągnięć (docs/08-design-ui.md §2.9�
       const pressables = tree!.root.findAll(
         (node: any) => node.props.accessibilityRole === 'radio' && typeof node.props.onPress === 'function',
       );
-      expect(pressables.length).toBe(4);
+      expect(pressables.length).toBe(6);
       act(() => {
         pressables[1].props.onPress();
       });

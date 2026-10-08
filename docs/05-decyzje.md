@@ -77,6 +77,14 @@ Aplikacja dostaje `@sentry/react-native` do raportowania awarii natywnych i niez
 
 **Konsekwencje:** wymaga przebudowy natywnej (nowy build), wpis o Sentry w polityce prywatności.
 
+### ADR-011: System kontekstu użytkownika, profile Narratora i Okrągły stół dla Vocaly
+**Status:** proponowana, 2026-10-08
+
+Wprowadzenie trzech powiązanych modułów rozszerzających kontekst i doradztwo w Vocaly:
+1. **Pliki kontekstu użytkownika (User Context Files):** modularne pliki Markdown (`IDENTITY.md`, `VALUES.md`, `GOALS.md`, `RELATIONS.md`, `DILEMMAS.md`, `MEMORY.md`) trzymane w Supabase (`user_context_files`), z wersjonowaniem, propozycjami aktualizacji (`user_context_proposals`) oraz pełną kontrolą użytkownika (edycja, cofanie, "Zapomnij to").
+2. **Osobowość narratora:** przemianowanie „Osobowości AI” na „Osobowość narratora” (single select) i dodanie dwóch perspektyw inspirowanych ideami Davida Deidy („Obecność i Męskość”) oraz Andrew Hubermana („Biologia i Rytm Dnia”). Brak podszywania się (3. osoba), nazwy archetypów, disclaimer medyczno-prawny.
+3. **Okrągły stół:** wieloosobowe doradztwo dla notatek o kategorii „Dylematy” (multiselect składu w Ustawieniach, Edge Function `round-table`, synteza narratora, filtr kryzysowy z numerami 116 123 i 112 oraz zapis decyzji do `DILEMMAS.md`).
+
 ---
 
 ## Otwarte kwestie

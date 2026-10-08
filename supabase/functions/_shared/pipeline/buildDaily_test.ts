@@ -6,6 +6,7 @@ import {
   DocumentInsert,
   DocumentChunkInsert,
   RecordingSummary,
+  ContextProposalInsert,
 } from '../db/types.ts';
 import { AiProviders } from '../ai/factory.ts';
 import { LlmProvider, EmbeddingProvider } from '../ai/types.ts';
@@ -21,6 +22,11 @@ class MockBuildDailyDb implements IBuildDailyDatabaseClient {
   queue = new Set<string>();
   recordings = new Map<string, RecordingSummary>();
   uploadedMarkdown = new Map<string, string>();
+  contextProposals: ContextProposalInsert[] = [];
+
+  async insertContextProposals(proposals: ContextProposalInsert[]): Promise<void> {
+    this.contextProposals.push(...proposals);
+  }
 
   private dayKey(userId: string, day: string) {
     return `${userId}::${day}`;
@@ -70,12 +76,25 @@ class MockBuildDailyDb implements IBuildDailyDatabaseClient {
   }
 }
 
-function makeAiProviders(digestJson: Record<string, unknown>): AiProviders {
+function makeAiProviders(digestJson: Record<string, unknown>, chatJson?: Record<string, unknown>): AiProviders {
   const digestLlm: LlmProvider = {
     providerName: 'groq',
     model: 'test-digest-model',
     async generateText() {
       return JSON.stringify(digestJson);
+    },
+    async generateJson<T>() {
+      return {} as T;
+    },
+    async *streamText() {
+      yield '';
+    },
+  };
+  const chatLlm: LlmProvider = {
+    providerName: 'groq',
+    model: 'test-chat-model',
+    async generateText() {
+      return JSON.stringify(chatJson ?? {});
     },
     async generateJson<T>() {
       return {} as T;
@@ -101,7 +120,7 @@ function makeAiProviders(digestJson: Record<string, unknown>): AiProviders {
     structure: digestLlm,
     digest: digestLlm,
     link: digestLlm,
-    chat: digestLlm,
+    chat: chatLlm,
     embedding,
   };
 }
@@ -338,5 +357,54 @@ Deno.test('buildDailySingle - seria resetuje się po przerwie', async () => {
   const profile = db.profiles.get('user-1')!;
   if (profile.current_streak !== 1) {
     throw new Error(`Oczekiwano resetu serii do 1 po przerwie, otrzymano: ${profile.current_streak}`);
+  }
+});
+
+Deno.test('buildDailySingle - zapisuje propozycje kontekstu gdy LLM wykryje trwałe fakty (F10-06)', async () => {
+  const db = new MockBuildDailyDb();
+  db.profiles.set('user-1', {
+    user_id: 'user-1',
+    life_goals: ['Uczyć się języka'],
+    ai_personality: null,
+    timezone: 'Europe/Warsaw',
+    current_streak: 1,
+    last_entry_day: '2026-09-22',
+    badges: [],
+  });
+  db.notesByDay.set('user-1::2026-09-23', [makeNote()]);
+
+  const proposalMock = {
+    proposals: [
+      {
+        filename: 'IDENTITY.md',
+        section: 'Rola zawodowa',
+        action: 'add',
+        diffContent: 'Objął stanowisko Tech Lead w projekcie X',
+        sourceQuote: 'Dzisiaj zostałem ogłoszony Tech Leadem!',
+        confidence: 0.9,
+      },
+    ],
+  };
+
+  const ai = makeAiProviders(validDigest(), proposalMock);
+
+  await buildDailySingle({
+    userId: 'user-1',
+    day: '2026-09-23',
+    db,
+    aiProviders: ai,
+    digestPromptTemplate: TEST_PROMPT,
+  });
+
+  if (db.contextProposals.length !== 1) {
+    throw new Error(`Oczekiwano 1 propozycji kontekstu, otrzymano: ${db.contextProposals.length}`);
+  }
+  const prop = db.contextProposals[0];
+  if (
+    prop.filename !== 'IDENTITY.md' ||
+    prop.diff_content !== 'Objął stanowisko Tech Lead w projekcie X' ||
+    prop.confidence !== 0.9
+  ) {
+    throw new Error(`Niepoprawna zawartość propozycji: ${JSON.stringify(prop)}`);
   }
 });

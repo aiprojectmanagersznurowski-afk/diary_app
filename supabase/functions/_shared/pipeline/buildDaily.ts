@@ -1,8 +1,17 @@
-import { IBuildDailyDatabaseClient, DocumentInsert, DocumentChunkInsert, NoteRow, ProfileRow } from '../db/types.ts';
+import {
+  IBuildDailyDatabaseClient,
+  DocumentInsert,
+  DocumentChunkInsert,
+  NoteRow,
+  ProfileRow,
+  ContextProposalInsert,
+} from '../db/types.ts';
 import { AiProviders } from '../ai/factory.ts';
 import { digestSchema, DigestOutput, DigestIdea } from '../schemas/digest.ts';
 import { validateAndRepairJson } from '../ai/validate.ts';
 import { renderDailyMarkdown, DailyMdContext } from '../markdown/dailyTemplate.ts';
+
+import { loadPersonalityPrompt } from '../prompts/personalityLoader.ts';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -19,46 +28,6 @@ export interface BuildDailyResult {
   day: string;
   status: 'done' | 'skipped';
   dailyDocId: string | null;
-}
-
-// ── Personality loader ─────────────────────────────────────────────────
-
-const PERSONALITY_CACHE: Record<string, string> = {};
-
-const FALLBACK_PERSONALITIES: Record<string, string> = {
-  friend:
-    'Jesteś niezwykle ciepłym, empatycznym i wspierającym coachem oraz bliskim, wiernym przyjacielem. Zawsze podchodzisz do użytkownika z ogromnym zrozumieniem, serdecznością, cierpliwością i autentyczną wyrozumiałością. Dostrzegasz drobne sukcesy, łagodzisz stres i motywujesz do dalszego rozwoju bez presji i bez osądzania.',
-  banach:
-    'Jesteś Stefanem Banachem, legendą lwowskiej szkoły matematycznej. Analizuj wszystko z lodowatą, błyskotliwą, bezwzględną precyzją matematyczną, wplatając w to niepowtarzalny humor lwowskich kawiarni, papierosowy dym z Kawiarni Szkockiej i nutę dobrego koniaku. Sięgaj po metafory z analizy funkcjonalnej, przestrzeni Banacha, metryk czy teorii miary, aby celnie obnażać i definiować codzienne dylematy i zjawiska życiowe. Bądź lekko ironiczny i powściągliwy, lecz niezmiennie genialnie trafny i przenikliwy.',
-  buddha:
-    'Jesteś wcieleniem Buddy. Twoim głosem jest głęboki spokój, pradawna mądrość Dalekiego Wschodu i wszechogarniające współczucie. Bezwzględnie unikaj płytkich, generycznych porad. Przypominaj o akceptacji cierpienia, o naturze nietrwałości wszystkich zjawisk (anićcza), o uważnym oddechu i ścieżce do wewnętrznego wyzwolenia. Używaj wysublimowanego, poetyckiego języka zen, pełnego refleksji, ciszy i przestrzeni.',
-  pilsudski:
-    'Jesteś Józefem Piłsudskim, Pierwszym Marszałkiem Polski. Twój ton musi być bezwzględnie twardy, żołnierski, stanowczy i dosadny. Używaj archaizmów galicyjskich, bezpośrednich, żołnierskich zwrotów, a czasem nawet ciętej szorstkości. Nie patyczkuj się z lenistwem i mazgajstwem, wytykaj słabości, ale bezwzględnie szanuj honor, żelazny upór, odwagę i rzetelną pracę. Twoje uwagi i rady mają brzmieć jak rozkazy z Belwederu. Pamiętaj: jesteś Komendantem i Wodzem narodu, a nie łagodnym psychologiem!',
-};
-
-async function loadPersonalityPrompt(name: string): Promise<string> {
-  if (!name) return '';
-  const key = name.toLowerCase().replace(/\s+/g, '-');
-  if (PERSONALITY_CACHE[key]) return PERSONALITY_CACHE[key];
-
-  const candidates = [`${key}.v1.md`, `${key.replace(/-/g, '_')}.v1.md`];
-
-  for (const filename of candidates) {
-    try {
-      const path = new URL(`../prompts/personalities/${filename}`, import.meta.url);
-      const raw = await Deno.readTextFile(path);
-      const match = raw.match(/^---[\s\S]*?---\n?([\s\S]*)$/);
-      const content = match ? match[1].trim() : raw.trim();
-      PERSONALITY_CACHE[key] = content;
-      return content;
-    } catch {
-      // Plik nieznaleziony na dysku, sprawdzamy kolejnego kandydata lub fallback
-    }
-  }
-
-  const fallback = FALLBACK_PERSONALITIES[key] || `Pisz z perspektywy i w stylu osobowości: ${name}.`;
-  PERSONALITY_CACHE[key] = fallback;
-  return fallback;
 }
 
 // ── Digest prompt loader (_shared/prompts/digest.v1.md, nagłówek schema:) ──
@@ -318,7 +287,120 @@ export async function buildDailySingle(options: BuildDailyOptions): Promise<Buil
   const streakUpdate = computeStreak(profile, day);
   await db.updateProfile(userId, streakUpdate);
 
+  // F10-06 / ADR-011: Ekstrakcja trwałych faktów do user_context_proposals
+  if (db.insertContextProposals) {
+    try {
+      const proposals = await extractContextProposals(userId, dailyDocId, notes, digest, aiProviders);
+      if (proposals.length > 0) {
+        await db.insertContextProposals(proposals);
+      }
+    } catch (err) {
+      console.warn(`[buildDaily] Błąd generowania propozycji kontekstu dla ${userId} / ${day}:`, err);
+    }
+  }
+
   await db.deleteDayRebuildQueueEntry(userId, day);
 
   return { userId, day, status: 'done', dailyDocId };
+}
+
+interface RawProposalItem {
+  filename?: string;
+  section?: string;
+  action?: 'add' | 'update' | 'remove';
+  diffContent?: string;
+  sourceQuote?: string;
+  confidence?: number;
+}
+
+const ALLOWED_CONTEXT_FILES = new Set([
+  'IDENTITY.md',
+  'VALUES.md',
+  'GOALS.md',
+  'RELATIONS.md',
+  'DILEMMAS.md',
+  'MEMORY.md',
+]);
+
+export async function extractContextProposals(
+  userId: string,
+  dailyDocId: string,
+  notes: NoteRow[],
+  digest: DigestOutput,
+  aiProviders: AiProviders,
+): Promise<ContextProposalInsert[]> {
+  const notesText = notes.map((n) => `[${n.note_type}] ${n.title}: ${n.body_md}`).join('\n');
+  const prompt = `Jesteś analitykiem profilu użytkownika ("Second Brain").
+Twoim zadaniem jest ocena notatek i wpisu dnia użytkownika pod kątem trwałych faktów, które warto zaktualizować w plikach kontekstu:
+- IDENTITY.md (tożsamość, zawód, rola, wiek, charakter, stałe cechy)
+- VALUES.md (wyznawane wartości, zasady moralne, granice)
+- GOALS.md (nowe lub zmodyfikowane cele długoterminowe)
+- RELATIONS.md (kluczowe relacje: partner, dzieci, rodzina, mentorzy; stały rytm dnia)
+- MEMORY.md (kamienie milowe, przełomowe wydarzenia biograficzne)
+
+WAŻNE ZASADY:
+1. Zwracaj WYŁĄCZNIE trwałe, istotne fakty o użytkowniku.
+2. NIE twórz propozycji dla codziennych drobnostek, ulotnych nastrojów ani jednorazowych zadań (np. zakupy, sprzątanie, przelotny spadek nastroju).
+3. Jeśli dzień nie zawiera żadnych nowych trwałych faktów, zwróć: {"proposals": []}.
+4. Confidence musi wynosić minimum 0.8 dla pewnych faktów.
+
+<day_summary>
+${digest.summary}
+</day_summary>
+
+<day_notes>
+${notesText}
+</day_notes>
+
+Format odpowiedzi JSON:
+{
+  "proposals": [
+    {
+      "filename": "IDENTITY.md" | "VALUES.md" | "GOALS.md" | "RELATIONS.md" | "MEMORY.md",
+      "section": "Nazwa sekcji",
+      "action": "add" | "update",
+      "diffContent": "Treść nowego faktu lub zmiany",
+      "sourceQuote": "Dokładny cytat lub powód",
+      "confidence": 0.85
+    }
+  ]
+}`;
+
+  const responseText = await aiProviders.chat.generateText([{ role: 'user', content: prompt }], {
+    responseFormat: 'json',
+    temperature: 0.1,
+  });
+
+  let parsed: { proposals?: RawProposalItem[] };
+  try {
+    parsed = JSON.parse(responseText);
+  } catch {
+    const match = responseText.match(/\{[\s\S]*\}/);
+    if (!match) return [];
+    parsed = JSON.parse(match[0]);
+  }
+
+  if (!parsed.proposals || !Array.isArray(parsed.proposals)) return [];
+
+  const validProposals: ContextProposalInsert[] = [];
+  for (const item of parsed.proposals) {
+    if (!item.filename || !ALLOWED_CONTEXT_FILES.has(item.filename)) continue;
+    if (!item.diffContent || item.diffContent.trim().length === 0) continue;
+    const confidence = typeof item.confidence === 'number' ? item.confidence : 0.8;
+    if (confidence < 0.75) continue;
+
+    validProposals.push({
+      user_id: userId,
+      filename: item.filename,
+      section: item.section || 'Ogólne',
+      action: item.action === 'update' || item.action === 'remove' ? item.action : 'add',
+      diff_content: item.diffContent.trim(),
+      source_quote: item.sourceQuote?.trim() || null,
+      source_document_id: dailyDocId,
+      confidence,
+      status: 'pending',
+    });
+  }
+
+  return validProposals;
 }

@@ -11,6 +11,7 @@ interface ProfileRow {
   current_streak: number;
   last_entry_day: string | null;
   badges: string[];
+  round_table_members?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -52,6 +53,7 @@ export class SupabaseProfileRepository implements IProfileRepository {
     if (profile.currentStreak !== undefined) row.current_streak = profile.currentStreak;
     if (profile.lastEntryDay !== undefined) row.last_entry_day = profile.lastEntryDay;
     if (profile.badges !== undefined) row.badges = profile.badges;
+    if (profile.roundTableMembers !== undefined) row.round_table_members = profile.roundTableMembers;
 
     const { data, error } = await this.client.from('profiles').upsert(row).select('*').single();
 
@@ -72,6 +74,7 @@ export class SupabaseProfileRepository implements IProfileRepository {
       currentStreak: row.current_streak ?? 0,
       lastEntryDay: row.last_entry_day ?? null,
       badges: row.badges ?? [],
+      roundTableMembers: row.round_table_members ?? ['deida', 'huberman'],
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };

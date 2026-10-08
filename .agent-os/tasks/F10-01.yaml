@@ -1,0 +1,27 @@
+id: F10-01
+title: System kontekstu użytkownika, Osobowość narratora i Okrągły stół dla Vocaly
+phase: 10
+role: mobile
+branch: feat/F10-01-context-narrator-roundtable
+roadmap: "F10-01: Migracja bazy danych Supabase: tabele `user_context_files`, `user_context_proposals`, `user_dilemma_advisories`, `profiles.round_table_members`, RLS"
+read_first:
+  - docs/02-architektura.md
+  - docs/05-decyzje.md
+scope:
+  write:
+    - supabase/migrations/**
+    - supabase/functions/**
+    - src/**
+    - docs/**
+context: |
+  Implementacja trzech powiązanych modułów (ADR-011):
+  1. System plików kontekstu użytkownika (IDENTITY.md, VALUES.md, GOALS.md, RELATIONS.md, DILEMMAS.md, MEMORY.md).
+  2. Osobowość narratora (David Deida, Andrew Huberman + dotychczasowe 4 osobowości).
+  3. Okrągły stół (multiselect w Ustawieniach, Edge Function round-table, panel na ekranie Dylematu, filtr kryzysowy 116 123/112, zapis decyzji).
+acceptance:
+  - "Migracja bazy danych zawiera tabele user_context_files, user_context_proposals, user_dilemma_advisories oraz kolumnę profiles.round_table_members z RLS"
+  - "Edge Functions round-table oraz build-daily poprawnie ładują profile osobowości i obsługują doradztwo oraz ekstrakcję propozycji"
+  - "Ekran Ustawień pozwala zarządzać narratorem, składem okrągłego stołu i plikami kontekstu z opcją 'Zapomnij to'"
+  - "Ekran notatki z kategorii Dylematy wyświetla panel Okrągłego stołu z syntezą i zapisem decyzji"
+  - "Onboarding prowadzi serię 4 pytań i zapisuje bazowe pliki kontekstu"
+  - "Deno testy (88/88) oraz Jest testy (56/56 pakietów, 475 testów) przechodzą bez błędów"
