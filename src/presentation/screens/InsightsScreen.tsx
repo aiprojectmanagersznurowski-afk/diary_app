@@ -8,25 +8,20 @@ import {
   titleTextStyle,
   useTheme,
 } from '../components/ui';
-import { AverageTiles, EnergyBarChart, GoalAlignmentRing, StressCalmChart } from '../components/insights';
+import { DominantEmotionsHistogram, GoalAlignmentHistoryChart, GoalAlignmentRing } from '../components/insights';
 import {
   AnalyticsData,
   dayStringOffsetFromToday,
   getDailyAnalyticsData,
-  getEnergyNote,
   getGoalAlignmentMessage,
 } from '../../application/useCases/statsUseCase';
 import { getDailyDocumentsInRangeUseCase } from '../../composition';
 import { pl } from '../i18n/pl';
 
 const EMPTY_ANALYTICS: AnalyticsData = {
-  stress: [],
-  calm: [],
-  energy: [],
   goalAlignment: 0,
-  avgStress: 0,
-  avgCalm: 0,
-  avgEnergy: 0,
+  goalHistory: [],
+  dominantEmotions: [],
 };
 
 const RANGE_OPTIONS = [
@@ -72,7 +67,6 @@ export const InsightsScreen = () => {
     };
   }, [timeRange]);
 
-  const energyNote = getEnergyNote(analyticsData.energy);
   const goalMessage = getGoalAlignmentMessage(analyticsData.goalAlignment);
 
   return (
@@ -100,21 +94,14 @@ export const InsightsScreen = () => {
           </View>
         ) : (
           <View style={styles.chartsWrapper}>
-            {/* Wykres Stres vs. Spokój */}
-            <StressCalmChart stress={analyticsData.stress} calm={analyticsData.calm} />
-
-            {/* Kafelki średnich */}
-            <AverageTiles
-              avgStress={analyticsData.avgStress}
-              avgCalm={analyticsData.avgCalm}
-              avgEnergy={analyticsData.avgEnergy}
-            />
-
-            {/* Wykres energii */}
-            <EnergyBarChart energy={analyticsData.energy} energyNote={energyNote} />
-
-            {/* Pierścień zgodności z celami życiowymi */}
+            {/* 1. Pierścień zgodności z celami życiowymi (ZAWSZE U GÓRY) */}
             <GoalAlignmentRing percentage={analyticsData.goalAlignment} message={goalMessage} />
+
+            {/* 2. Wykres ostatnich dni z wynikiem zgodności celów */}
+            <GoalAlignmentHistoryChart history={analyticsData.goalHistory} timeRange={timeRange} />
+
+            {/* 3. Dominujące emocje (w ujęciu 7 dni i 30 dni) */}
+            <DominantEmotionsHistogram emotions={analyticsData.dominantEmotions} />
           </View>
         )}
       </ScrollView>
@@ -140,11 +127,7 @@ const styles = StyleSheet.create({
     width: 40,
   },
   segWrapper: {
-    marginTop: 14,
-    marginBottom: 16,
-  },
-  chartsWrapper: {
-    gap: 0,
+    marginVertical: 16,
   },
   loadingContainer: {
     paddingVertical: 60,
@@ -154,6 +137,8 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    fontWeight: '600',
+  },
+  chartsWrapper: {
+    gap: 16,
   },
 });

@@ -1,5 +1,4 @@
-export { StressCalmChart } from './StressCalmChart';
-export { AverageTiles } from './AverageTiles';
-export { EnergyBarChart } from './EnergyBarChart';
 export { GoalAlignmentRing } from './GoalAlignmentRing';
+export { GoalAlignmentHistoryChart } from './GoalAlignmentHistoryChart';
+export { DominantEmotionsHistogram } from './DominantEmotionsHistogram';
 export * from './chartLogic';
