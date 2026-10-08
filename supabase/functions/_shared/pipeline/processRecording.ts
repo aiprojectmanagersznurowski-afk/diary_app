@@ -301,6 +301,25 @@ Zwróć WYŁĄCZNIE poprawny JSON zgodny z powyższym schematem.`;
     await db.upsertDayRebuildQueue(recording.user_id, day);
     await db.updateRecording(recordingId, { status: 'done', last_error: null });
 
+    // Bezpośrednie wywołanie Edge Function build-daily, aby wpis dnia
+    // powstał od razu po przetworzeniu nagrania bez konieczności czekania na zewnętrzny cron
+    const supabaseUrl = (globalThis as any).Deno?.env?.get('SUPABASE_URL');
+    const serviceKey = (globalThis as any).Deno?.env?.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (supabaseUrl && serviceKey) {
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/build-daily`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({ user_id: recording.user_id, day }),
+        });
+      } catch (e) {
+        console.warn('Błąd natychmiastowego wywołania build-daily z process-recording:', e);
+      }
+    }
+
     return {
       recordingId,
       status: 'done',
