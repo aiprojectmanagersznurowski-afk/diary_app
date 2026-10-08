@@ -52,9 +52,9 @@ Każde zadanie ma własną konfigurację, więc model można zmienić bez zmian 
 | Zadanie | Domyślnie | Zmienne |
 |---|---|---|
 | Transkrypcja | Groq `whisper-large-v3`, język `pl` | `STT_PROVIDER`, `STT_MODEL` |
-| Podział nagrania na notatki i klasyfikacja | Groq `llama-3.3-70b-versatile` | `LLM_STRUCTURE_PROVIDER`, `LLM_STRUCTURE_MODEL` |
-| Wpis dnia z osobowością | Groq `llama-3.3-70b-versatile` | `LLM_DIGEST_PROVIDER`, `LLM_DIGEST_MODEL` |
-| Ocena powiązań | Groq `llama-3.3-70b-versatile` | `LLM_LINK_PROVIDER`, `LLM_LINK_MODEL` |
+| Podział nagrania na notatki i klasyfikacja | Groq `openai/gpt-oss-120b` | `LLM_STRUCTURE_PROVIDER`, `LLM_STRUCTURE_MODEL` |
+| Wpis dnia z osobowością | Groq `openai/gpt-oss-120b` | `LLM_DIGEST_PROVIDER`, `LLM_DIGEST_MODEL` |
+| Ocena powiązań | Groq `openai/gpt-oss-120b` | `LLM_LINK_PROVIDER`, `LLM_LINK_MODEL` |
 | Czat i przepisywanie zapytań | do wyboru po testach jakości po polsku (Groq lub Gemini) | `LLM_CHAT_PROVIDER`, `LLM_CHAT_MODEL` |
 | Embeddingi | Google `gemini-embedding-001`, `output_dimensionality = 1536` | `EMBED_PROVIDER`, `EMBED_MODEL`, `EMBED_DIM` |
 

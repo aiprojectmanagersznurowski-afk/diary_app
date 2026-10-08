@@ -20,10 +20,29 @@ export interface PipelineResult {
   documentIds: string[];
 }
 
-const DEFAULT_STRUCTURE_PROMPT = `Jesteś asystentem AI dzielącym transkrypcję głosową na atomowe notatki.
-Podziel poniższą wypowiedź na 1 lub więcej notatek.
-Dozwolone typy notatek: idea, task, reflection, event.
-Odpowiedź zwróć w formacie JSON zgodnym ze schematem structure.
+const DEFAULT_STRUCTURE_PROMPT = `Jesteś asystentem AI odpowiedzialnym za podział surowej transkrypcji głosowej na atomowe, spójne notatki w pamiętniku osobistym.
+Podziel poniższą wypowiedź na 1 lub więcej odrębnych, atomowych notatek. Każda notatka powinna dotyczyć jednego wątku.
+Dozwolone typy notatek (noteType):
+- "idea": Nowy pomysł, koncepcja, projekt do zrealizowania.
+- "task": Zadanie do wykonania, czynność, plan działania, 'to-do'.
+- "reflection": Osobista refleksja, przemyślenie, emocja, stan ducha.
+- "event": Wydarzenie z życia, spotkanie, fakt, relacja z dnia.
+
+Kategorie (category): "Dylematy", "Praca", "Zdrowie", "Relacje", "Finanse", "Osobiste", "Hobby", "Nauka". Zastosuj "Dylematy" dla trudnych decyzji, wyborów życiowych lub zawodowych, wątpliwości oraz rozważań za i przeciw.
+
+Odpowiedź MUSI być poprawnym obiektem JSON w formacie:
+{
+  "notes": [
+    {
+      "title": "Zwięzły tytuł notatki (2-6 słów)",
+      "noteType": "idea",
+      "category": "Dylematy",
+      "tags": ["tag1", "tag2"],
+      "content": "Zredagowany tekst notatki w 1. osobie..."
+    }
+  ]
+}
+
 <transcript>
 {{TRANSCRIPT}}
 </transcript>`;
@@ -31,13 +50,38 @@ Odpowiedź zwróć w formacie JSON zgodnym ze schematem structure.
 const DEFAULT_LINK_PROMPT = `Jesteś asystentem AI oceniającym powiązania między notatkami.
 Oceń powiązania między notatką źródłową a podanymi kandydatami.
 Wolno Ci wybrać WYŁĄCZNIE identyfikatory z listy kandydatów.
-Odpowiedź zwróć w formacie JSON zgodnym ze schematem link.
+Odpowiedź zwróć w formacie JSON zgodnym ze schematem link:
+{
+  "links": [
+    {
+      "targetId": "uuid-kandydata",
+      "score": 0.85,
+      "reason": "Krótkie uzasadnienie powiązania"
+    }
+  ]
+}
 <source_note>
 {{SOURCE_NOTE}}
 </source_note>
 <candidates>
 {{CANDIDATES}}
 </candidates>`;
+
+let structurePromptCache: string | null = null;
+
+async function loadStructurePromptTemplate(): Promise<string> {
+  if (structurePromptCache) return structurePromptCache;
+  try {
+    const path = new URL('../prompts/structure.v2.md', import.meta.url);
+    const raw = await Deno.readTextFile(path);
+    const match = raw.match(/^---[\s\S]*?---\n?([\s\S]*)$/);
+    const content = (match ? match[1] : raw).trim();
+    structurePromptCache = content;
+    return content;
+  } catch {
+    return DEFAULT_STRUCTURE_PROMPT;
+  }
+}
 
 /**
  * Główny przepływ przetwarzania nagrania (kroki a-e z docs/02-architektura.md §6.1).
@@ -83,14 +127,40 @@ export async function processRecordingPipeline(options: PipelineOptions): Promis
     let documents = await db.getDocumentsByRecordingId(recordingId);
 
     if (currentStatus === 'uploaded' || currentStatus === 'transcribed' || documents.length === 0) {
-      const promptTemplate = options.structurePromptTemplate || DEFAULT_STRUCTURE_PROMPT;
+      const promptTemplate =
+        options.structurePromptTemplate || (await loadStructurePromptTemplate()) || DEFAULT_STRUCTURE_PROMPT;
       const filledPrompt = promptTemplate.replace('{{TRANSCRIPT}}', transcript || '');
 
-      const structureResponseText = await aiProviders.structure.generateText([{ role: 'user', content: filledPrompt }]);
+      const structureResponseText = await aiProviders.structure.generateText(
+        [{ role: 'user', content: filledPrompt }],
+        { responseFormat: 'json', temperature: 0.2 },
+      );
 
       const repairCallback = async (errMsg: string, rawText: string) => {
-        const repairPrompt = `Popraw poniższy błąd w formacie JSON:\nBłąd: ${errMsg}\nPoprzednia odpowiedź: ${rawText}`;
-        return await aiProviders.structure.generateText([{ role: 'user', content: repairPrompt }]);
+        const repairPrompt = `Popraw poniższą odpowiedź, aby była poprawnym obiektem JSON zawierającym pole "notes" (tablicę notatek):
+{
+  "notes": [
+    {
+      "title": "Krótki tytuł",
+      "noteType": "idea" | "task" | "reflection" | "event",
+      "category": "Dylematy" | "Praca" | "Osobiste" | "Zdrowie" | "Relacje",
+      "tags": ["tag1", "tag2"],
+      "content": "Treść notatki w 1. osobie"
+    }
+  ]
+}
+
+Błędy walidacji:
+${errMsg}
+
+Poprzednia odpowiedź:
+${rawText}
+
+Zwróć WYŁĄCZNIE poprawny JSON zgodny z powyższym schematem.`;
+        return await aiProviders.structure.generateText([{ role: 'user', content: repairPrompt }], {
+          responseFormat: 'json',
+          temperature: 0.1,
+        });
       };
 
       const structuredOutput = await validateAndRepairJson(structureResponseText, structureSchema, repairCallback);
@@ -190,11 +260,17 @@ export async function processRecordingPipeline(options: PipelineOptions): Promis
           .replace('{{CANDIDATES}}', candidateDescriptions);
 
         try {
-          const linkRespText = await aiProviders.link.generateText([{ role: 'user', content: filledLinkPrompt }]);
+          const linkRespText = await aiProviders.link.generateText([{ role: 'user', content: filledLinkPrompt }], {
+            responseFormat: 'json',
+            temperature: 0.1,
+          });
 
           const linkRepairCallback = async (errMsg: string, rawText: string) => {
             const repairPrompt = `Popraw błąd formatu JSON dla powiązań:\n${errMsg}\nPoprzednia odpowiedź:\n${rawText}`;
-            return await aiProviders.link.generateText([{ role: 'user', content: repairPrompt }]);
+            return await aiProviders.link.generateText([{ role: 'user', content: repairPrompt }], {
+              responseFormat: 'json',
+              temperature: 0.1,
+            });
           };
 
           const linkOutput = await validateAndRepairJson(linkRespText, linkSchema, linkRepairCallback);

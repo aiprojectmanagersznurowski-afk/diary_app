@@ -59,7 +59,7 @@ export class GroqLlmAdapter implements LlmProvider {
   private apiKey: string;
   private fetchFn?: FetchFn;
 
-  constructor(apiKey: string, model: string = 'llama-3.3-70b-versatile', fetchFn?: FetchFn) {
+  constructor(apiKey: string, model: string = 'openai/gpt-oss-120b', fetchFn?: FetchFn) {
     if (!apiKey) {
       throw new Error('Brak klucza API dla Groq (wymagany GROQ_API_KEY)');
     }

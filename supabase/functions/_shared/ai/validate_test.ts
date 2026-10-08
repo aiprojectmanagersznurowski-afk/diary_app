@@ -276,3 +276,73 @@ Deno.test('onboardingGoalsSchema - JSON nie do naprawy rzuca LlmValidationError'
     throw new Error('Oczekiwano LlmValidationError');
   }
 });
+
+// --- 5. Odporność na formaty LLM (tablica top-level, aliasy, kategoria Dylematy) ---
+
+Deno.test('structureSchema - top-level array jest automatycznie opakowywana w { notes: [...] }', async () => {
+  const topLevelArray = JSON.stringify([
+    {
+      title: 'Decyzja o zmianie kierunku',
+      noteType: 'dylemat',
+      category: 'Dylematy',
+      tags: 'kariera, priorytety',
+      content: 'Zastanawiam się czy kontynuować obecny projekt czy zmienić kierunek.',
+    },
+  ]);
+
+  const result = await validateAndRepairJson(topLevelArray, structureSchema);
+  if (result.notes.length !== 1) {
+    throw new Error(`Oczekiwano 1 notatki, otrzymano ${result.notes.length}`);
+  }
+  const note = result.notes[0];
+  if (note.noteType !== 'reflection') {
+    throw new Error(`Oczekiwano zmapowania dylemat na reflection, otrzymano: ${note.noteType}`);
+  }
+  if (note.category !== 'Dylematy') {
+    throw new Error(`Oczekiwano kategorii Dylematy, otrzymano: ${note.category}`);
+  }
+  if (note.tags.length !== 2 || note.tags[0] !== 'kariera' || note.tags[1] !== 'priorytety') {
+    throw new Error(`Oczekiwano sparsowanych tagów [kariera, priorytety], otrzymano: ${JSON.stringify(note.tags)}`);
+  }
+});
+
+Deno.test('structureSchema - polskie aliasy typów notatek i brakująca kategoria', async () => {
+  const rawJson = JSON.stringify({
+    notes: [
+      {
+        title: 'Kupić bilet',
+        noteType: 'Zadanie',
+        content: 'Muszę kupić bilet na pociąg.',
+      },
+      {
+        title: 'Świetny pomysł na feature',
+        noteType: 'pomysł',
+        tags: null,
+        content: 'Wymyśliłem nową funkcję.',
+      },
+    ],
+  });
+
+  const result = await validateAndRepairJson(rawJson, structureSchema);
+  if (result.notes[0].noteType !== 'task' || result.notes[0].category !== 'Osobiste') {
+    throw new Error(`Niepoprawna normalizacja dla zadania: ${JSON.stringify(result.notes[0])}`);
+  }
+  if (result.notes[1].noteType !== 'idea' || !Array.isArray(result.notes[1].tags)) {
+    throw new Error(`Niepoprawna normalizacja dla pomysłu: ${JSON.stringify(result.notes[1])}`);
+  }
+});
+
+Deno.test('linkSchema - top-level array powiązań jest automatycznie opakowywana w { links: [...] }', async () => {
+  const rawArray = JSON.stringify([
+    {
+      targetId: 'doc-uuid-1',
+      score: 0.9,
+      reason: 'Wspólny kontekst celów kwartalnych',
+    },
+  ]);
+
+  const result = await validateAndRepairJson(rawArray, linkSchema);
+  if (result.links.length !== 1 || result.links[0].targetId !== 'doc-uuid-1') {
+    throw new Error(`Niepoprawna normalizacja top-level array w linkSchema: ${JSON.stringify(result)}`);
+  }
+});

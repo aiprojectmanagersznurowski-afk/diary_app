@@ -70,7 +70,7 @@ Deno.test('GroqLlmAdapter - pomyślnie generuje tekst i format JSON', async () =
     );
   };
 
-  const adapter = new GroqLlmAdapter('dummy-groq-key', 'llama-3.3-70b-versatile', mockFetch);
+  const adapter = new GroqLlmAdapter('dummy-groq-key', 'openai/gpt-oss-120b', mockFetch);
 
   // 1. Zwykły tekst
   const textResult = await adapter.generateText([{ role: 'user', content: 'Cześć' }]);
@@ -98,7 +98,7 @@ Deno.test('GroqLlmAdapter - rzuca błąd przy niepoprawnym formacie JSON w gener
     );
   };
 
-  const adapter = new GroqLlmAdapter('dummy-groq-key', 'llama-3.3-70b-versatile', mockFetch);
+  const adapter = new GroqLlmAdapter('dummy-groq-key', 'openai/gpt-oss-120b', mockFetch);
   let errorCaught = false;
 
   try {
@@ -133,7 +133,7 @@ Deno.test('GroqLlmAdapter - streamText poprawnie czyta strumień SSE', async () 
     return new Response(stream, { status: 200 });
   };
 
-  const adapter = new GroqLlmAdapter('dummy-groq-key', 'llama-3.3-70b-versatile', mockFetch);
+  const adapter = new GroqLlmAdapter('dummy-groq-key', 'openai/gpt-oss-120b', mockFetch);
   const chunks: string[] = [];
 
   for await (const chunk of adapter.streamText([{ role: 'user', content: 'Napisz coś' }])) {

@@ -9,8 +9,23 @@ export const linkItemSchema = z.object({
 
 export type LinkItem = z.infer<typeof linkItemSchema>;
 
-export const linkSchema = z.object({
-  links: z.array(linkItemSchema).default([]),
-});
+export const linkSchema = z.preprocess(
+  (val) => {
+    if (Array.isArray(val)) {
+      return { links: val };
+    }
+    if (val && typeof val === 'object' && !('links' in val)) {
+      const obj = val as Record<string, unknown>;
+      const arrayKey = Object.keys(obj).find((k) => Array.isArray(obj[k]));
+      if (arrayKey) {
+        return { ...obj, links: obj[arrayKey] };
+      }
+    }
+    return val;
+  },
+  z.object({
+    links: z.array(linkItemSchema).default([]),
+  }),
+);
 
 export type LinkOutput = z.infer<typeof linkSchema>;
