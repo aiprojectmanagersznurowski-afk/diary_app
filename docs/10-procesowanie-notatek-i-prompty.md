@@ -27,76 +27,53 @@ Przetwarzanie nagrań opiera się na architekturze asynchronicznej napędzanej p
 
 ---
 
-## 2. Diagramy przetwarzania (Mermaid)
+## 2. Diagramy przetwarzania
 
 ### 2.1. Diagram architektury i przepływu danych (Flowchart)
 
 Poniższy diagram przedstawia pełny obieg danych od nagrania głosu na urządzeniu, przez kolejne etapy przetwarzania w Edge Function `process-recording`, aż po agregację wpisu dnia w `build-daily`:
 
+![Architektura potoku przetwarzania notatek](assets/pipeline-architecture.svg)
+
+<details>
+<summary>Rozwiń kod źródłowy diagramu Mermaid (Flowchart)</summary>
+
 ```mermaid
 flowchart TD
-    subgraph S1["1. Rejestracja i Kolejka Audio"]
-        U["👤 Użytkownik<br/>(iPhone / Apple Watch)"]
-        APP["📱 Aplikacja Mobilna<br/>(Lokalna kolejka SQLite)"]
-        STORAGE[("🗄️ Supabase Storage<br/>audio/{userId}/{id}.m4a")]
-        REC[("📋 Tabela recordings<br/>status: uploaded")]
-        
-        U -->|Nagranie m4a| APP
-        APP -->|Upload pliku| STORAGE
-        APP -->|INSERT rekord| REC
-    end
+    U["Użytkownik (iPhone / Watch)"] -->|Nagranie audio .m4a| APP["Aplikacja Mobilna (SQLite)"]
+    APP -->|Upload pliku| STORAGE[("Supabase Storage (audio)")]
+    APP -->|INSERT rekord| REC[("Tabela recordings (status: uploaded)")]
+    REC -->|POST /process-recording| EF["Edge Function: process-recording"]
 
-    subgraph S2["2. Edge Function: process-recording"]
-        TRIGGER["⚡ Wywołanie POST /process-recording"]
-        REC -.->|recording_id| TRIGGER
+    EF -->|Pobranie .m4a| STT["Groq Whisper Large v3"]
+    STT -->|raw_transcript| DB_TRANS[("Zapis transkrypcji (transcribed)")]
 
-        subgraph STEP_A["Krok A: Transkrypcja STT"]
-            STT["🎙️ Groq Whisper Large v3<br/>model: whisper-large-v3"]
-            RAW["Zapis transkrypcji<br/>status: transcribed"]
-            STT --> RAW
-        end
+    DB_TRANS -->|Prompt structure.v2.md| LLM_STRUCT["Groq LLM (gpt-oss-120b)"]
+    LLM_STRUCT -->|JSON notes| DB_NOTES[("Tabela documents (segmented, kat: Dylematy)")]
 
-        subgraph STEP_B["Krok B: Podział i Strukturyzacja LLM"]
-            LLM_STRUCT["🧠 Groq LLM<br/>model: openai/gpt-oss-120b<br/>prompt: structure.v2.md"]
-            VALID["Walidacja schematu Zod<br/>+ automatyczna naprawa"]
-            DOCS[("📝 Tabela documents<br/>Atomowe notatki (kind: note)<br/>Kategorie: Osobiste, Dylematy...<br/>status: segmented")]
-            LLM_STRUCT --> VALID --> DOCS
-        end
+    DB_NOTES -->|Treść notatki| EMBED["Google Gemini (embedding-004)"]
+    EMBED -->|Wektory 1536d| CHUNKS[("Tabela document_chunks (pgvector)")]
 
-        subgraph STEP_CD["Krok C & D: Wektoryzacja i Graf Powiązań"]
-            EMBED["💎 Google Gemini<br/>text-embedding-004 (1536d)"]
-            CHUNKS[("🔍 Tabela document_chunks<br/>Indeks pgvector")]
-            LLM_LINK["🔗 Groq LLM<br/>prompt: link.v1.md"]
-            LINKS[("🕸️ Tabela links<br/>Graf powiązań semantycznych")]
-            EMBED --> CHUNKS
-            CHUNKS --> LLM_LINK --> LINKS
-        end
+    CHUNKS -->|Kandydaci + prompt link.v1.md| LLM_LINK["Groq LLM (Relacje)"]
+    LLM_LINK -->|Ocenione wagi relacji| LINKS[("Tabela links (graf wiedzy)")]
 
-        subgraph STEP_E["Krok E: Finalizacja"]
-            QUEUE[("⏱️ Tabela day_rebuild_queue<br/>Kolejka przebudowy dnia")]
-            DONE["Zakończenie nagrania<br/>status: done"]
-            QUEUE --> DONE
-        end
-
-        TRIGGER --> STEP_A
-        STEP_A --> STEP_B
-        STEP_B --> STEP_CD
-        STEP_CD --> STEP_E
-    end
-
-    subgraph S3["3. Asynchroniczny Wpis Dnia: build-daily"]
-        BD["⚡ Edge Function: build-daily<br/>(Cron o północy lub trigger z kolejki)"]
-        DAILY[("📅 Tabela documents (kind: daily)<br/>Wpis dnia DailyDocument:<br/>• Myśl przewodnia dnia<br/>• Emocje i dylematy<br/>• Wpływ na cele życiowe")]
-        DONE -.->|Zadanie z kolejki| BD
-        BD --> DAILY
-    end
+    LINKS --> QUEUE[("Tabela day_rebuild_queue (status: done)")]
+    QUEUE -.->|Cron o północy / trigger| BD["Edge Function: build-daily"]
+    BD --> DAILY[("Wpis dnia DailyDocument (emocje, cele)")]
 ```
+
+</details>
 
 ---
 
 ### 2.2. Diagram sekwencji wywołań (Sequence Diagram)
 
 Dokładna kolejność komunikacji pomiędzy aplikacją mobilną, bazą Supabase a zewnętrznymi modelami AI (Groq i Gemini):
+
+![Diagram sekwencji komunikacji i wywołań](assets/pipeline-sequence.svg)
+
+<details>
+<summary>Rozwiń kod źródłowy diagramu Mermaid (Sequence Diagram)</summary>
 
 ```mermaid
 sequenceDiagram
@@ -106,47 +83,48 @@ sequenceDiagram
     participant Storage as Supabase Storage
     participant DB as Postgres (Supabase)
     participant EF as Edge Function (process-recording)
-    participant Groq as Groq (Whisper / LLM)
-    participant Gem as Gemini (Embedding)
+    participant Groq as Groq AI (STT i LLM)
+    participant Gem as Gemini AI (Embeddings)
 
-    U->>App: Nagranie głosu (plik m4a)
-    App->>Storage: Upload pliku audio
-    App->>DB: Zapis rekordu recordings (status: uploaded)
-    App->>EF: POST /process-recording { recording_id }
+    U->>App: 1. Nagranie audio (.m4a)
+    App->>Storage: 2. Upload pliku do Storage
+    App->>DB: 3. INSERT recordings (status: uploaded)
+    App->>EF: 4. POST /process-recording { recording_id }
 
-    Note over EF,Groq: KROK A: Transkrypcja STT
-    EF->>Storage: Pobranie pliku m4a
-    EF->>Groq: Audio -> whisper-large-v3 (język: pl)
-    Groq-->>EF: Surowy tekst (raw_transcript)
-    EF->>DB: Update recording (raw_transcript, status: transcribed)
+    Note over EF,Groq: KROK A: Transkrypcja STT (whisper-large-v3)
+    EF->>Storage: Pobranie pliku .m4a
+    EF->>Groq: Wyślij audio (język: pl)
+    Groq-->>EF: Zwróć raw_transcript
+    EF->>DB: UPDATE recordings (status: transcribed)
 
-    Note over EF,Groq: KROK B: Podział na notatki LLM
-    EF->>Groq: Prompt structure.v2.md + raw_transcript (response_format: json)
-    Groq-->>EF: Odpowiedź JSON { notes: [...] }
-    opt Błąd walidacji schematu JSON
-        EF->>Groq: Prompt naprawczy z jawnym schematem Zod
-        Groq-->>EF: Poprawiony JSON { notes: [...] }
+    Note over EF,Groq: KROK B: Podział na notatki LLM (structure.v2.md)
+    EF->>Groq: Prompt structure.v2.md (JSON)
+    Groq-->>EF: Odpowiedź { notes: [...] }
+    opt Walidacja i ewentualna naprawa Zod
+        EF->>Groq: Prompt naprawczy z jawnym schematem
+        Groq-->>EF: Poprawiony JSON
     end
-    EF->>DB: Zapis notatek kind=note (kategorie w tym "Dylematy", tagi)
-    EF->>DB: Update recording (status: segmented)
+    EF->>DB: INSERT documents (kind=note, kat: Dylematy)
+    EF->>DB: UPDATE recordings (status: segmented)
 
     Note over EF,Gem: KROK C & D: Embeddingi i Graf Powiązań
     loop Dla każdej utworzonej notatki
         EF->>Gem: text-embedding-004 (treść notatki)
         Gem-->>EF: Wektor embeddingu 1536 floatów
-        EF->>DB: Zapis chunka i wektora w document_chunks (pgvector)
+        EF->>DB: Zapis chunka w document_chunks (pgvector)
         EF->>DB: Wyszukanie najbliższych wektorowo notatek
         EF->>Groq: Prompt link.v1.md (ocena relacji z kandydatami)
-        Groq-->>EF: Lista powiązań wraz ze scorem
+        Groq-->>EF: Lista powiązań ze scorem
         EF->>DB: Zapis relacji w tabeli links
     end
 
-    Note over EF,DB: KROK E: Kolejka Wpisu Dnia
-    EF->>DB: Dodanie dnia do day_rebuild_queue
-    EF->>DB: Update recording (status: done)
-    EF-->>App: Odpowiedź { status: "done", documentIds: [...] }
-    App->>U: Odświeżenie listy notatek i statusu
+    Note over EF,DB: KROK E: Kolejka Wpisu Dnia & Zakończenie
+    EF->>DB: INSERT day_rebuild_queue & status: done
+    EF-->>App: HTTP 200 { status: "done", documentIds: [...] }
+    App->>U: Odświeżenie listy notatek na żywo
 ```
+
+</details>
 
 ---
 

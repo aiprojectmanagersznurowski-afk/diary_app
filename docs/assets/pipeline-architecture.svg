@@ -1,0 +1,211 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 820" width="100%" height="100%" style="background:#0b0f19; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8b5cf6" />
+      <stop offset="50%" stop-color="#ec4899" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    <linearGradient id="cardGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="purpleGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0.05" />
+    </linearGradient>
+    <linearGradient id="tealGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.05" />
+    </linearGradient>
+    <linearGradient id="amberGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#d97706" stop-opacity="0.05" />
+    </linearGradient>
+    <linearGradient id="greenGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#059669" stop-opacity="0.05" />
+    </linearGradient>
+
+    <!-- Arrow Marker -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#94a3b8" />
+    </marker>
+    <marker id="arrowCyan" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#06b6d4" />
+    </marker>
+    <marker id="arrowPurple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#a855f7" />
+    </marker>
+  </defs>
+
+  <!-- Background Glows -->
+  <circle cx="150" cy="120" r="120" fill="#8b5cf6" opacity="0.07" filter="blur(40px)" />
+  <circle cx="800" cy="400" r="160" fill="#06b6d4" opacity="0.07" filter="blur(50px)" />
+  <circle cx="470" cy="720" r="140" fill="#10b981" opacity="0.06" filter="blur(45px)" />
+
+  <!-- TITLE -->
+  <text x="470" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="url(#headerGrad)">ARCHITEKTURA POTOKU PRZETWARZANIA NOTATEK</text>
+  <text x="470" y="60" text-anchor="middle" font-size="12" fill="#94a3b8">Od nagrania głosu na iPhone / Apple Watch do grafu powiązań i wpisu dnia</text>
+
+  <!-- ================= SECTION 1: REJESTRACJA ================= -->
+  <g transform="translate(30, 80)">
+    <!-- Container -->
+    <rect width="880" height="135" rx="14" fill="#131c2e" stroke="#1e293b" stroke-width="1.5" />
+    <rect x="0" y="0" width="880" height="135" rx="14" fill="url(#purpleGlow)" />
+    
+    <text x="24" y="26" font-size="13" font-weight="700" fill="#c084fc" letter-spacing="0.5">1. REJESTRACJA I KOLEJKA OFFLINE</text>
+
+    <!-- Node: Użytkownik -->
+    <rect x="24" y="42" width="170" height="74" rx="10" fill="#1e293b" stroke="#334155" stroke-width="1.2" />
+    <text x="109" y="68" text-anchor="middle" font-size="13" font-weight="600" fill="#f8fafc">👤 Użytkownik</text>
+    <text x="109" y="88" text-anchor="middle" font-size="11" fill="#94a3b8">iPhone / Apple Watch</text>
+    <text x="109" y="103" text-anchor="middle" font-size="10" fill="#a78bfa">Nagranie audio (.m4a)</text>
+
+    <!-- Arrow -->
+    <line x1="194" y1="79" x2="230" y2="79" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)" />
+
+    <!-- Node: App SQLite Queue -->
+    <rect x="235" y="42" width="185" height="74" rx="10" fill="#1e293b" stroke="#334155" stroke-width="1.2" />
+    <text x="327" y="68" text-anchor="middle" font-size="13" font-weight="600" fill="#f8fafc">📱 Aplikacja Mobilna</text>
+    <text x="327" y="88" text-anchor="middle" font-size="11" fill="#94a3b8">Kolejka SQLite (offline)</text>
+    <text x="327" y="103" text-anchor="middle" font-size="10" fill="#38bdf8">Idempotentny worker</text>
+
+    <!-- Arrow Split -->
+    <path d="M 420 70 L 465 62" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)" />
+    <path d="M 420 88 L 465 96" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)" />
+
+    <!-- Node: Storage -->
+    <rect x="470" y="40" width="190" height="38" rx="8" fill="#0f172a" stroke="#2563eb" stroke-width="1" />
+    <text x="565" y="58" text-anchor="middle" font-size="11" font-weight="600" fill="#60a5fa">🗄️ Supabase Storage</text>
+    <text x="565" y="71" text-anchor="middle" font-size="9" fill="#94a3b8">audio/{userId}/{id}.m4a</text>
+
+    <!-- Node: DB recordings -->
+    <rect x="470" y="84" width="190" height="38" rx="8" fill="#0f172a" stroke="#059669" stroke-width="1" />
+    <text x="565" y="102" text-anchor="middle" font-size="11" font-weight="600" fill="#34d399">📋 Tabela recordings</text>
+    <text x="565" y="115" text-anchor="middle" font-size="9" fill="#94a3b8">status: uploaded</text>
+
+    <!-- Arrow to Trigger -->
+    <path d="M 660 88 L 705 88" stroke="#06b6d4" stroke-width="2" marker-end="url(#arrowCyan)" />
+
+    <!-- Trigger Node -->
+    <rect x="710" y="46" width="170" height="66" rx="10" fill="#164e63" stroke="#0891b2" stroke-width="1.5" />
+    <text x="795" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="#67e8f9">⚡ Trigger HTTP</text>
+    <text x="795" y="90" text-anchor="middle" font-size="10" fill="#e0f2fe">POST /process-recording</text>
+    <text x="795" y="103" text-anchor="middle" font-size="9" fill="#a5f3fc">{ recording_id }</text>
+  </g>
+
+  <!-- Connect Section 1 to Section 2 -->
+  <line x1="825" y1="215" x2="825" y2="245" stroke="#06b6d4" stroke-width="2" stroke-dasharray="4,4" />
+  <path d="M 825 245 L 825 255 L 470 255 L 470 265" fill="none" stroke="#06b6d4" stroke-width="2" marker-end="url(#arrowCyan)" />
+
+  <!-- ================= SECTION 2: EDGE FUNCTION ================= -->
+  <g transform="translate(30, 270)">
+    <!-- Container -->
+    <rect width="880" height="370" rx="14" fill="#0f172a" stroke="#1e293b" stroke-width="1.5" />
+    <rect x="0" y="0" width="880" height="370" rx="14" fill="url(#tealGlow)" />
+    
+    <text x="24" y="26" font-size="13" font-weight="700" fill="#38bdf8" letter-spacing="0.5">2. EDGE FUNCTION: process-recording (5 IDEMPOTENTNYCH KROKÓW)</text>
+
+    <!-- KROK A -->
+    <g transform="translate(24, 40)">
+      <rect width="832" height="54" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1" />
+      <rect x="8" y="10" width="75" height="34" rx="6" fill="#0369a1" />
+      <text x="45" y="32" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">KROK A</text>
+      
+      <text x="96" y="25" font-size="12" font-weight="600" fill="#f8fafc">Transkrypcja STT (Groq Whisper Large v3)</text>
+      <text x="96" y="42" font-size="10" fill="#94a3b8">Pobranie .m4a ze Storage ➔ STT (język: pl) ➔ Zapis raw_transcript w recordings</text>
+      
+      <rect x="670" y="13" width="150" height="28" rx="6" fill="#082f49" stroke="#0284c7" stroke-width="1" />
+      <text x="745" y="31" text-anchor="middle" font-size="10" font-weight="600" fill="#38bdf8">status: transcribed</text>
+    </g>
+
+    <!-- KROK B -->
+    <g transform="translate(24, 102)">
+      <rect width="832" height="66" rx="8" fill="#1e293b" stroke="#8b5cf6" stroke-width="1.2" />
+      <rect x="8" y="14" width="75" height="38" rx="6" fill="#7c3aed" />
+      <text x="45" y="38" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">KROK B</text>
+      
+      <text x="96" y="26" font-size="12" font-weight="700" fill="#e9d5ff">Podział i Kategoryzacja LLM (Groq openai/gpt-oss-120b)</text>
+      <text x="96" y="43" font-size="10" fill="#cbd5e1">Prompt structure.v2.md (JSON) ➔ Zod schema validate ➔ Auto-repair przy błędach</text>
+      <text x="96" y="58" font-size="10" fill="#a78bfa">Kategorie: Osobiste, Relacje, Praca, Zdrowie, Finanse, DYLEMATY</text>
+      
+      <rect x="670" y="17" width="150" height="32" rx="6" fill="#2e1065" stroke="#9333ea" stroke-width="1" />
+      <text x="745" y="32" text-anchor="middle" font-size="10" font-weight="600" fill="#d8b4fe">Zapis w documents (notes)</text>
+      <text x="745" y="44" text-anchor="middle" font-size="9" fill="#c084fc">status: segmented</text>
+    </g>
+
+    <!-- KROK C -->
+    <g transform="translate(24, 176)">
+      <rect width="832" height="54" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1" />
+      <rect x="8" y="10" width="75" height="34" rx="6" fill="#0d9488" />
+      <text x="45" y="32" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">KROK C</text>
+      
+      <text x="96" y="25" font-size="12" font-weight="600" fill="#f8fafc">Embeddingi Semantyczne (Google Gemini 1536 dim)</text>
+      <text x="96" y="42" font-size="10" fill="#94a3b8">Model text-embedding-004 ➔ Generowanie wektorów 1536d dla każdej utworzonej notatki</text>
+      
+      <rect x="670" y="13" width="150" height="28" rx="6" fill="#042f2e" stroke="#0d9488" stroke-width="1" />
+      <text x="745" y="31" text-anchor="middle" font-size="10" font-weight="600" fill="#2dd4bf">Zapis w pgvector (chunks)</text>
+    </g>
+
+    <!-- KROK D -->
+    <g transform="translate(24, 238)">
+      <rect width="832" height="54" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1" />
+      <rect x="8" y="10" width="75" height="34" rx="6" fill="#d97706" />
+      <text x="45" y="32" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">KROK D</text>
+      
+      <text x="96" y="25" font-size="12" font-weight="600" fill="#f8fafc">Graf Powiązań (Groq LLM + prompt link.v1.md)</text>
+      <text x="96" y="42" font-size="10" fill="#94a3b8">Wyszukanie najbliższych wektorowo notatek ➔ LLM ocenia wagę relacji [0..1] ➔ Relacje w tabeli links</text>
+      
+      <rect x="670" y="13" width="150" height="28" rx="6" fill="#451a03" stroke="#b45309" stroke-width="1" />
+      <text x="745" y="31" text-anchor="middle" font-size="10" font-weight="600" fill="#fbbf24">Graf relacji w links</text>
+    </g>
+
+    <!-- KROK E -->
+    <g transform="translate(24, 300)">
+      <rect width="832" height="54" rx="8" fill="#1e293b" stroke="#10b981" stroke-width="1.2" />
+      <rect x="8" y="10" width="75" height="34" rx="6" fill="#059669" />
+      <text x="45" y="32" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">KROK E</text>
+      
+      <text x="96" y="25" font-size="12" font-weight="700" fill="#a7f3d0">Zakończenie i Kolejka Przebudowy Dnia</text>
+      <text x="96" y="42" font-size="10" fill="#cbd5e1">Wstawienie dnia do day_rebuild_queue ➔ Zmiana statusu nagrania na DONE ➔ Notyfikacja UI</text>
+      
+      <rect x="670" y="13" width="150" height="28" rx="6" fill="#064e3b" stroke="#10b981" stroke-width="1" />
+      <text x="745" y="31" text-anchor="middle" font-size="10" font-weight="700" fill="#34d399">status: done</text>
+    </g>
+  </g>
+
+  <!-- Connect Section 2 to Section 3 -->
+  <line x1="470" y1="640" x2="470" y2="665" stroke="#10b981" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- ================= SECTION 3: WPIS DNIA ================= -->
+  <g transform="translate(30, 670)">
+    <!-- Container -->
+    <rect width="880" height="120" rx="14" fill="#131c2e" stroke="#10b981" stroke-width="1.2" />
+    <rect x="0" y="0" width="880" height="120" rx="14" fill="url(#greenGlow)" />
+    
+    <text x="24" y="26" font-size="13" font-weight="700" fill="#34d399" letter-spacing="0.5">3. ASYNCHRONICZNY WPIS DNIA (EDGE FUNCTION: build-daily)</text>
+
+    <!-- Trigger -->
+    <rect x="24" y="42" width="220" height="60" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1" />
+    <text x="134" y="65" text-anchor="middle" font-size="11" font-weight="600" fill="#f8fafc">⏱️ Wyzwalacz</text>
+    <text x="134" y="82" text-anchor="middle" font-size="10" fill="#94a3b8">Kolejka day_rebuild_queue</text>
+    <text x="134" y="94" text-anchor="middle" font-size="9" fill="#6ee7b7">lub Cron o północy</text>
+
+    <line x1="244" y1="72" x2="280" y2="72" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)" />
+
+    <!-- Function Box -->
+    <rect x="285" y="42" width="240" height="60" rx="8" fill="#1e293b" stroke="#059669" stroke-width="1.2" />
+    <text x="405" y="65" text-anchor="middle" font-size="12" font-weight="700" fill="#6ee7b7">⚡ Edge Function: build-daily</text>
+    <text x="405" y="82" text-anchor="middle" font-size="10" fill="#cbd5e1">Agregacja wszystkich notatek z 24h</text>
+    <text x="405" y="94" text-anchor="middle" font-size="9" fill="#94a3b8">Prompt daily.v1.md + model LLM</text>
+
+    <line x1="525" y1="72" x2="560" y2="72" stroke="#10b981" stroke-width="1.8" marker-end="url(#arrow)" />
+
+    <!-- Result Daily Document -->
+    <rect x="565" y="42" width="290" height="60" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1.5" />
+    <text x="710" y="63" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">📅 DailyDocument (documents)</text>
+    <text x="710" y="78" text-anchor="middle" font-size="10" fill="#a7f3d0">• Myśl przewodnia &amp; Dominujące emocje</text>
+    <text x="710" y="92" text-anchor="middle" font-size="10" fill="#6ee7b7">• Wpływ na cele życiowe (score 0..1)</text>
+  </g>
+</svg>
