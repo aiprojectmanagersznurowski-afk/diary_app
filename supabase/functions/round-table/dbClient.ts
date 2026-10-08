@@ -2,6 +2,45 @@
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { IRoundTableDatabaseClient, PersonaRecommendation, NarratorSynthesis, UserContextFileRow } from './types.ts';
 
+export function extractNoteContentFromMarkdown(bodyMd: string): string {
+  if (!bodyMd) return '';
+  // Usuń nagłówek frontmatter YAML (--- ... ---)
+  let text = bodyMd.replace(/^---[\s\S]*?---\n*/, '').trim();
+  // Usuń pierwszy nagłówek H1 (# Tytuł) jeśli występuje na początku
+  text = text.replace(/^#\s+[^\n]*\n*/, '').trim();
+  return text || bodyMd.trim();
+}
+
+export function mapDocumentRow(row: Record<string, unknown>): {
+  id: string;
+  title: string;
+  content: string;
+  category?: string;
+} {
+  const docData = (row.data as Record<string, unknown>) || {};
+  const title = (row.title as string) || (docData.title as string) || 'Dylemat';
+  const bodyMd = (row.body_md as string) || '';
+  const contentFromMd = extractNoteContentFromMarkdown(bodyMd);
+  const content =
+    contentFromMd ||
+    (docData.content as string) ||
+    (docData.cleanedContent as string) ||
+    (docData.reflection as string) ||
+    title;
+
+  const categoriesObj = row.categories as { name?: string } | { name?: string }[] | null;
+  const categoryName = Array.isArray(categoriesObj)
+    ? categoriesObj[0]?.name
+    : categoriesObj?.name || (docData.category as string) || undefined;
+
+  return {
+    id: row.id as string,
+    title,
+    content,
+    category: categoryName,
+  };
+}
+
 export class RealRoundTableDatabaseClient implements IRoundTableDatabaseClient {
   private client: SupabaseClient;
 
@@ -44,23 +83,16 @@ export class RealRoundTableDatabaseClient implements IRoundTableDatabaseClient {
   ): Promise<{ id: string; content: string; title: string; category?: string } | null> {
     const { data, error } = await this.client
       .from('documents')
-      .select('id, data, category')
+      .select('id, title, body_md, data, categories(name)')
       .eq('user_id', userId)
       .eq('id', documentId)
       .maybeSingle();
 
-    if (error || !data) return null;
-
-    const docData = (data.data as Record<string, unknown>) || {};
-    const title = (docData.title as string) || 'Dylemat';
-    const content = (docData.cleanedContent as string) || (docData.reflection as string) || JSON.stringify(docData);
-
-    return {
-      id: data.id,
-      title,
-      content,
-      category: data.category as string | undefined,
-    };
+    if (error) {
+      throw new Error(`Błąd odczytu notatki: ${error.message}`);
+    }
+    if (!data) return null;
+    return mapDocumentRow(data as Record<string, unknown>);
   }
 
   async getUserContextFiles(userId: string): Promise<UserContextFileRow[]> {

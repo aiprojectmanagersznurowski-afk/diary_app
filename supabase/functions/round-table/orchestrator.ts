@@ -1,5 +1,6 @@
 import { AiProviders } from '../_shared/ai/factory.ts';
 import { LlmMessage } from '../_shared/ai/types.ts';
+import { cleanJsonString } from '../_shared/ai/validate.ts';
 import { loadPersonalityPrompt, normalizePersonalityKey } from '../_shared/prompts/personalityLoader.ts';
 import { PersonaRecommendation, NarratorSynthesis, RoundTableResult, UserContextFileRow } from './types.ts';
 
@@ -50,26 +51,29 @@ export async function orchestrateRoundTable({
       const personaName = getPersonaDisplayName(memberKey);
 
       const systemPrompt = `Jesteś doradcą przy Okrągłym stole w aplikacji Vocaly.
-Zasady Twojej perspektywy:
+Twoja rola: reprezentujesz najwyższy poziom intelektu, przenikliwości i głębi życiowej. Jesteś bezkompromisowy wobec powierzchownych rad, pustych frazesów i taniego coachingu.
+
+Zasady Twojej unikalnej perspektywy i stylu wypowiedzi:
 ${personaPrompt}
 
-Kontekst użytkownika (wartości, cele, nawyki i historia):
+Kontekst użytkownika (wartości, cele, nawyki i dotychczasowe decyzje):
 ${contextStr}
 
-Instrukcje:
-1. Odpowiedz na dylemat użytkownika ze swojej unikalnej perspektywy.
-2. Twoja odpowiedź musi być w formacie JSON i zawierać dokładnie 3 pola:
-   - "angle": sedno dylematu i możliwe źródła z Twojej perspektywy (o co naprawdę tu chodzi?),
-   - "recommendation": Twoja konkretna rekomendacja decyzyjna,
-   - "nextStep": jeden najbliższy, realistyczny krok lub eksperyment.
-Pamiętaj: jeśli opierasz się na publicznych ideach (Deida / Huberman), wypowiadaj się w 3. osobie i nie udzielaj porad medycznych/farmakologicznych.
+Instrukcje dotyczące analizy dylematu:
+1. Odpowiedz na dylemat użytkownika ze swojej unikalnej, wyrazistej perspektywy.
+2. Odnieś się wprost do wartości i celów użytkownika podanych w kontekście, jeśli mają znaczenie dla tego wyboru.
+3. Twoja odpowiedź musi być w formacie JSON i zawierać dokładnie 3 pola:
+   - "angle": sedno dylematu, ukryte motywy i psychologiczne napięcie z Twojej perspektywy (o co tu NAPRAWDĘ chodzi pod powierzchnią wyboru?),
+   - "recommendation": Twoja odważna, konkretna i nieoczywista rekomendacja decyzyjna (bez ogólników i bez unikania zajęcia stanowiska),
+   - "nextStep": jeden konkretny, precyzyjny mikro-eksperyment lub krok do wykonania w ciągu 24-48 godzin, który przyniesie natychmiastową jasność.
+Pamiętaj: jeśli opierasz się na publicznych ideach (Deida / Huberman), wypowiadaj się w 3. osobie i bezwzględnie nie udzielaj porad medycznych/farmakologicznych.
 Zwróć WYŁĄCZNIE poprawny obiekt JSON.`;
 
       const messages: LlmMessage[] = [
         { role: 'system', content: systemPrompt },
         {
           role: 'user',
-          content: `Oto mój dylemat:\n"${dilemmaText}"\n\nPrzeanalizuj go ze swojej perspektywy i zwróć odpowiedź w formacie JSON.`,
+          content: `Oto mój dylemat decyzyjny:\n"${dilemmaText}"\n\nPrzeanalizuj go dogłębnie ze swojej perspektywy i zwróć odpowiedź w formacie JSON.`,
         },
       ];
 
@@ -79,15 +83,17 @@ Zwróć WYŁĄCZNIE poprawny obiekt JSON.`;
           temperature: 0.6,
         });
 
-        const parsed = JSON.parse(rawRes);
+        const cleaned = cleanJsonString(rawRes);
+        const parsed = JSON.parse(cleaned);
         return {
           personaId: memberKey,
           personaName,
-          angle: parsed.angle || 'Analiza perspektywy doradcy.',
-          recommendation: parsed.recommendation || 'Zalecenie doradcy.',
-          nextStep: parsed.nextStep || 'Zastanów się nad priorytetami.',
+          angle: parsed.angle || `Analiza dylematu z perspektywy: ${personaName}.`,
+          recommendation: parsed.recommendation || 'Podejmij decyzję w zgodzie ze swoimi najważniejszymi wartościami.',
+          nextStep: parsed.nextStep || 'Zapisz swoje wnioski i zrób mały krok testowy.',
         };
-      } catch {
+      } catch (err) {
+        console.warn(`Błąd generowania perspektywy doradcy ${memberKey}:`, err);
         return {
           personaId: memberKey,
           personaName,
@@ -110,23 +116,27 @@ Zwróć WYŁĄCZNIE poprawny obiekt JSON.`;
     .join('\n\n');
 
   const synthesisSystemPrompt = `Jesteś głównym Narratorem w aplikacji Vocaly.
-Twój styl i perspektywa:
+Łączysz mądrość wszystkich doradców w spójną całość, pomagając użytkownikowi zobaczyć pełny obraz sytuacji.
+Twój styl i filtr poznawczy:
 ${narratorPrompt}
 
+Kontekst użytkownika:
+${contextStr}
+
 Twoje zadanie:
-Wysłuchałeś wypowiedzi doradców przy Okrągłym stole i przygotowujesz dla użytkownika zwięzłą, klarowną syntezę.
+Wysłuchałeś wypowiedzi doradców przy Okrągłym stole i przygotowujesz dla użytkownika mistrzowską, wyrazistą syntezę dylematu.
 Zwróć obiekt JSON z polami:
-- "consensus": w czym doradcy są zgodni lub co jest wspólnym mianownikiem ich rad,
-- "divergence": gdzie pojawia się kluczowe napięcie lub różnica podejść,
-- "keyQuestion": jedno najważniejsze, celne pytanie, które użytkownik powinien sobie zadać przed decyzją,
-- "narratorAdvice": Twoja wspierająca myśl jako Narratora łącząca te wątki.
+- "consensus": w czym doradcy są фундаментално zgodni i co stanowi niezaprzeczalny punkt wyjścia,
+- "divergence": gdzie pojawia się kluczowe napięcie, spór wartości lub konflikt filozofii życiowych między doradcami,
+- "keyQuestion": jedno najcelniejsze pytanie sokratejskie, które użytkownik musi sobie szczerze zadać przed ostatecznym wyborem,
+- "narratorAdvice": Twoja wspierająca, głęboka puenta jako Narratora, osadzona w Twoim unikalnym tonie.
 Zwróć WYŁĄCZNIE poprawny obiekt JSON.`;
 
   const synthesisMessages: LlmMessage[] = [
     { role: 'system', content: synthesisSystemPrompt },
     {
       role: 'user',
-      content: `Dylemat użytkownika:\n"${dilemmaText}"\n\nWypowiedzi doradców przy stole:\n${advisorOutputsText}\n\nPrzygotuj syntezę w formacie JSON.`,
+      content: `Dylemat użytkownika:\n"${dilemmaText}"\n\nWypowiedzi doradców przy Okrągłym stole:\n${advisorOutputsText}\n\nPrzygotuj syntezę w formacie JSON.`,
     },
   ];
 
@@ -136,7 +146,8 @@ Zwróć WYŁĄCZNIE poprawny obiekt JSON.`;
       responseFormat: 'json',
       temperature: 0.4,
     });
-    const parsedSynthesis = JSON.parse(rawSynthesis);
+    const cleanedSynthesis = cleanJsonString(rawSynthesis);
+    const parsedSynthesis = JSON.parse(cleanedSynthesis);
     narratorSynthesis = {
       consensus: parsedSynthesis.consensus || 'Doradcy wskazują na konieczność szczerego spojrzenia na priorytety.',
       divergence:
@@ -145,7 +156,8 @@ Zwróć WYŁĄCZNIE poprawny obiekt JSON.`;
       narratorAdvice:
         parsedSynthesis.narratorAdvice || 'Zaufaj swojemu procesowi i podejmij decyzję w zgodzie ze sobą.',
     };
-  } catch {
+  } catch (err) {
+    console.warn('Błąd generowania syntezy Narratora:', err);
     narratorSynthesis = {
       consensus: 'Wszyscy doradcy zachęcają do uważności i działania w zgodzie ze swoimi wartościami.',
       divergence: 'Rozbieżność dotyczy akcentu między dyscypliną a wyrozumiałością dla siebie.',

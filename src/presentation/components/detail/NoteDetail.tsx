@@ -29,7 +29,10 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({ note, daily, recordings,
   const source = noteSource(note, recordings);
   const sourceLabel = sourceText(source);
   const longDate = formatLongDate(note.day);
-  const isDilemma = note.categoryName === 'Dylematy';
+  const isDilemma =
+    note.categoryName?.trim().toLowerCase() === 'dylematy' ||
+    note.categoryName?.trim().toLowerCase() === 'dylemat' ||
+    note.tags?.some((t) => t.trim().toLowerCase() === 'dylemat' || t.trim().toLowerCase() === 'dylematy');
 
   return (
     <ScreenContainer>

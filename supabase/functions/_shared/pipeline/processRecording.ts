@@ -28,15 +28,16 @@ Dozwolone typy notatek (noteType):
 - "reflection": Osobista refleksja, przemyślenie, emocja, stan ducha.
 - "event": Wydarzenie z życia, spotkanie, fakt, relacja z dnia.
 
-Kategorie (category): "Dylematy", "Praca", "Zdrowie", "Relacje", "Finanse", "Osobiste", "Hobby", "Nauka". Zastosuj "Dylematy" dla trudnych decyzji, wyborów życiowych lub zawodowych, wątpliwości oraz rozważań za i przeciw.
+Kategorie (category) – dokładnie jedna z: "Praca", "Zdrowie", "Relacje", "Finanse", "Osobiste", "Hobby", "Nauka", "Dylematy".
+"Dylematy" stosuj WYŁĄCZNIE, gdy decyzja nie jest jeszcze podjęta i użytkownik rozważa co najmniej dwie opcje lub wyraża wahanie. Decyzje już podjęte, zadania, emocje i pomysły bez rozterki przypisz do kategorii tematycznej. W dylemacie zachowaj wszystkie opcje, argumenty i obawy.
 
 Odpowiedź MUSI być poprawnym obiektem JSON w formacie:
 {
   "notes": [
     {
       "title": "Zwięzły tytuł notatki (2-6 słów)",
-      "noteType": "idea",
-      "category": "Dylematy",
+      "noteType": "event",
+      "category": "Praca",
       "tags": ["tag1", "tag2"],
       "content": "Zredagowany tekst notatki w 1. osobie..."
     }
@@ -72,7 +73,7 @@ let structurePromptCache: string | null = null;
 async function loadStructurePromptTemplate(): Promise<string> {
   if (structurePromptCache) return structurePromptCache;
   try {
-    const path = new URL('../prompts/structure.v2.md', import.meta.url);
+    const path = new URL('../prompts/structure.v3.md', import.meta.url);
     const raw = await Deno.readTextFile(path);
     const match = raw.match(/^---[\s\S]*?---\n?([\s\S]*)$/);
     const content = (match ? match[1] : raw).trim();
@@ -143,7 +144,7 @@ export async function processRecordingPipeline(options: PipelineOptions): Promis
     {
       "title": "Krótki tytuł",
       "noteType": "idea" | "task" | "reflection" | "event",
-      "category": "Dylematy" | "Praca" | "Osobiste" | "Zdrowie" | "Relacje",
+      "category": "Praca" | "Zdrowie" | "Relacje" | "Finanse" | "Osobiste" | "Hobby" | "Nauka" | "Dylematy",
       "tags": ["tag1", "tag2"],
       "content": "Treść notatki w 1. osobie"
     }
