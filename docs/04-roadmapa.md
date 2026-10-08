@@ -132,7 +132,7 @@ flowchart LR
 - [ ] Raportowanie awarii i błędów JS (Sentry) bez treści nagrań i notatek
 - [ ] Android: build preview (APK), logowanie Google i nagrywanie sprawdzone na telefonie
 - [x] Domyślny model Groq w aplikacji mobilnej i konfiguracja submit w eas.json
-- [ ] Przebudowa ekranu Analiz (ring, historia celów, histogram emocji), kategoria Dylematy i dokumentacja procesowania
+- [x] Przebudowa ekranu Analiz (ring, historia celów, histogram emocji), kategoria Dylematy i dokumentacja procesowania
 
 **Gotowe, gdy:** build z błędną konfiguracją (tekst zastępczy, zły klucz, brakujące zmienne) przerywa się przed kolejką EAS z czytelnym komunikatem, a aplikacja przy błędzie konfiguracji pokazuje ekran z listą problemów zamiast zachowywać się losowo.
 

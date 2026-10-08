@@ -37,7 +37,15 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({ note, daily, recordings,
           <View style={styles.spacer} />
         </View>
 
-        <NoteTypeChip type={note.noteType} />
+        <View style={styles.chipsRow}>
+          <NoteTypeChip type={note.noteType} />
+          {note.categoryName ? (
+            <View style={[styles.categoryBadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Feather name="folder" size={12} color={colors.textSecondary} />
+              <Text style={[styles.categoryText, { color: colors.textSecondary }]}>{note.categoryName}</Text>
+            </View>
+          ) : null}
+        </View>
         <GradientText text={note.title} style={styles.title} />
 
         <GlassCard>
@@ -111,4 +119,23 @@ const styles = StyleSheet.create({
   dayMid: { flex: 1, minWidth: 0 },
   dayTitle: { fontSize: 15, fontWeight: '600', lineHeight: 20 },
   daySub: { fontSize: 13, marginTop: 2 },
+  chipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  categoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });
