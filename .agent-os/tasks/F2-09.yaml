@@ -1,5 +1,5 @@
 id: F2-09
-title: Domyślny model Groq w Edge Functions
+title: Domyślny model Groq, odporność schematu i kategoria Dylematy w Edge Functions
 phase: 2
 role: edge
 branch: chore/F2-09-groq-default-model
@@ -13,17 +13,23 @@ scope:
     - supabase/functions/_shared/ai/**
     - supabase/functions/_shared/config/**
     - supabase/functions/_shared/pipeline/**
+    - supabase/functions/_shared/prompts/**
+    - supabase/functions/_shared/schemas/**
     - supabase/functions/process-recording/**
     - .env.example
     - docs/03-stos-technologiczny.md
 context: |
-  Zmiana domyślnego modelu Groq dla zadań structure, digest, link i chat (gdy provider = groq)
-  na `openai/gpt-oss-120b`. Dotyczy wartości domyślnych w getAiConfig, konstruktora
-  GroqLlmAdapter, testów deno, `.env.example` i tabeli modeli w docs/03. Modele nadal
-  zmieniane przez zmienne LLM_*_MODEL (ADR-006), bez zmian w kodzie.
+  1. Zmiana domyślnego modelu Groq dla zadań structure, digest, link i chat (gdy provider = groq)
+     na `openai/gpt-oss-120b` w getAiConfig, GroqLlmAdapter, testach deno, .env.example i docs/03.
+  2. Wzbogacenie DEFAULT_STRUCTURE_PROMPT oraz prompts/structure.v1.md o jawny format JSON ({ notes: [...] }),
+     wyjaśnienie pól oraz nową kategorię "Dylematy" (trudne decyzje, rozważania za i przeciw, wybory).
+  3. Uodpornienie validateAndRepairJson na typowe formaty LLM (np. tablica na najwyższym poziomie automatycznie
+     opakowywana w { notes: [...] }, domyślne puste tagi, domyślna kategoria).
+  4. Wzbogacenie promptu naprawczego (repairCallback) o jawny schemat JSON oczekiwanej odpowiedzi.
 acceptance:
   - "getAiConfig() bez zmiennych zwraca openai/gpt-oss-120b dla structure, digest, link i chat przy provider = groq"
+  - "DEFAULT_STRUCTURE_PROMPT i structure.v1.md zawierają kategorię Dylematy i dokładny format JSON"
+  - "validateAndRepairJson poprawnie normalizuje tablicę do obiektu { notes: [...] } i naprawia błędy z jawnym schematem"
   - "deno test dla _shared i process-recording przechodzi"
-  - "docs/03 i .env.example podają ten sam model domyślny"
 human_steps:
-  - "CP-SECRETS: ustaw LLM_STRUCTURE_MODEL, LLM_DIGEST_MODEL, LLM_LINK_MODEL w Supabase secrets (supabase secrets set), jeśli serwer ma używać nowego modelu"
+  - "Wdrożenie funkcji na Supabase: supabase functions deploy process-recording build-daily chat"
