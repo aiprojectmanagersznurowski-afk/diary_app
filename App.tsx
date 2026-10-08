@@ -33,7 +33,7 @@ const Stack = createNativeStackNavigator<AppStackParamList>();
 function AppContent() {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState<User | null>(null);
-  const { hasHydrated, lifeGoals, theme } = useSettingsStore();
+  const { hasHydrated, lifeGoals, theme, hasCompletedOnboarding } = useSettingsStore();
 
   useEffect(() => {
     // Nasłuch zmian sesji Supabase Auth rejestrowany dokładnie raz na cykl życia aplikacji.
@@ -88,7 +88,7 @@ function AppContent() {
         >
           {!user ? (
             <Stack.Screen name="Login" component={LoginScreen} />
-          ) : lifeGoals.length === 0 ? (
+          ) : !hasCompletedOnboarding || lifeGoals.length === 0 ? (
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           ) : (
             <>

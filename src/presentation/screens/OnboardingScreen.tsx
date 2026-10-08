@@ -21,6 +21,7 @@ import {
 import { pl } from '../i18n/pl';
 
 const QUESTIONS = pl.onboarding.questions;
+const TARGET_FILES = ['IDENTITY.md', 'VALUES.md', 'GOALS.md', 'RELATIONS.md'] as const;
 
 export const OnboardingScreen = () => {
   const { audioRecorder, aiService, profileService, userContextRepository } = useOnboardingServices();
@@ -33,7 +34,7 @@ export const OnboardingScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const { setGoals, theme, aiPersonality } = useSettingsStore();
+  const { setGoals, theme, aiPersonality, setHasCompletedOnboarding } = useSettingsStore();
   const { colors } = useTheme();
 
   useEffect(() => {
@@ -68,39 +69,42 @@ export const OnboardingScreen = () => {
           const goalsContent = finalGoals.map((g) => `- ${g}`).join('\n');
 
           const contextSaves: Promise<void>[] = [
-            userContextRepository.saveContextFile(user.id, 'GOALS.md', `# Moje cele życiowe\n\n${goalsContent}`),
+            userContextRepository.saveContextFile(user.id, 'GOALS.md', `# Moje cele życiowe\n\n${goalsContent}\n`),
+            userContextRepository.saveContextFile(
+              user.id,
+              'IDENTITY.md',
+              `# Kim jestem\n\n${identityContent || 'Brak danych o tożsamości. Możesz uzupełnić ten plik w Ustawieniach.'}\n`,
+            ),
+            userContextRepository.saveContextFile(
+              user.id,
+              'VALUES.md',
+              `# Moje wartości i zasady\n\n${valuesContent || 'Brak zdefiniowanych wartości. Możesz uzupełnić ten plik w Ustawieniach.'}\n`,
+            ),
+            userContextRepository.saveContextFile(
+              user.id,
+              'RELATIONS.md',
+              `# Relacje i rytm dnia\n\n${relationsContent || 'Brak danych o relacjach. Możesz uzupełnić ten plik w Ustawieniach.'}\n`,
+            ),
+            userContextRepository.saveContextFile(
+              user.id,
+              'DILEMMAS.md',
+              `# Historia dylematów i decyzji\n\nBrak zarejestrowanych dylematów. Gdy oznaczysz notatkę jako dylemat i skonsultujesz ją z Okrągłym stołem, Twoje decyzje pojawią się tutaj.\n`,
+            ),
+            userContextRepository.saveContextFile(
+              user.id,
+              'MEMORY.md',
+              `# Pamięć długoterminowa\n\nSkondensowane fakty i synteza z Twoich notatek będą aktualizowane automatycznie co tydzień.\n`,
+            ),
           ];
-          if (identityContent) {
-            contextSaves.push(
-              userContextRepository.saveContextFile(user.id, 'IDENTITY.md', `# Kim jestem\n\n${identityContent}`),
-            );
-          }
-          if (valuesContent) {
-            contextSaves.push(
-              userContextRepository.saveContextFile(
-                user.id,
-                'VALUES.md',
-                `# Moje wartości i zasady\n\n${valuesContent}`,
-              ),
-            );
-          }
-          if (relationsContent) {
-            contextSaves.push(
-              userContextRepository.saveContextFile(
-                user.id,
-                'RELATIONS.md',
-                `# Relacje i rytm dnia\n\n${relationsContent}`,
-              ),
-            );
-          }
           await Promise.allSettled(contextSaves);
         } catch (err) {
           console.warn('Failed to save profile or context files during onboarding', err);
         }
       }
       setGoals(finalGoals);
+      setHasCompletedOnboarding(true);
     },
-    [profileService, userContextRepository, aiPersonality, theme, setGoals, answers],
+    [profileService, userContextRepository, aiPersonality, theme, setGoals, setHasCompletedOnboarding, answers],
   );
 
   const handleSkip = async () => {
@@ -135,13 +139,20 @@ export const OnboardingScreen = () => {
           setCurrentStep((prev) => prev + 1);
           setIsProcessing(false);
         } else {
-          const extracted = await aiService.extractLifeGoalsFromTranscript(newAnswers.join('\n\n'));
-          if (extracted && extracted.length > 0) {
-            setGoalsList(extracted);
-            setIsProcessing(false);
-          } else {
-            throw new Error(pl.onboarding.errorNoGoals);
+          let extracted: string[] = [];
+          try {
+            extracted = await aiService.extractLifeGoalsFromTranscript(newAnswers.join('\n\n'));
+          } catch (extractionErr) {
+            console.warn('extractLifeGoalsFromTranscript failed, using fallback', extractionErr);
           }
+
+          if (!extracted || extracted.length === 0) {
+            const fallbackCandidate = newAnswers[2] || newAnswers[0];
+            extracted = fallbackCandidate?.trim() ? [fallbackCandidate.trim()] : [pl.onboarding.defaultGoal];
+          }
+
+          setGoalsList(extracted);
+          setIsProcessing(false);
         }
       } catch (err) {
         setError(String(err));
@@ -185,15 +196,39 @@ export const OnboardingScreen = () => {
               <Chip key={goal} label={goal} />
             ))}
           </View>
+          <View style={styles.filesBox}>
+            <Text style={[styles.filesHeader, { color: colors.textSecondary }]}>
+              {pl.onboarding.createdFilesHeader}
+            </Text>
+            <View style={styles.filesRow}>
+              {TARGET_FILES.map((f) => (
+                <View
+                  key={f}
+                  style={[styles.contextPill, { backgroundColor: colors.card2, borderColor: colors.border }]}
+                >
+                  <Feather name="file-text" size={11} color={colors.primary} style={{ marginRight: 4 }} />
+                  <Text style={[styles.contextPillText, { color: colors.text }]}>{f}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
           <View style={styles.fullWidth}>
             <PrimaryButton label={pl.onboarding.start} onPress={handleStart} loading={isSaving} />
           </View>
         </GlassCard>
       ) : (
         <GlassCard style={styles.card} padding={24}>
-          <Text style={[styles.step, { color: colors.primary }]}>
-            {pl.onboarding.stepLabel(currentStep + 1, QUESTIONS.length)}
-          </Text>
+          <View style={styles.stepHeader}>
+            <Text style={[styles.step, { color: colors.primary }]}>
+              {pl.onboarding.stepLabel(currentStep + 1, QUESTIONS.length)}
+            </Text>
+            <View style={[styles.fileBadge, { backgroundColor: colors.card2, borderColor: colors.border }]}>
+              <Feather name="file-text" size={11} color={colors.primary} style={{ marginRight: 4 }} />
+              <Text style={[styles.fileBadgeText, { color: colors.textSecondary }]}>
+                {pl.onboarding.targetFileBadge(TARGET_FILES[currentStep])}
+              </Text>
+            </View>
+          </View>
           <Text style={[styles.question, { color: colors.text }]}>{QUESTIONS[currentStep]}</Text>
 
           <View style={styles.recordArea}>
@@ -257,6 +292,25 @@ const styles = StyleSheet.create({
   appName: { fontSize: 38, fontWeight: '800', letterSpacing: -0.5 },
   subtitle: { fontSize: 16, lineHeight: 24, marginTop: 6 },
   card: { alignItems: 'center' },
+  stepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  fileBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  fileBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
   step: { fontSize: 12, fontWeight: '700', letterSpacing: 2, textAlign: 'center' },
   question: { fontSize: 19, fontWeight: '700', lineHeight: 26, letterSpacing: -0.2, textAlign: 'center', marginTop: 8 },
   recordArea: { minHeight: 170, alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 18 },
@@ -289,5 +343,17 @@ const styles = StyleSheet.create({
   successTitle: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5, textAlign: 'center', lineHeight: 25 },
   successSubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 18, marginTop: 2, marginBottom: 12 },
   goalChips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
+  filesBox: { alignSelf: 'stretch', marginTop: 14, alignItems: 'center' },
+  filesHeader: { fontSize: 12, fontWeight: '600', marginBottom: 8 },
+  filesRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 },
+  contextPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  contextPillText: { fontSize: 11, fontWeight: '600' },
   fullWidth: { alignSelf: 'stretch', marginTop: 14 },
 });

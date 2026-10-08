@@ -101,7 +101,9 @@ interface SettingsState {
   aiPersonality: AIPersonality;
   roundTableMembers: string[];
   hasHydrated: boolean;
+  hasCompletedOnboarding: boolean;
   setHasHydrated: (state: boolean) => void;
+  setHasCompletedOnboarding: (completed: boolean) => void;
   setGoals: (goals: string[]) => void;
   addGoal: (goal: string) => void;
   removeGoal: (goal: string) => void;
@@ -144,7 +146,9 @@ export const useSettingsStore = create<SettingsState>()(
       aiPersonality: 'Po prostu przyjaciel',
       roundTableMembers: ['deida', 'huberman'],
       hasHydrated: false,
+      hasCompletedOnboarding: false,
       setHasHydrated: (state) => set({ hasHydrated: state }),
+      setHasCompletedOnboarding: (hasCompletedOnboarding) => set({ hasCompletedOnboarding }),
       setGoals: (goals) => {
         set({ lifeGoals: goals });
         syncProfileToCloud({ lifeGoals: goals });
@@ -164,7 +168,7 @@ export const useSettingsStore = create<SettingsState>()(
         });
       },
       clearGoals: () => {
-        set({ lifeGoals: [] });
+        set({ lifeGoals: [], hasCompletedOnboarding: false });
         syncProfileToCloud({ lifeGoals: [] });
       },
       setTheme: (theme) => {
@@ -195,6 +199,8 @@ export const useSettingsStore = create<SettingsState>()(
           theme: (profile.theme as ThemeName) || state.theme,
           aiPersonality: (profile.aiPersonality as AIPersonality) || state.aiPersonality,
           roundTableMembers: profile.roundTableMembers || state.roundTableMembers,
+          hasCompletedOnboarding:
+            profile.lifeGoals && profile.lifeGoals.length > 0 ? true : state.hasCompletedOnboarding,
         }));
       },
       syncGoalsFromCloud: async (targetUserId?: string) => {
@@ -210,6 +216,8 @@ export const useSettingsStore = create<SettingsState>()(
               theme: (profile.theme as ThemeName) || state.theme,
               aiPersonality: (profile.aiPersonality as AIPersonality) || state.aiPersonality,
               roundTableMembers: profile.roundTableMembers || state.roundTableMembers,
+              hasCompletedOnboarding:
+                profile.lifeGoals && profile.lifeGoals.length > 0 ? true : state.hasCompletedOnboarding,
             }));
           }
         } catch (error) {
@@ -222,6 +230,7 @@ export const useSettingsStore = create<SettingsState>()(
           theme: 'AppleDark',
           aiPersonality: 'Po prostu przyjaciel',
           roundTableMembers: ['deida', 'huberman'],
+          hasCompletedOnboarding: false,
         });
         AsyncStorage.removeItem('settings-storage').catch(() => {});
       },

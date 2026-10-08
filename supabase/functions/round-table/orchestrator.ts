@@ -8,8 +8,8 @@ const PERSONA_DISPLAY_NAMES: Record<string, string> = {
   banach: 'Stefan Banach',
   buddha: 'Buddha',
   pilsudski: 'Józef Piłsudski',
-  deida: 'David Deida (Obecność i Droga)',
-  huberman: 'Andrew Huberman (Biologia i Rytm Dnia)',
+  deida: 'David Deida',
+  huberman: 'Andrew Huberman',
 };
 
 export function getPersonaDisplayName(key: string): string {
