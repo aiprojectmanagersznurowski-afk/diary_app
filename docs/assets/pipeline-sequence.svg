@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 760" width="100%" height="100%" style="background:#0b0f19; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="headerGradSeq" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#818cf8" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+
+    <!-- Markers -->
+    <marker id="seqArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#38bdf8" />
+    </marker>
+    <marker id="seqArrowPurple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#c084fc" />
+    </marker>
+    <marker id="seqArrowGreen" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#34d399" />
+    </marker>
+    <marker id="seqArrowAmber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#fbbf24" />
+    </marker>
+    <marker id="seqArrowGray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#64748b" />
+    </marker>
+  </defs>
+
+  <!-- TITLE -->
+  <text x="470" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="url(#headerGradSeq)">SEKWENCJA KOMUNIKACJI I WYWOŁAŃ W POTOKU</text>
+  <text x="470" y="56" text-anchor="middle" font-size="12" fill="#94a3b8">Wymiana komunikatów między klientem, bazą danych a modelami Groq i Gemini</text>
+
+  <!-- PARTICIPANTS HEADERS -->
+  <!-- Col 1: Użytkownik (x=60) -->
+  <rect x="10" y="75" width="100" height="42" rx="8" fill="#1e293b" stroke="#334155" />
+  <text x="60" y="94" text-anchor="middle" font-size="11" font-weight="600" fill="#f8fafc">👤 Użytkownik</text>
+  <text x="60" y="108" text-anchor="middle" font-size="9" fill="#94a3b8">iOS / Watch</text>
+  <line x1="60" y1="117" x2="60" y2="720" stroke="#1e293b" stroke-width="1.5" stroke-dasharray="4,4" />
+
+  <!-- Col 2: Aplikacja (x=190) -->
+  <rect x="135" y="75" width="110" height="42" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.2" />
+  <text x="190" y="94" text-anchor="middle" font-size="11" font-weight="600" fill="#f8fafc">📱 Aplikacja</text>
+  <text x="190" y="108" text-anchor="middle" font-size="9" fill="#38bdf8">SQLite Queue</text>
+  <line x1="190" y1="117" x2="190" y2="720" stroke="#1e293b" stroke-width="1.5" stroke-dasharray="4,4" />
+
+  <!-- Col 3: Storage (x=330) -->
+  <rect x="280" y="75" width="100" height="42" rx="8" fill="#1e293b" stroke="#334155" />
+  <text x="330" y="94" text-anchor="middle" font-size="11" font-weight="600" fill="#f8fafc">🗄️ Storage</text>
+  <text x="330" y="108" text-anchor="middle" font-size="9" fill="#94a3b8">Pliki .m4a</text>
+  <line x1="330" y1="117" x2="330" y2="720" stroke="#1e293b" stroke-width="1.5" stroke-dasharray="4,4" />
+
+  <!-- Col 4: PostgreSQL (x=460) -->
+  <rect x="410" y="75" width="100" height="42" rx="8" fill="#1e293b" stroke="#334155" />
+  <text x="460" y="94" text-anchor="middle" font-size="11" font-weight="600" fill="#f8fafc">🐘 Postgres</text>
+  <text x="460" y="108" text-anchor="middle" font-size="9" fill="#94a3b8">Tabele &amp; RLS</text>
+  <line x1="460" y1="117" x2="460" y2="720" stroke="#1e293b" stroke-width="1.5" stroke-dasharray="4,4" />
+
+  <!-- Col 5: Edge Function (x=600) -->
+  <rect x="540" y="75" width="120" height="42" rx="8" fill="#1e293b" stroke="#06b6d4" stroke-width="1.2" />
+  <text x="600" y="94" text-anchor="middle" font-size="11" font-weight="600" fill="#f8fafc">⚡ Edge Function</text>
+  <text x="600" y="108" text-anchor="middle" font-size="9" fill="#06b6d4">process-recording</text>
+  <line x1="600" y1="117" x2="600" y2="720" stroke="#1e293b" stroke-width="1.5" stroke-dasharray="4,4" />
+
+  <!-- Col 6: Groq AI (x=750) -->
+  <rect x="700" y="75" width="100" height="42" rx="8" fill="#1e293b" stroke="#c084fc" stroke-width="1.2" />
+  <text x="750" y="94" text-anchor="middle" font-size="11" font-weight="600" fill="#f8fafc">🧠 Groq AI</text>
+  <text x="750" y="108" text-anchor="middle" font-size="9" fill="#c084fc">STT &amp; LLM</text>
+  <line x1="750" y1="117" x2="750" y2="720" stroke="#1e293b" stroke-width="1.5" stroke-dasharray="4,4" />
+
+  <!-- Col 7: Gemini AI (x=870) -->
+  <rect x="820" y="75" width="100" height="42" rx="8" fill="#1e293b" stroke="#34d399" stroke-width="1.2" />
+  <text x="870" y="94" text-anchor="middle" font-size="11" font-weight="600" fill="#f8fafc">💎 Gemini AI</text>
+  <text x="870" y="108" text-anchor="middle" font-size="9" fill="#34d399">Embed 1536d</text>
+  <line x1="870" y1="117" x2="870" y2="720" stroke="#1e293b" stroke-width="1.5" stroke-dasharray="4,4" />
+
+  <!-- ================= INTERACTIONS ================= -->
+
+  <!-- 1. Voice Record -->
+  <g transform="translate(0, 140)">
+    <line x1="60" y1="0" x2="185" y2="0" stroke="#38bdf8" stroke-width="1.8" marker-end="url(#seqArrow)" />
+    <text x="122" y="-7" text-anchor="middle" font-size="10" fill="#e2e8f0">1. Nagranie audio (.m4a)</text>
+  </g>
+
+  <!-- 2. Upload storage -->
+  <g transform="translate(0, 175)">
+    <line x1="190" y1="0" x2="325" y2="0" stroke="#38bdf8" stroke-width="1.8" marker-end="url(#seqArrow)" />
+    <text x="260" y="-7" text-anchor="middle" font-size="10" fill="#e2e8f0">2. Upload pliku do Storage</text>
+  </g>
+
+  <!-- 3. Insert recordings -->
+  <g transform="translate(0, 210)">
+    <line x1="190" y1="0" x2="455" y2="0" stroke="#38bdf8" stroke-width="1.8" marker-end="url(#seqArrow)" />
+    <text x="325" y="-7" text-anchor="middle" font-size="10" fill="#e2e8f0">3. INSERT recordings (status: uploaded)</text>
+  </g>
+
+  <!-- 4. HTTP POST trigger -->
+  <g transform="translate(0, 245)">
+    <line x1="190" y1="0" x2="595" y2="0" stroke="#06b6d4" stroke-width="1.8" marker-end="url(#seqArrow)" />
+    <text x="395" y="-7" text-anchor="middle" font-size="10" font-weight="600" fill="#67e8f9">4. POST /process-recording { recording_id }</text>
+  </g>
+
+  <!-- Step A: STT Banner -->
+  <rect x="250" y="270" width="540" height="20" rx="4" fill="#0c4a6e" />
+  <text x="520" y="284" text-anchor="middle" font-size="10" font-weight="700" fill="#38bdf8">KROK A: TRANSKRYPCJA STT (whisper-large-v3)</text>
+
+  <g transform="translate(0, 310)">
+    <line x1="600" y1="0" x2="335" y2="0" stroke="#64748b" stroke-width="1.5" marker-end="url(#seqArrowGray)" />
+    <text x="465" y="-6" text-anchor="middle" font-size="9" fill="#94a3b8">Pobranie pliku .m4a</text>
+  </g>
+
+  <g transform="translate(0, 335)">
+    <line x1="600" y1="0" x2="745" y2="0" stroke="#c084fc" stroke-width="1.8" marker-end="url(#seqArrowPurple)" />
+    <text x="672" y="-6" text-anchor="middle" font-size="10" fill="#f3e8ff">Wyślij audio (język: pl)</text>
+  </g>
+
+  <g transform="translate(0, 360)">
+    <line x1="750" y1="0" x2="605" y2="0" stroke="#c084fc" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#seqArrowPurple)" />
+    <text x="675" y="-6" text-anchor="middle" font-size="10" fill="#f3e8ff">Zwróć raw_transcript</text>
+  </g>
+
+  <g transform="translate(0, 385)">
+    <line x1="600" y1="0" x2="465" y2="0" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#seqArrow)" />
+    <text x="532" y="-6" text-anchor="middle" font-size="9" fill="#cbd5e1">UPDATE recordings (status: transcribed)</text>
+  </g>
+
+  <!-- Step B: Structuring Banner -->
+  <rect x="380" y="405" width="450" height="20" rx="4" fill="#3b0764" />
+  <text x="605" y="419" text-anchor="middle" font-size="10" font-weight="700" fill="#d8b4fe">KROK B: PODZIAŁ NA NOTATKI LLM (structure.v2.md, kat: Dylematy)</text>
+
+  <g transform="translate(0, 440)">
+    <line x1="600" y1="0" x2="745" y2="0" stroke="#c084fc" stroke-width="1.8" marker-end="url(#seqArrowPurple)" />
+    <text x="672" y="-6" text-anchor="middle" font-size="10" fill="#f3e8ff">Prompt structure.v2.md (JSON)</text>
+  </g>
+
+  <g transform="translate(0, 465)">
+    <line x1="750" y1="0" x2="605" y2="0" stroke="#c084fc" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#seqArrowPurple)" />
+    <text x="675" y="-6" text-anchor="middle" font-size="10" fill="#f3e8ff">{ notes: [...] } (walidacja/naprawa Zod)</text>
+  </g>
+
+  <g transform="translate(0, 490)">
+    <line x1="600" y1="0" x2="465" y2="0" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#seqArrow)" />
+    <text x="532" y="-6" text-anchor="middle" font-size="9" fill="#cbd5e1">INSERT documents (kind=note) &amp; status: segmented</text>
+  </g>
+
+  <!-- Step C & D: Embed & Links Banner -->
+  <rect x="380" y="510" width="510" height="20" rx="4" fill="#064e3b" />
+  <text x="635" y="524" text-anchor="middle" font-size="10" font-weight="700" fill="#34d399">KROK C &amp; D: WEKTORYZACJA (Gemini) ORAZ GRAF POWIĄZAŃ (Groq)</text>
+
+  <g transform="translate(0, 545)">
+    <line x1="600" y1="0" x2="865" y2="0" stroke="#34d399" stroke-width="1.8" marker-end="url(#seqArrowGreen)" />
+    <text x="735" y="-6" text-anchor="middle" font-size="10" fill="#a7f3d0">text-embedding-004 (treść notatki)</text>
+  </g>
+
+  <g transform="translate(0, 570)">
+    <line x1="870" y1="0" x2="605" y2="0" stroke="#34d399" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#seqArrowGreen)" />
+    <text x="735" y="-6" text-anchor="middle" font-size="10" fill="#a7f3d0">Wektor 1536 floatów ➔ Zapis pgvector</text>
+  </g>
+
+  <g transform="translate(0, 595)">
+    <line x1="600" y1="0" x2="745" y2="0" stroke="#fbbf24" stroke-width="1.8" marker-end="url(#seqArrowAmber)" />
+    <text x="672" y="-6" text-anchor="middle" font-size="10" fill="#fde68a">Prompt link.v1.md (ocena powiązań)</text>
+  </g>
+
+  <g transform="translate(0, 620)">
+    <line x1="750" y1="0" x2="605" y2="0" stroke="#fbbf24" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#seqArrowAmber)" />
+    <text x="675" y="-6" text-anchor="middle" font-size="10" fill="#fde68a">Lista relacji ze scorem ➔ Zapis w tabeli links</text>
+  </g>
+
+  <!-- Step E: Finalize Banner -->
+  <rect x="170" y="640" width="460" height="20" rx="4" fill="#1e1b4b" />
+  <text x="400" y="654" text-anchor="middle" font-size="10" font-weight="700" fill="#818cf8">KROK E: KOLEJKA WPISU DNIA &amp; ZAKOŃCZENIE</text>
+
+  <g transform="translate(0, 675)">
+    <line x1="600" y1="0" x2="465" y2="0" stroke="#38bdf8" stroke-width="1.8" marker-end="url(#seqArrow)" />
+    <text x="532" y="-6" text-anchor="middle" font-size="9" fill="#cbd5e1">INSERT day_rebuild_queue &amp; recordings status: done</text>
+  </g>
+
+  <g transform="translate(0, 700)">
+    <line x1="600" y1="0" x2="195" y2="0" stroke="#34d399" stroke-width="2" marker-end="url(#seqArrowGreen)" />
+    <text x="395" y="-7" text-anchor="middle" font-size="10" font-weight="700" fill="#34d399">HTTP 200 { status: "done", documentIds: [...] }</text>
+  </g>
+
+  <g transform="translate(0, 725)">
+    <line x1="190" y1="0" x2="65" y2="0" stroke="#34d399" stroke-width="2" marker-end="url(#seqArrowGreen)" />
+    <text x="125" y="-7" text-anchor="middle" font-size="10" font-weight="600" fill="#6ee7b7">Odświeżenie UI listy notatek na żywo</text>
+  </g>
+</svg>
